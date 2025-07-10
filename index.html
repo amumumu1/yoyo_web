@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>BLE → センシング & 解析</title>
+  <style>
+    body { font-family: 'Hiragino Sans', sans-serif; padding: 20px; }
+    button { margin-right: 10px; padding: 10px; font-size: 16px; }
+    #score { margin-top: 20px; font-size: 18px; }
+    img { display: block; margin-top: 20px; max-width: 100%; height: auto; }
+    pre { background: #f4f4f4; padding: 10px; max-height: 200px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <button id="btnConnect">接続</button>
+  <button id="btnStop" disabled>センシング停止 &amp; 解析</button>
+  <div id="score"></div>
+  <img id="heatmap" alt="ヒートマップ" />
+
+  <h2>取得データ (CSV形式)</h2>
+  <pre id="csvOutput"></pre>
+
+  <script>
+    const SERVICE_UUID  = '88888888-4abd-ba0d-b7c6-ff0a00200021';
+    const CONTROL_UUID  = '88888888-4abd-ba0d-b7c6-ff0a00200022';
+    const DATA_UUID     = '88888888-4abd-ba0d-b7c6-ff0a00200023';
+
+    let dataChar, controlChar, device;
+    let buffer = '';
+    const acc = [], gyro = [];
+    const btnConnect = document.getElementById('btnConnect');
+    const btnStop    = document.getElementById('btnStop');
+    const csvOutput  = document.getElementById('csvOutput');
+    const scoreDiv   = document.getElementById('score');
+    const heatmapImg = document.getElementById('heatmap');
+
+    // 接続＆センシング開始
+    btnConnect.onclick = async () => {
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'ArduinoIMU' }],
+          optionalServices: [SERVICE_UUID]
+        });
+        const server  = await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+
+        controlChar = await service.getCharacteristic(CONTROL_UUID);
+        await controlChar.writeValue(new Uint8Array([1])); // センシング開始
+
+        await new Promise(r => setTimeout(r, 100));
+        dataChar = await service.getCharacteristic(DATA_UUID);
+        await dataChar.startNotifications();
+        dataChar.addEventListener('characteristicvaluechanged', handleNotify);
+
+        btnStop.disabled = false;
+        btnConnect.disabled = true;
+        console.log('▶ センシング開始');
+      } catch (err) {
+        console.error(err);
+        alert('接続／初期化に失敗: ' + err.message);
+      }
+    };
+
+    // 通知データをパース
+    function handleNotify(event) {
+      buffer += new TextDecoder().decode(event.target.value);
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        const p = line.trim().split(',').map(Number);
+        if (p.length === 7) {
+          const [t, ax, ay, az, gx, gy, gz] = p;
+          acc.push({ t, ax, ay, az });
+          gyro.push({ t, gx, gy, gz });
+        }
+      }
+    }
+
+    // センシング停止 & 解析
+    btnStop.onclick = async () => {
+      try {
+        await controlChar.writeValue(new Uint8Array([0])); // 停止信号
+        await dataChar.stopNotifications();
+        device.gatt.disconnect();
+        btnStop.disabled = true;
+        console.log('▶ センシング停止');
+
+        // CSV 生成
+        let txt = 'time,ax,ay,az\n';
+        acc.forEach(d => { txt += `${d.t},${d.ax},${d.ay},${d.az}\n`; });
+        txt += '\n';
+        txt += 'time,gx,gy,gz\n';
+        gyro.forEach(d => { txt += `${d.t},${d.gx},${d.gy},${d.gz}\n`; });
+        csvOutput.textContent = txt;
+
+        // サーバー解析
+        const res = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acc, gyro })
+        });
+        const json = await res.json();
+        scoreDiv.textContent = `Final Score: ${json.score.toFixed(1)}`;
+        heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
+      } catch (err) {
+        console.error(err);
+        alert('停止／解析に失敗: ' + err.message);
+      }
+    };
+  </script>
+</body>
+</html>

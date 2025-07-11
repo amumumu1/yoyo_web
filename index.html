@@ -141,15 +141,16 @@
 
         // 平均と標準偏差の表示（textContent）
         // 平均と標準偏差の表示（null 対応）
-        const meanStr = (json.loop_mean_duration !== null)
+        const meanStr = (json.loop_mean_duration !== null && json.loop_mean_duration !== undefined)
           ? `平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒`
           : `平均ループ時間: なし`;
 
-        const stdStr = (json.loop_std_duration !== null)
+        const stdStr = (json.loop_std_duration !== null && json.loop_std_duration !== undefined)
           ? `　ループ時間の標準偏差: ${json.loop_std_duration.toFixed(3)} 秒`
           : `　ループ時間の標準偏差: なし`;
 
         loopSummary.textContent = `${meanStr}\n${stdStr}`;
+
 
         // 各ループの一覧（pre に表示）
         if (json.loop_duration_list && json.loop_duration_list.length > 0) {

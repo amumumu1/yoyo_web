@@ -2,28 +2,40 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>BLE → センシング & 解析</title>
+  <title>インサイド・ループ技能評価</title>
   <style>
     body { font-family: 'Hiragino Sans', sans-serif; padding: 20px; }
     button { margin-right: 10px; padding: 10px; font-size: 16px; }
     #score { margin-top: 20px; font-size: 18px; }
+    #loopSummary { font-size: 18px; }
+    #loopDetails { font-size: 18px; }
     img { display: block; margin-top: 20px; max-width: 100%; height: auto; }
     pre { background: #f4f4f4; padding: 10px; max-height: 200px; overflow: auto; }
   </style>
 </head>
 <body>
-  <button id="btnConnect">接続</button>
-  <button id="btnStop" disabled>センシング停止 &amp; 解析</button>
+  <button id="btnConnect">接続 &amp; センシング開始</button>
+  <button id="btnStop" disabled>センシング終了 &amp; 解析</button>
+  <div id="loading" style="display: none; font-size: 18px; margin-top: 20px;">解析中...</div>
   <div id="score"></div>
-  <img id="heatmap" alt="ヒートマップ" />
+  <div id="loopSummary"></div>  <!-- 平均・標準偏差の出力用 -->
+  <pre id="loopDetails" style="display: none;"></pre>  <!-- 各ループの所要時間一覧 -->
+  <img id="heatmap" alt="ヒートマップ" style="display: none;" />
 
-  <h2>取得データ (CSV形式)</h2>
-  <pre id="csvOutput"></pre>
+
+  <h2 id="csvTitle" style="display: none;">取得データ (CSV形式)</h2>
+  <pre id="csvOutput" style="display: none;"></pre>
+  
+
+
 
   <script>
     const SERVICE_UUID  = '88888888-4abd-ba0d-b7c6-ff0a00200021';
     const CONTROL_UUID  = '88888888-4abd-ba0d-b7c6-ff0a00200022';
     const DATA_UUID     = '88888888-4abd-ba0d-b7c6-ff0a00200023';
+
+    // リモート Flask API のベース URL
+    const API_BASE = 'https://yoyo-backend.kajilab.dev';
 
     let dataChar, controlChar, device;
     let buffer = '';
@@ -36,12 +48,19 @@
 
     // 接続＆センシング開始
     btnConnect.onclick = async () => {
+      acc.length = 0;
+      gyro.length = 0;
+
       try {
-        device = await navigator.bluetooth.requestDevice({
-          filters: [{ name: 'ArduinoIMU' }],
-          optionalServices: [SERVICE_UUID]
-        });
-        const server  = await device.gatt.connect();
+        if (!device || !device.gatt.connected) {
+          // 初回または切断されたときは再ペアリング
+          device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: 'ArduinoIMU' }],
+            optionalServices: [SERVICE_UUID]
+          });
+        }
+
+        const server = await device.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
 
         controlChar = await service.getCharacteristic(CONTROL_UUID);
@@ -61,6 +80,7 @@
       }
     };
 
+
     // 通知データをパース
     function handleNotify(event) {
       buffer += new TextDecoder().decode(event.target.value);
@@ -76,35 +96,82 @@
       }
     }
 
-    // センシング停止 & 解析
+    const loadingDiv = document.getElementById('loading');
+
+    // センシング停止 ＆ 解析
     btnStop.onclick = async () => {
       try {
-        await controlChar.writeValue(new Uint8Array([0])); // 停止信号
+        loadingDiv.style.display = 'block'; 
+        // 停止信号を送って通知停止
+        await controlChar.writeValue(new Uint8Array([0]));
         await dataChar.stopNotifications();
-        device.gatt.disconnect();
+        // device.gatt.disconnect();
         btnStop.disabled = true;
         console.log('▶ センシング停止');
 
         // CSV 生成
-        let txt = 'time,ax,ay,az\n';
+        let txt = '加速度\n';
+        txt += 'time,x,y,z\n';
         acc.forEach(d => { txt += `${d.t},${d.ax},${d.ay},${d.az}\n`; });
         txt += '\n';
-        txt += 'time,gx,gy,gz\n';
+        txt += '角速度\n';
+        txt += 'time,x,y,z\n';
         gyro.forEach(d => { txt += `${d.t},${d.gx},${d.gy},${d.gz}\n`; });
         csvOutput.textContent = txt;
 
-        // サーバー解析
-        const res = await fetch('/analyze', {
+        // リモート API 呼び出しに変更
+        const res = await fetch(`${API_BASE}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ acc, gyro })
         });
         const json = await res.json();
-        scoreDiv.textContent = `Final Score: ${json.score.toFixed(1)}`;
+        console.log("サーバーからの結果:", json);
+        // センシング停止 ＆ 解析の中
+        csvOutput.textContent = txt;
+        csvOutput.style.display = 'block';
+        document.getElementById('csvTitle').style.display = 'block';
+
+        // スコア表示
+        let stableText = (json.stable_loop !== null && json.stable_loop !== undefined)? `安定開始ループ: ${json.stable_loop}周目`: `安定開始ループ: なし`;
+
+        scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${stableText}`;
+        const loopSummary = document.getElementById('loopSummary');
+        const loopDetails = document.getElementById('loopDetails');
+
+        // 平均と標準偏差の表示（textContent）
+        // 平均と標準偏差の表示（null 対応）
+        const meanStr = (json.loop_mean_duration !== null)
+          ? `平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒`
+          : `平均ループ時間: なし`;
+
+        const stdStr = (json.loop_std_duration !== null)
+          ? `　ループ時間の標準偏差: ${json.loop_std_duration.toFixed(3)} 秒`
+          : `　ループ時間の標準偏差: なし`;
+
+        loopSummary.textContent = `${meanStr}\n${stdStr}`;
+
+        // 各ループの一覧（pre に表示）
+        if (json.loop_duration_list && json.loop_duration_list.length > 0) {
+          loopDetails.textContent = json.loop_duration_list.join('\n');
+          loopDetails.style.display = 'block';
+        } else {
+          loopDetails.textContent = '';
+          loopDetails.style.display = 'none';
+        }
+
+
         heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
+        heatmapImg.style.display = 'block';
+
       } catch (err) {
         console.error(err);
         alert('停止／解析に失敗: ' + err.message);
+      }finally {
+      loadingDiv.style.display = 'none';  // 解析中を非表示
+      // 接続ボタンを「センシング」にして再度使えるように
+      btnConnect.textContent = 'もう一度センシング';
+      btnConnect.disabled = false;
       }
     };
   </script>

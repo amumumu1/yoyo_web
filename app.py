@@ -100,7 +100,70 @@ def analyze():
     else:
         score = 0.0
 
-    return jsonify({'score': score, 'heatmap': heatmap_b64})
+    def detect_stable_loop_by_tail(dtw_matrix):
+        N = dtw_matrix.shape[0]
+        if N == 0:
+            return None  # ← 追加
+        tail_len = N // 2
+        vals = dtw_matrix[np.triu_indices(N, k=1)]
+        d_min, d_max = vals.min(), vals.max()
+        threshold = (d_min + d_max) / 2  
+    
+
+        ref_idx = list(range(N - tail_len, N))
+
+        for i in range(N - tail_len):
+            mean_dist = dtw_matrix[i, ref_idx].mean()
+            if mean_dist <= threshold:
+                return i + 1  # 1始まり
+        return None
+
+    stable_loop = detect_stable_loop_by_tail(dtw_mat)
+   
+   # 各ループの所要時間（秒）を計算
+    loop_durations = [
+    float(t_sec.iloc[v2] - t_sec.iloc[v1])
+    for v1, _, v2 in loops
+    ]
+
+    if loop_durations:
+        loop_mean_duration = float(np.mean(loop_durations))
+        loop_std_duration  = float(np.std(loop_durations))
+        loop_duration_list = [
+            f"ループ {i+1}: {d:.3f} 秒" for i, d in enumerate(loop_durations)
+        ]
+    else:
+        loop_mean_duration = None  # ← 修正
+        loop_std_duration  = None  # ← 修正
+        loop_duration_list = []    # ← 空リストのままでOK
+
+
+
+    
+
+    if len(loops) < 2:
+        return jsonify({
+            'score': 0.0,
+            'heatmap': heatmap_b64,  
+            'stable_loop': None,
+            'loop_count': len(loops),
+            'loop_mean_duration': loop_mean_duration,  # 平均
+            'loop_std_duration': loop_std_duration,    # 標準偏差
+            'loop_duration_list': loop_duration_list   # 各ループの文字列リスト
+        })
+    else:
+        return jsonify({
+            'score': score,
+            'heatmap': heatmap_b64,
+            'stable_loop': stable_loop,  # ← Noneなら null として返る
+            'loop_count': n , 
+            'loop_mean_duration': loop_mean_duration,  # 平均
+            'loop_std_duration': loop_std_duration,    # 標準偏差
+            'loop_duration_list': loop_duration_list   # 各ループの文字列リスト
+    })
+        
+
+    
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)

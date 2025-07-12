@@ -93,6 +93,14 @@ def analyze():
     cax = ax.matshow(dtw_mat, cmap='coolwarm')
     plt.colorbar(cax)
     ax.set_title('Loop Similarity')
+
+    # インデックスを 1, 2, 3, ... に変更
+    tick_labels = [str(i+1) for i in range(dtw_mat.shape[0])]
+    ax.set_xticks(range(dtw_mat.shape[0]))
+    ax.set_yticks(range(dtw_mat.shape[0]))
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+
     plt.tight_layout()
     buf = BytesIO()
     fig.savefig(buf, format='png')

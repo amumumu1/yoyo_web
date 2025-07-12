@@ -95,30 +95,6 @@ def analyze():
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-    # ----- ループ検出グラフを作成（PNG -> base64） -----
-    fig2, ax2 = plt.subplots(figsize=(10, 4))
-    ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
-
-    # 1周とみなした区間を塗る
-    for v1, p, v2 in loops:
-        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3)
-
-    # ピークと谷を描画
-    ax2.plot(t_sec[peaks], y[peaks], "go", label="peak")
-    ax2.plot(t_sec[valleys], y[valleys], "ro", label="valley")
-
-    ax2.set_xlabel("Time [s]")
-    ax2.set_ylabel("Gyro Y [rad/s]")
-    ax2.set_title("ループ検出グラフ")
-    ax2.grid(True)
-    ax2.legend(loc="upper right")
-
-    # base64 に変換
-    buf2 = BytesIO()
-    fig2.savefig(buf2, format='png')
-    plt.close(fig2)
-    loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
-
 
     # スコア算出
     vals = dtw_mat[np.triu_indices(n, 1)]

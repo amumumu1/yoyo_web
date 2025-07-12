@@ -159,9 +159,7 @@ def analyze():
     ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
     ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
 
-    ax2.set_title("ループ検出")
-    ax2.set_xlabel("時間 [秒]")
-    ax2.set_ylabel("角速度 gy [rad/s]")
+    
     ax2.legend()
     ax2.grid(True)
 
@@ -179,12 +177,14 @@ def analyze():
         # ----- セグメントグラフ（最低限の描画） -----
         fig2, ax2 = plt.subplots(figsize=(10, 4))
         ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
-        plt.title("角速度グラフ", fontproperties=font_prop)
-        plt.xlabel("時間 [s]", fontproperties=font_prop)
-        plt.ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
-
+        ax2.set_title("ループ検出", fontproperties=font_prop)
+        ax2.set_xlabel("時間 [秒]", fontproperties=font_prop)
+        ax2.set_ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
         ax2.grid(True)
-        ax2.legend()
+        ax2.legend(prop=font_prop)
+
+
+     
 
         buf2 = BytesIO()
         fig2.savefig(buf2, format='png')

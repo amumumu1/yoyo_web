@@ -11,7 +11,8 @@ from ahrs.filters import Madgwick
 import base64
 import math  # ← 追加
 
-plt.rcParams['font.family'] = 'Noto Sans CJK JP'
+plt.rcParams['font.family'] = 'DejaVu Sans'
+
 
 
 app = Flask(__name__)

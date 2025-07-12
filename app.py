@@ -147,7 +147,7 @@ def analyze():
         loop_std_duration  = None  # ← 修正
         loop_duration_list = []    # ← 空リストのままでOK
 
-        # ====== ループ検出グラフの描画 ======
+     # ====== ループ検出グラフの描画 ======
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     ax2.plot(t_sec, y, color='orange')
 
@@ -159,14 +159,19 @@ def analyze():
     ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
     ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
 
-    
-    ax2.legend()
+    # ✅ フォント指定を追加
+    ax2.set_title("ループ検出", fontproperties=font_prop)
+    ax2.set_xlabel("時間 [秒]", fontproperties=font_prop)
+    ax2.set_ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
+    ax2.legend(prop=font_prop)
     ax2.grid(True)
 
+    # 保存処理
     buf2 = BytesIO()
     fig2.savefig(buf2, format='png')
     plt.close(fig2)
     loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+
 
 
 

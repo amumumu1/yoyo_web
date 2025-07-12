@@ -11,7 +11,8 @@ from ahrs.filters import Madgwick
 import base64
 import math  # ← 追加
 
-plt.rcParams['font.family'] = 'Hiragino Sans'
+plt.rcParams['font.family'] = 'Noto Sans CJK JP'
+
 
 app = Flask(__name__)
 CORS(app)

@@ -11,7 +11,11 @@ from ahrs.filters import Madgwick
 import base64
 import math  # ← 追加
 
-plt.rcParams['font.family'] = 'Noto Sans CJK JP'
+from matplotlib import font_manager
+font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+font_prop = font_manager.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = font_prop.get_name()
+
 
 app = Flask(__name__)
 CORS(app)

@@ -9,6 +9,9 @@ from scipy.signal import find_peaks, savgol_filter
 from fastdtw import fastdtw
 from ahrs.filters import Madgwick
 import base64
+import math  # ← 追加
+
+plt.rcParams['font.family'] = 'Hiragino Sans'
 
 app = Flask(__name__)
 CORS(app)
@@ -92,6 +95,31 @@ def analyze():
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
+    # ----- ループ検出グラフを作成（PNG -> base64） -----
+    fig2, ax2 = plt.subplots(figsize=(10, 4))
+    ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
+
+    # 1周とみなした区間を塗る
+    for v1, p, v2 in loops:
+        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3)
+
+    # ピークと谷を描画
+    ax2.plot(t_sec[peaks], y[peaks], "go", label="peak")
+    ax2.plot(t_sec[valleys], y[valleys], "ro", label="valley")
+
+    ax2.set_xlabel("Time [s]")
+    ax2.set_ylabel("Gyro Y [rad/s]")
+    ax2.set_title("ループ検出グラフ")
+    ax2.grid(True)
+    ax2.legend(loc="upper right")
+
+    # base64 に変換
+    buf2 = BytesIO()
+    fig2.savefig(buf2, format='png')
+    plt.close(fig2)
+    loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+
+
     # スコア算出
     vals = dtw_mat[np.triu_indices(n, 1)]
     if vals.size > 0:
@@ -137,24 +165,64 @@ def analyze():
         loop_std_duration  = None  # ← 修正
         loop_duration_list = []    # ← 空リストのままでOK
 
+        # ====== ループ検出グラフの描画 ======
+    fig2, ax2 = plt.subplots(figsize=(12, 6))
+    ax2.plot(t_sec, y, color='orange')
+
+    # 検出されたループ領域を塗る
+    for idx, (v1, p, v2) in enumerate(loops):
+        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3, label='1周' if idx == 0 else "")
+
+    # ピーク・谷にマーカー
+    ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
+    ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
+
+    ax2.set_title("ループ検出")
+    ax2.set_xlabel("時間 [秒]")
+    ax2.set_ylabel("角速度 gy [rad/s]")
+    ax2.legend()
+    ax2.grid(True)
+
+    buf2 = BytesIO()
+    fig2.savefig(buf2, format='png')
+    plt.close(fig2)
+    loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+
+
 
 
     
 
     if len(loops) < 2:
+        # ----- セグメントグラフ（最低限の描画） -----
+        fig2, ax2 = plt.subplots(figsize=(10, 4))
+        ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
+        ax2.set_xlabel("時間 [秒]")
+        ax2.set_ylabel("角速度 gy [rad/s]")
+        ax2.set_title("ループ検出グラフ")
+        ax2.grid(True)
+        ax2.legend()
+
+        buf2 = BytesIO()
+        fig2.savefig(buf2, format='png')
+        plt.close(fig2)
+        loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+
         return jsonify({
             'score': 0.0,
-            'heatmap': heatmap_b64,  
+            'heatmap': heatmap_b64,
+            'loop_plot': loop_plot_b64,
             'stable_loop': None,
             'loop_count': len(loops),
-            'loop_mean_duration': loop_mean_duration,  # 平均
-            'loop_std_duration': loop_std_duration,    # 標準偏差
-            'loop_duration_list': loop_duration_list   # 各ループの文字列リスト
+            'loop_mean_duration': None,
+            'loop_std_duration': None,
+            'loop_duration_list': []
         })
     else:
         return jsonify({
             'score': score,
             'heatmap': heatmap_b64,
+            'loop_plot': loop_plot_b64,
             'stable_loop': stable_loop,  # ← Noneなら null として返る
             'loop_count': n , 
             'loop_mean_duration': loop_mean_duration,  # 平均

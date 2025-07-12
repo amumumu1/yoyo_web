@@ -11,9 +11,7 @@ from ahrs.filters import Madgwick
 import base64
 import math  # ← 追加
 
-plt.rcParams['font.family'] = 'DejaVu Sans'
-
-
+plt.rcParams['font.family'] = 'Hiragino Sans'
 
 app = Flask(__name__)
 CORS(app)
@@ -98,6 +96,8 @@ def analyze():
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
 
+
+
     # スコア算出
     vals = dtw_mat[np.triu_indices(n, 1)]
     if vals.size > 0:
@@ -165,7 +165,6 @@ def analyze():
     fig2.savefig(buf2, format='png')
     plt.close(fig2)
     loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
-    
 
 
 

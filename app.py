@@ -179,9 +179,10 @@ def analyze():
         # ----- セグメントグラフ（最低限の描画） -----
         fig2, ax2 = plt.subplots(figsize=(10, 4))
         ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
-        ax2.set_xlabel("時間 [秒]")
-        ax2.set_ylabel("角速度 gy [rad/s]")
-        ax2.set_title("ループ検出グラフ")
+        plt.title("角速度グラフ", fontproperties=font_prop)
+        plt.xlabel("時間 [s]", fontproperties=font_prop)
+        plt.ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
+
         ax2.grid(True)
         ax2.legend()
 

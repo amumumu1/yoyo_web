@@ -165,6 +165,7 @@ def analyze():
     fig2.savefig(buf2, format='png')
     plt.close(fig2)
     loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+    
 
 
 

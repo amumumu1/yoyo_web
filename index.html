@@ -167,13 +167,14 @@
 
         document.getElementById('liveChart').style.display = 'none';
 
-        if (json.loop_plot) {
+        if (json.loop_plot && typeof json.loop_plot === 'string' && json.loop_plot.length > 0) {
           loopPlotImg.src = `data:image/png;base64,${json.loop_plot}`;
           loopPlotImg.style.display = 'block';
         } else {
+          console.warn('loop_plot is null or invalid');
           loopPlotImg.style.display = 'none';
-          console.warn('loop_plot is null or undefined');
         }
+
 
         if (json.heatmap) {
           heatmapImg.src = `data:image/png;base64,${json.heatmap}`;

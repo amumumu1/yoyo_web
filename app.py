@@ -238,7 +238,7 @@ def analyze():
     ax2.set_title("ループ検出" ,fontproperties=font_prop)
     ax2.set_xlabel("時間 [秒]",fontproperties=font_prop)
     ax2.set_ylabel("角速度 gy [rad/s]",fontproperties=font_prop)
-    ax2.legend()
+    ax2.legend(prop=font_prop)
     ax2.grid(True)
 
     buf2 = BytesIO()

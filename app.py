@@ -177,7 +177,12 @@ def analyze():
     # スコア算出
     vals = dtw_mat[np.triu_indices(n, 1)]
     if vals.size > 0:
-        norm = (vals - vals.min()) / (vals.max() - vals.min())
+        if len(vals) == 0 or np.isnan(vals).any():
+            norm = np.zeros_like(vals)
+        elif vals.max() == vals.min():
+            norm = np.ones_like(vals)
+        else:
+            norm = (vals - vals.min()) / (vals.max() - vals.min())
         score = float((100 * (1.0 - norm)).mean())
     else:
         score = 0.0

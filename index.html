@@ -9,6 +9,7 @@
     #score, #loopSummary, #loopDetails { font-size: 18px; margin-top: 10px; }
     pre { background: #f4f4f4; padding: 10px; max-height: 200px; overflow: auto; }
     img { display: block; margin-top: 20px; max-width: 100%; height: auto; }
+    video { display: block; margin-top: 20px; max-width: 60%; height: auto; }
   </style>
 </head>
 <body>
@@ -18,16 +19,32 @@
 
   <canvas id="liveChart" width="800" height="300" style="display: none;"></canvas>
   <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
+  <img id="heatmap" alt="ヒートマップ" style="display: none;" />
+  <img id="proComparison" alt="プロ比較グラフ" style="display: none;" />
+  <img id="userComparison" alt="ユーザー内比較グラフ" style="display: none;" />
+
   <div id="score"></div>
   <div id="loopSummary"></div>
   <pre id="loopDetails" style="display: none;"></pre>
-  <img id="heatmap" alt="ヒートマップ" style="display: none;" />
+
+  <!-- プロのデータ表示エリア -->
+  <div id="proExample" style="display: none;">
+    <h2>プロの参考データ</h2>
+    <h3>プロのループ検出</h3>
+    <img src="pro_segu.png" alt="プロのループ検出図" style="width: 100%; max-width: 1200px;" />
+    <h3>プロのヒートマップ</h3>
+    <img src="pro_heatmap.png" alt="プロのヒートマップ" style="width: 100%; max-width: 800px;" />
+    <h3>プロの実演映像</h3>
+    <video controls style="max-width: 60%;">
+      <source src="pro.mp4" type="video/mp4" />
+      お使いのブラウザは動画に対応していません。
+    </video>
+  </div>
+
   <h2 id="csvTitle" style="display: none;">取得データ (CSV形式)</h2>
   <button id="btnSaveCsv" style="display: none;">CSVを保存</button>
-
   <h3 id="accLabel" style="display: none;">加速度データ</h3>
   <pre id="accOutput" style="display: none;"></pre>
-
   <h3 id="gyroLabel" style="display: none;">角速度データ</h3>
   <pre id="gyroOutput" style="display: none;"></pre>
 
@@ -36,9 +53,7 @@
     const SERVICE_UUID = '88888888-4abd-ba0d-b7c6-ff0a00200021';
     const CONTROL_UUID = '88888888-4abd-ba0d-b7c6-ff0a00200022';
     const DATA_UUID    = '88888888-4abd-ba0d-b7c6-ff0a00200023';
-    // const API_BASE     = 'http://192.168.101.22:8000/analyze';
     const API_BASE     = 'https://yoyo-backend.kajilab.dev/analyze';
-
 
     let device, dataChar, controlChar;
     let buffer = '';
@@ -76,7 +91,6 @@
       }
     });
 
-    // センシング開始
     btnConnect.onclick = async () => {
       acc.length = 0;
       gyro.length = 0;
@@ -113,7 +127,6 @@
       }
     };
 
-    // センサデータ受信
     function handleNotify(event) {
       buffer += new TextDecoder().decode(event.target.value);
       const lines = buffer.split('\n');
@@ -142,7 +155,6 @@
       }
     }
 
-    // センシング終了 → 解析
     btnStop.onclick = async () => {
       try {
         loadingDiv.style.display = 'block';
@@ -153,13 +165,6 @@
         accOutput.textContent = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         gyroOutput.textContent = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
 
-        document.getElementById('csvTitle').style.display = 'block';
-        document.getElementById('btnSaveCsv').style.display = 'inline-block';
-        document.getElementById('accLabel').style.display = 'block';
-        document.getElementById('gyroLabel').style.display = 'block';
-        accOutput.style.display = 'block';
-        gyroOutput.style.display = 'block';
-
         const res = await fetch(API_BASE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -167,38 +172,20 @@
         });
         const json = await res.json();
 
-        document.getElementById('liveChart').style.display = 'none';
+        loopPlotImg.src = `data:image/png;base64,${json.loop_plot}`;
+        loopPlotImg.style.display = 'block';
 
-        if (json.loop_plot && typeof json.loop_plot === 'string' && json.loop_plot.length > 0) {
-          loopPlotImg.src = `data:image/png;base64,${json.loop_plot}`;
-          loopPlotImg.style.display = 'block';
-        } else {
-          console.warn('loop_plot is null or invalid');
-          loopPlotImg.style.display = 'none';
-        }
+        heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
+        heatmapImg.style.display = 'block';
 
+        document.getElementById('proComparison').src = `data:image/png;base64,${json.user_vs_pro}`;
+        document.getElementById('proComparison').style.display = 'block';
 
-        if (json.heatmap) {
-          heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
-          heatmapImg.style.display = 'block';
-        } else {
-          heatmapImg.style.display = 'none';
-          console.warn('heatmap is null or undefined');
-        }
+        document.getElementById('userComparison').src = `data:image/png;base64,${json.user_vs_user}`;
+        document.getElementById('userComparison').style.display = 'block';
 
-        scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${json.stable_loop !== null ? `安定開始ループ: ${json.stable_loop}周目` : '安定開始ループ: なし'}`;
-        const meanStr = (json.loop_mean_duration !== null) ? `平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒` : `平均ループ時間: なし`;
-        const stdStr  = (json.loop_std_duration !== null)  ? `　ループ時間の標準偏差: ${json.loop_std_duration.toFixed(3)} 秒` : `　ループ時間の標準偏差: なし`;
-        document.getElementById('loopSummary').textContent = `${meanStr}\n${stdStr}`;
-
-        const loopDetails = document.getElementById('loopDetails');
-        if (json.loop_duration_list?.length) {
-          loopDetails.textContent = json.loop_duration_list.join('\n');
-          loopDetails.style.display = 'block';
-        } else {
-          loopDetails.textContent = '';
-          loopDetails.style.display = 'none';
-        }
+        scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)} 総ループ数: ${json.loop_count}`;
+        document.getElementById('proExample').style.display = 'block';
 
       } catch (err) {
         console.error(err);
@@ -206,30 +193,7 @@
       } finally {
         loadingDiv.style.display = 'none';
         btnConnect.disabled = false;
-        btnConnect.textContent = 'もう一度センシング';
       }
-
-      // 保存ボタンの処理
-      document.getElementById('btnSaveCsv').onclick = () => {
-        const now = new Date();
-        const pad = n => n.toString().padStart(2, '0');
-        const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        const accCsv = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
-        const gyroCsv = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
-
-        const saveFile = (content, filename) => {
-          const blob = new Blob([content], { type: 'text/csv' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          a.click();
-          URL.revokeObjectURL(url);
-        };
-
-        saveFile(accCsv, `${ts}_acc.csv`);
-        saveFile(gyroCsv, `${ts}_gyro.csv`);
-      };
     };
   </script>
 </body>

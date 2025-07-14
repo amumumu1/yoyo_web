@@ -160,6 +160,11 @@ def analyze():
     cax = ax.matshow(dtw_mat, cmap='coolwarm')
     plt.colorbar(cax)
     ax.set_title('Loop Similarity')
+    tick_labels = [str(i+1) for i in range(dtw_mat.shape[0])]
+    ax.set_xticks(range(dtw_mat.shape[0]))
+    ax.set_yticks(range(dtw_mat.shape[0]))
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
     plt.tight_layout()
     buf = BytesIO()
     fig.savefig(buf, format='png')
@@ -220,15 +225,15 @@ def analyze():
 
     # 検出されたループ領域を塗る
     for idx, (v1, p, v2) in enumerate(loops):
-        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3, label='1周' if idx == 0 else "")
+        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3, label='1周' if idx == 0 else "" ,fontproperties=font_prop)
 
     # ピーク・谷にマーカー
-    ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
-    ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
+    ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク" ,fontproperties=font_prop)
+    ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷" ,fontproperties=font_prop)
 
-    ax2.set_title("ループ検出")
-    ax2.set_xlabel("時間 [秒]")
-    ax2.set_ylabel("角速度 gy [rad/s]")
+    ax2.set_title("ループ検出" ,fontproperties=font_prop)
+    ax2.set_xlabel("時間 [秒]",fontproperties=font_prop)
+    ax2.set_ylabel("角速度 gy [rad/s]",fontproperties=font_prop)
     ax2.legend()
     ax2.grid(True)
 
@@ -293,9 +298,9 @@ def analyze():
         # ----- セグメントグラフ（最低限の描画） -----
         fig2, ax2 = plt.subplots(figsize=(10, 4))
         ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
-        ax2.set_xlabel("時間 [秒]")
-        ax2.set_ylabel("角速度 gy [rad/s]")
-        ax2.set_title("ループ検出グラフ")
+        ax2.set_xlabel("時間 [秒]",fontproperties=font_prop)
+        ax2.set_ylabel("角速度 gy [rad/s]",fontproperties=font_prop)
+        ax2.set_title("ループ検出グラフ" ,fontproperties=font_prop)
         ax2.grid(True)
         ax2.legend()
 

@@ -243,7 +243,7 @@ def analyze():
     loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
 
     
-    font_prop = font_manager.FontProperties(family='Hiragino Sans')
+
 
     # ==== プロ代表ループとの比較グラフ生成 ====
     try:

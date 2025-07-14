@@ -225,11 +225,11 @@ def analyze():
 
     # 検出されたループ領域を塗る
     for idx, (v1, p, v2) in enumerate(loops):
-        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3, label='1周' if idx == 0 else "" ,fontproperties=font_prop)
+        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3, label='1周' if idx == 0 else "" )
 
     # ピーク・谷にマーカー
-    ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク" ,fontproperties=font_prop)
-    ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷" ,fontproperties=font_prop)
+    ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
+    ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
 
     ax2.set_title("ループ検出" ,fontproperties=font_prop)
     ax2.set_xlabel("時間 [秒]",fontproperties=font_prop)

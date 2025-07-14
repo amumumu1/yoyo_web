@@ -184,14 +184,17 @@ def analyze():
 
     def detect_stable_loop_by_tail(dtw_matrix):
         N = dtw_matrix.shape[0]
-        if N == 0:
-            return None  # ← 追加
-        tail_len = N // 2
+        if N < 2:
+            return None  # ループが1個以下なら安定性評価できない
+
         vals = dtw_matrix[np.triu_indices(N, k=1)]
+        if vals.size == 0:
+            return None  # これが今回のクラッシュ防止
+
         d_min, d_max = vals.min(), vals.max()
         threshold = (d_min + d_max) / 2  
-    
 
+        tail_len = N // 2
         ref_idx = list(range(N - tail_len, N))
 
         for i in range(N - tail_len):
@@ -199,6 +202,7 @@ def analyze():
             if mean_dist <= threshold:
                 return i + 1  # 1始まり
         return None
+
 
     stable_loop = detect_stable_loop_by_tail(dtw_mat)
    

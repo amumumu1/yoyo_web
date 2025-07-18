@@ -64,6 +64,8 @@
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
     <h3 id="Rui" style="display: none;">ループごとの類似度</h3>
     <img id="heatmap" alt="ヒートマップ" style="display: none;" />
+    <h3 id="ProHeatmap" style="display: none;">プロ距離のみのヒートマップ</h3>
+    <img id="proHeatmap" alt="プロ距離ヒートマップ" style="display: none; max-width: 100%;" />
     <h3 id="Pro" style="display: none;">プロと比較</h3>
     <img id="comparePlot" style="width: 1000px; display: none; " />
     <!-- プロのデータ表示エリア -->
@@ -338,6 +340,16 @@
             heatmapImg.style.display = 'none';
             console.warn('heatmap is null or undefined');
           }
+
+          if (json.pro_heatmap) {
+            document.getElementById('proHeatmap').src = `data:image/png;base64,${json.pro_heatmap}`;
+            document.getElementById('proHeatmap').style.display = 'block';
+            document.getElementById('ProHeatmap').style.display = 'block';
+          } else {
+            document.getElementById('proHeatmap').style.display = 'none';
+            document.getElementById('ProHeatmap').style.display = 'none';
+          }
+
 
           if (json.compare_plot) {
             document.getElementById('comparePlot').src = `data:image/png;base64,${json.compare_plot}`;

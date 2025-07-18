@@ -319,14 +319,13 @@ def analyze():
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-    # --- プロ比較専用の行列を作成（対角線だけ距離、他はNaN） ---
-    pro_mat = np.full((n, n), np.nan)  # 全部NaNで初期化（白表示用）
+    # --- プロ比較専用のヒートマップ（対角線だけ距離、他は真っ白） ---
+    pro_mat = np.full((n, n), np.nan)  # NaNで塗りつぶし（白表示用）
     for i, d in enumerate(distances):
-        pro_mat[i, i] = d  # 対角線だけプロ距離を埋める
+        pro_mat[i, i] = d  # 対角線にプロ距離
 
-    # --- ヒートマップ作成 ---
     fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(pro_mat, cmap='coolwarm')  # NaN部分は白で表示される
+    cax = ax.matshow(pro_mat, cmap='coolwarm')
     plt.colorbar(cax)
     ax.set_title('Pro vs Each Loop (Diagonal Only)')
     tick_labels = [str(i+1) for i in range(n)]
@@ -339,6 +338,7 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     pro_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 
 
@@ -505,6 +505,7 @@ def analyze():
     result = {
         'score': score if len(loops) >= 2 else 0.0,
         'heatmap': heatmap_b64,
+        'pro_heatmap': pro_heatmap_b64,  # プロ距離だけのヒートマップ（新規）
         'loop_plot': loop_plot_b64,
         'stable_loop': stable_loop if len(loops) >= 2 else None,
         'loop_count': n,

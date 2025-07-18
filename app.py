@@ -262,6 +262,8 @@ def analyze():
             dz, _ = fastdtw(segments[a]['z'], segments[b]['z'], dist=lambda x,y: abs(x-y))
             dtw_mat[a, b] = dw + dx + dy + dz
 
+
+
     # --- ユーザー側ループのsegmentsを生成 ---
     segments = []
     for v1, p, v2 in loops:
@@ -338,6 +340,31 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     pro_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
+    # --- プロ距離を上書きする前に、自分自身のDTW行列を保存 ---
+    self_dtw_mat = dtw_mat.copy()
+
+    # ... （プロとの距離を対角線に上書きする処理はそのまま）
+    for i, d in enumerate(distances):
+        dtw_mat[i, i] = d
+
+    # --- 自分自身のオリジナルDTWヒートマップ ---
+    fig, ax = plt.subplots(figsize=(6, 6))
+    cax = ax.matshow(self_dtw_mat, cmap='coolwarm')
+    plt.colorbar(cax)
+    ax.set_title('Self Loop Similarity (Original)')
+    tick_labels = [str(i+1) for i in range(n)]
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+    plt.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    self_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
+
 
 
 
@@ -504,6 +531,7 @@ def analyze():
     # --- 結果まとめ ---
     result = {
         'score': score if len(loops) >= 2 else 0.0,
+        'self_heatmap': self_heatmap_b64,  # ← 純粋な自分同士比較
         'heatmap': heatmap_b64,
         'pro_heatmap': pro_heatmap_b64,  # プロ距離だけのヒートマップ（新規）
         'loop_plot': loop_plot_b64,

@@ -62,9 +62,11 @@
     <pre id="loopDetails" style="display: none;"></pre>
     <h3 id="Ken" style="display: none;">ループ検出</h3>
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
-    <h3 id="Rui" style="display: none;">ループごとの類似度</h3>
+    <h3 id="Self" style="display: none;">ループごとの類似度</h3>
+    <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="display: none; max-width: 100%;" />
+    <h3 id="Rui" style="display: none;">ループごとの類似度（対角線はプロと比較）</h3>
     <img id="heatmap" alt="ヒートマップ" style="display: none;" />
-    <h3 id="ProHeatmap" style="display: none;">プロ距離のみのヒートマップ</h3>
+    <h3 id="ProHeatmap" style="display: none;">プロと比較</h3>
     <img id="proHeatmap" alt="プロ距離ヒートマップ" style="display: none; max-width: 100%;" />
     <h3 id="Pro" style="display: none;">プロと比較</h3>
     <img id="comparePlot" style="width: 1000px; display: none; " />
@@ -330,6 +332,15 @@
           } else {
             console.warn('loop_plot is null or invalid');
             loopPlotImg.style.display = 'none';
+          }
+
+          if (json.self_heatmap) {
+            document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
+            document.getElementById('selfHeatmap').style.display = 'block';
+            document.getElementById('Self').style.display = 'block';
+          } else {
+            document.getElementById('selfHeatmap').style.display = 'none';
+            document.getElementById('Self').style.display = 'none';
           }
 
 

@@ -35,6 +35,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp TEXT,
+        name TEXT,
         score REAL,
         loop_count INTEGER,
         stable_loop INTEGER,
@@ -56,11 +57,11 @@ def save_result_to_db(result):
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO results (
-            timestamp, score, loop_count, stable_loop,
+            timestamp, name, score, loop_count, stable_loop,
             loop_mean_duration, loop_std_duration,
             loop_plot, heatmap, compare_plot
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         result.get("score"),

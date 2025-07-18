@@ -52,7 +52,10 @@
 
     <canvas id="liveChart" width="800" height="300" style="display: none;"></canvas>
     <hr id="hrTitle" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
-    <button id="btnSaveResult" style="display: none;">結果を保存する</button>
+    <div id="saveSection" style="display: none;">
+      <input type="text" id="resultName" placeholder="結果の名前を入力" style="font-size:16px; padding:5px; width:200px;" />
+      <button id="btnSaveResult">結果を保存する</button>
+    </div>
     <h2 id="Title" style="display: none;">解析結果</h2>
     <div id="score"></div>
     <div id="loopSummary"></div>

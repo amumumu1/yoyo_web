@@ -25,7 +25,7 @@
       padding: 20px 40px;
       border-radius: 10px;
     }
-    #heatmap, #selfHeatmap, #proHeatmap, #loopPlot, #comparePlot {
+    #loopPlot, #comparePlot {
       display: none;
       margin: 0 auto;
       width: auto;
@@ -39,6 +39,22 @@
     h3 {
       font-size: 30px;  /* 例：大きくしたいサイズに変更。30px や 32px も可 */
     }
+
+    .heatmap-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin: 20px auto;
+    }
+    .heatmap-grid div {
+      flex: 1;
+      text-align: center;
+    }
+    .heatmap-grid img {
+      max-width: 100%;
+      height: auto;
+    }
+
 
 
   </style>
@@ -54,20 +70,31 @@
     <hr id="hrTitle" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="saveSection" style="display: none;">
       <input type="text" id="resultName" placeholder="結果の名前を入力" style="font-size:16px; padding:5px; width:200px;" />
-      <button id="btnSaveResult">結果を保存する</button>
+      <button id="btnSaveResult" style="display:none;">結果を保存する</button>
     </div>
+
     <h2 id="Title" style="display: none;">解析結果</h2>
     <div id="score"></div>
     <div id="loopSummary"></div>
     <pre id="loopDetails" style="display: none;"></pre>
     <h3 id="Ken" style="display: none;">ループ検出</h3>
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
-    <h3 id="Self" style="display: none;">類似度比較</h3>
-    <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="display: none; max-width: 100%;" />
-    <h3 id="Rui" style="display: none;">類似度比較（対角線はプロと比較）</h3>
-    <img id="heatmap" alt="ヒートマップ" style="display: none;" />
-    <h3 id="ProHeatmap" style="display: none;">対角線プロ比較</h3>
-    <img id="proHeatmap" alt="プロ距離ヒートマップ" style="display: none; max-width: 100%;" />
+    <h3 id="HeatmapTitle" style="display: none;">ループ類似度</h3>
+    <div id="Rui" style="display: none;" class="heatmap-grid">
+      <div>
+        <h4>自分 vs 自分</h4>
+        <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
+      </div>
+      <div>
+        <h4>自分 vs 自分（対角線=プロ）</h4>
+        <img id="heatmap" alt="ヒートマップ" style="max-width: 100%;" />
+      </div>
+      <div>
+        <h4>対角線プロ比較</h4>
+        <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
+      </div>
+    </div>
+
     <h3 id="Pro" style="display: none;">プロと比較</h3>
     <img id="comparePlot" style="width: 1000px; display: none; " />
     <!-- プロのデータ表示エリア -->
@@ -116,7 +143,7 @@
       const btnRi    = document.getElementById('btnRi');
       const scoreDiv   = document.getElementById('score');
       const loopPlotImg = document.getElementById('loopPlot');
-      const heatmapImg  = document.getElementById('heatmap');
+      //const heatmapImg  = document.getElementById('heatmap');
       const loadingDiv = document.getElementById('loading');
       const accOutput = document.getElementById('accOutput');
       const gyroOutput = document.getElementById('gyroOutput');
@@ -151,7 +178,7 @@
       btnConnect.onclick = async () => {
         // 🔽 前回の表示を初期化
         document.getElementById('loopPlot').style.display = 'none';
-        document.getElementById('heatmap').style.display = 'none';
+        //document.getElementById('heatmap').style.display = 'none';
         document.getElementById('comparePlot').style.display = 'none';
         document.getElementById('score').textContent = '';
         document.getElementById('loopSummary').textContent = '';
@@ -171,6 +198,7 @@
         document.getElementById('hrCsv').style.display = 'none';
         document.getElementById('hrTitle').style.display = 'none';
         document.getElementById('Ken').style.display = 'none';
+        document.getElementById('HeatmapTitle').style.display = 'none';
         document.getElementById('Rui').style.display = 'none';
         document.getElementById('Pro').style.display = 'none';
         document.getElementById('saveSection').style.display = 'none';
@@ -266,7 +294,7 @@
           // 🔽 解析中は他の要素を非表示にする
           document.getElementById('liveChart').style.display = 'none';
           document.getElementById('loopPlot').style.display = 'none';
-          document.getElementById('heatmap').style.display = 'none';
+          //document.getElementById('heatmap').style.display = 'none';
           document.getElementById('comparePlot').style.display = 'none';
           document.getElementById('score').textContent = '';
           document.getElementById('loopSummary').textContent = '';
@@ -283,6 +311,7 @@
           document.getElementById('hrCsv').style.display = 'none';
           document.getElementById('hrTitle').style.display = 'none';
           document.getElementById('Ken').style.display = 'none';
+          document.getElementById('HeatmapTitle').style.display = 'none';
           document.getElementById('Rui').style.display = 'none';
           document.getElementById('Pro').style.display = 'none';
     
@@ -318,6 +347,7 @@
           document.getElementById('hrCsv').style.display = 'block';
           document.getElementById('hrTitle').style.display = 'block';
           document.getElementById('Ken').style.display = 'block';
+          document.getElementById('HeatmapTitle').style.display = 'block';
           document.getElementById('Rui').style.display = 'block';
           document.getElementById('Pro').style.display = 'block';
 
@@ -333,33 +363,33 @@
             console.warn('loop_plot is null or invalid');
             loopPlotImg.style.display = 'none';
           }
-          if (json.self_heatmap) {
-            document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
-            document.getElementById('selfHeatmap').style.display = 'block';
-            document.getElementById('Self').style.display = 'block';
+          const container = document.getElementById('Rui');
+          const title = document.getElementById('HeatmapTitle');
+
+          if (json.self_heatmap || json.heatmap || json.pro_heatmap) {
+            if (json.self_heatmap) {
+              const selfImg = document.getElementById('selfHeatmap');
+              selfImg.src = `data:image/png;base64,${json.self_heatmap}`;
+              selfImg.style.display = 'block';
+            }
+            if (json.heatmap) {
+              const heatmapImg = document.getElementById('heatmap');
+              heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
+              heatmapImg.style.display = 'block';
+            }
+            if (json.pro_heatmap) {
+              const proImg = document.getElementById('proHeatmap');
+              proImg.src = `data:image/png;base64,${json.pro_heatmap}`;
+              proImg.style.display = 'block';
+            }
+            container.style.display = 'flex';
+            title.style.display = 'block';
           } else {
-            document.getElementById('selfHeatmap').style.display = 'none';
-            document.getElementById('Self').style.display = 'none';
+            container.style.display = 'none';
+            title.style.display = 'none';
           }
 
 
-
-          if (json.heatmap) {
-            heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
-            heatmapImg.style.display = 'block';
-          } else {
-            heatmapImg.style.display = 'none';
-            console.warn('heatmap is null or undefined');
-          }
-
-          if (json.pro_heatmap) {
-            document.getElementById('proHeatmap').src = `data:image/png;base64,${json.pro_heatmap}`;
-            document.getElementById('proHeatmap').style.display = 'block';
-            document.getElementById('ProHeatmap').style.display = 'block';
-          } else {
-            document.getElementById('proHeatmap').style.display = 'none';
-            document.getElementById('ProHeatmap').style.display = 'none';
-          }
 
 
           if (json.compare_plot) {

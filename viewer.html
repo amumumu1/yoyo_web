@@ -85,7 +85,13 @@
         <p>平均ループ時間: ${detail.loop_mean_duration ?? '-'} 秒</p>
         <p>ループ時間の標準偏差: ${detail.loop_std_duration ?? '-'} 秒</p>
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
-        <img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ">
+         <!-- 3つのヒートマップを横並び表示 -->
+        <div style="display:flex; gap:20px; justify-content:center; margin:20px 0;">
+          ${detail.self_heatmap ? `<div><h4>自分 vs 自分（オリジナル）</h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}
+          ${detail.heatmap ? `<div><h4>自分 vs 自分（対角線=プロ）</h4><img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ"></div>` : ''}
+          ${detail.pro_heatmap ? `<div><h4>対角線プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}" alt="プロ距離ヒートマップ"></div>` : ''}
+        </div>
+
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
       container.style.display = 'block';

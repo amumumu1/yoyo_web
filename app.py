@@ -65,6 +65,7 @@ def save_result_to_db(result):
     """, (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         result.get("score"),
+        result.get("name"),
         result.get("loop_count"),
         result.get("stable_loop"),
         result.get("loop_mean_duration"),

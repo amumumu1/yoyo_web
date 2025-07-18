@@ -52,6 +52,7 @@
 
     <canvas id="liveChart" width="800" height="300" style="display: none;"></canvas>
     <hr id="hrTitle" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
+    <button id="btnSaveResult" style="display: none;">結果を保存する</button>
     <h2 id="Title" style="display: none;">解析結果</h2>
     <div id="score"></div>
     <div id="loopSummary"></div>
@@ -345,6 +346,10 @@
             loopDetails.style.display = 'none';
           }
 
+           // 結果の表示処理
+          document.getElementById('Title').style.display = 'block';
+          document.getElementById('btnSaveResult').style.display = 'inline-block'
+
         } catch (err) {
           console.error(err);
           alert('解析失敗: ' + err.message);
@@ -355,13 +360,10 @@
           document.getElementById('proExample').style.display = 'block';
         }
 
-        // --- 結果をDBに保存する処理 ---
-        const btnSaveResult = document.createElement('button');
-        btnSaveResult.textContent = '結果を保存';
-        btnSaveResult.style.display = 'none';
-        btnSaveResult.onclick = async () => {
+        // 保存ボタンの処理
+        document.getElementById('btnSaveResult').onclick = async () => {
           if (!lastResult) {
-            alert('保存する結果がありません');
+            alert('保存できる結果がありません');
             return;
           }
           const res = await fetch('https://yoyo-backend.kajilab.dev/save_result', {
@@ -370,9 +372,12 @@
             body: JSON.stringify(lastResult)
           });
           const result = await res.json();
-          alert(result.status === 'saved' ? '結果を保存しました' : '保存に失敗しました');
+          if (result.status === 'saved') {
+            alert('結果を保存しました');
+          } else {
+            alert('保存に失敗しました');
+          }
         };
-        document.body.appendChild(btnSaveResult);
 
         // 解析完了後に保存ボタンを表示
         btnStop.addEventListener('click', () => {

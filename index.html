@@ -369,18 +369,21 @@
             alert('保存できる結果がありません');
             return;
           }
+          const name = document.getElementById('resultName').value.trim() || '無題';
+          const payload = { ...lastResult, name };  // 名前を追加
           const res = await fetch('https://yoyo-backend.kajilab.dev/save_result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lastResult)
+            body: JSON.stringify(payload)
           });
           const result = await res.json();
           if (result.status === 'saved') {
-            alert('結果を保存しました');
+            alert(`「${name}」として保存しました`);
           } else {
             alert('保存に失敗しました');
           }
         };
+
 
         // 解析完了後に保存ボタンを表示
         btnStop.addEventListener('click', () => {

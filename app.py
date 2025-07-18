@@ -1,7 +1,6 @@
 import matplotlib
 matplotlib.use('Agg')
 from flask_cors import CORS 
-from flask import Flask, request, jsonify, send_file
 import pandas as pd, numpy as np
 from io import BytesIO
 import matplotlib.pyplot as plt
@@ -11,6 +10,10 @@ from ahrs.filters import Madgwick
 import base64
 import math  # ← 追加
 from matplotlib import font_manager
+import sqlite3
+import os
+from flask import Flask, request, jsonify, send_file, render_template_string
+from datetime import datetime
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 font_prop = font_manager.FontProperties(fname=font_path)
@@ -21,6 +24,103 @@ plt.rcParams['font.family'] = font_prop.get_name()
 
 app = Flask(__name__)
 CORS(app)
+
+DB_PATH = "results.db"
+
+# --- データベース初期化 ---
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        score REAL,
+        loop_count INTEGER,
+        stable_loop INTEGER,
+        loop_mean_duration REAL,
+        loop_std_duration REAL,
+        loop_plot TEXT,
+        heatmap TEXT,
+        compare_plot TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- DBに結果を保存 ---
+def save_result_to_db(result):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO results (
+            timestamp, score, loop_count, stable_loop,
+            loop_mean_duration, loop_std_duration,
+            loop_plot, heatmap, compare_plot
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        result.get("score"),
+        result.get("loop_count"),
+        result.get("stable_loop"),
+        result.get("loop_mean_duration"),
+        result.get("loop_std_duration"),
+        result.get("loop_plot"),
+        result.get("heatmap"),
+        result.get("compare_plot")
+    ))
+    conn.commit()
+    conn.close()
+
+# --- 履歴一覧をJSONで返す ---
+@app.route("/results", methods=["GET"])
+def get_results():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT id, timestamp, score, loop_count, stable_loop FROM results ORDER BY id DESC LIMIT 20")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([
+        {
+            "id": r[0],
+            "timestamp": r[1],
+            "score": r[2],
+            "loop_count": r[3],
+            "stable_loop": r[4]
+        }
+        for r in rows
+    ])
+
+# --- 特定の結果を取得（グラフ画像含む） ---
+@app.route("/results/<int:result_id>", methods=["GET"])
+def get_result_detail(result_id):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT timestamp, score, loop_count, stable_loop,
+               loop_mean_duration, loop_std_duration,
+               loop_plot, heatmap, compare_plot
+        FROM results WHERE id = ?
+    """, (result_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Result not found"}), 404
+
+    return jsonify({
+        "timestamp": row[0],
+        "score": row[1],
+        "loop_count": row[2],
+        "stable_loop": row[3],
+        "loop_mean_duration": row[4],
+        "loop_std_duration": row[5],
+        "loop_plot": row[6],
+        "heatmap": row[7],
+        "compare_plot": row[8]
+    })
 
 @app.route('/')
 def index():
@@ -296,6 +396,53 @@ def analyze():
         compare_plot_b64 = None
 
 
+    # --- ループ検出グラフ描画 ---
+    if len(loops) >= 2:
+        # 詳細グラフ（2個以上）
+        fig2, ax2 = plt.subplots(figsize=(12, 6))
+        ax2.plot(t_sec, y, color='orange')
+        for idx, (v1, p, v2) in enumerate(loops):
+            ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3, label='1周' if idx == 0 else "")
+        ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
+        ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
+        ax2.set_title("ループ検出", fontproperties=font_prop)
+        ax2.set_xlabel("時間 [秒]", fontproperties=font_prop)
+        ax2.set_ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
+        ax2.legend(prop=font_prop)
+        ax2.grid(True)
+        buf2 = BytesIO()
+        fig2.savefig(buf2, format='png')
+        plt.close(fig2)
+        loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+    else:
+        # 簡易グラフ（1個以下）
+        fig2, ax2 = plt.subplots(figsize=(10, 4))
+        ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
+        ax2.set_xlabel("時間 [秒]", fontproperties=font_prop)
+        ax2.set_ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
+        ax2.set_title("ループ検出グラフ", fontproperties=font_prop)
+        ax2.grid(True)
+        ax2.legend()
+        buf2 = BytesIO()
+        fig2.savefig(buf2, format='png')
+        plt.close(fig2)
+        loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
+
+    # --- 結果まとめ ---
+    result = {
+        'score': score if len(loops) >= 2 else 0.0,
+        'heatmap': heatmap_b64,
+        'loop_plot': loop_plot_b64,
+        'stable_loop': stable_loop if len(loops) >= 2 else None,
+        'loop_count': n,
+        'loop_mean_duration': loop_mean_duration if len(loops) >= 2 else None,
+        'loop_std_duration': loop_std_duration if len(loops) >= 2 else None,
+        'loop_duration_list': loop_duration_list if len(loops) >= 2 else [],
+        'compare_plot': compare_plot_b64
+    }
+
+    save_result_to_db(result)
+    return jsonify(result)
 
 
 
@@ -303,44 +450,8 @@ def analyze():
 
     
 
-    if len(loops) < 2:
-        # ----- セグメントグラフ（最低限の描画） -----
-        fig2, ax2 = plt.subplots(figsize=(10, 4))
-        ax2.plot(t_sec, y, color='orange', label='gy (filtered)')
-        ax2.set_xlabel("時間 [秒]",fontproperties=font_prop)
-        ax2.set_ylabel("角速度 gy [rad/s]",fontproperties=font_prop)
-        ax2.set_title("ループ検出グラフ" ,fontproperties=font_prop)
-        ax2.grid(True)
-        ax2.legend()
-
-        buf2 = BytesIO()
-        fig2.savefig(buf2, format='png')
-        plt.close(fig2)
-        loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
-
-        return jsonify({
-            'score': 0.0,
-            'heatmap': heatmap_b64,
-            'loop_plot': loop_plot_b64,
-            'stable_loop': None,
-            'loop_count': len(loops),
-            'loop_mean_duration': None,
-            'loop_std_duration': None,
-            'loop_duration_list': [],
-            'compare_plot': compare_plot_b64
-        })
-    else:
-        return jsonify({
-            'score': score,
-            'heatmap': heatmap_b64,
-            'loop_plot': loop_plot_b64,
-            'stable_loop': stable_loop,  # ← Noneなら null として返る
-            'loop_count': n , 
-            'loop_mean_duration': loop_mean_duration,  # 平均
-            'loop_std_duration': loop_std_duration,    # 標準偏差
-            'loop_duration_list': loop_duration_list,  # 各ループの文字列リスト
-            'compare_plot': compare_plot_b64
-    })
+    
+    
         
 
     

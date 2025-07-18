@@ -25,7 +25,7 @@
       padding: 20px 40px;
       border-radius: 10px;
     }
-    #heatmap, #loopPlot, #comparePlot {
+    #heatmap, #selfHeatmap, #proHeatmap, #loopPlot, #comparePlot {
       display: none;
       margin: 0 auto;
       width: auto;
@@ -39,20 +39,6 @@
     h3 {
       font-size: 30px;  /* 例：大きくしたいサイズに変更。30px や 32px も可 */
     }
-
-    .heatmap-container {
-      display: flex;
-      justify-content: space-around;
-      align-items: flex-start;
-      gap: 20px; /* ヒートマップ間の余白 */
-      margin-top: 20px;
-    }
-
-    .heatmap-block {
-      flex: 1;               /* 均等に幅を取る */
-      text-align: center;    /* 見出しと画像を中央寄せ */
-    }
-
 
 
   </style>
@@ -76,25 +62,12 @@
     <pre id="loopDetails" style="display: none;"></pre>
     <h3 id="Ken" style="display: none;">ループ検出</h3>
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
-    <div class="heatmap-container" style="display: none;">
-    <!-- 自分 vs 自分 -->
-    <div class="heatmap-block">
-      <h3>ループごとの類似度</h3>
-      <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
-    </div>
-
-    <!-- 自分 vs 自分（対角線はプロ距離） -->
-    <div class="heatmap-block">
-      <h3>ループごとの類似度（対角線はプロと比較）</h3>
-      <img id="heatmap" alt="ヒートマップ" style="max-width: 100%;" />
-    </div>
-
-    <!-- プロとの比較（対角線のみ） -->
-    <div class="heatmap-block">
-      <h3>プロと比較</h3>
-      <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
-    </div>
-  </div>
+    <h3 id="Self" style="display: none;">類似度比較</h3>
+    <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="display: none; max-width: 100%;" />
+    <h3 id="Rui" style="display: none;">類似度比較（対角線はプロと比較）</h3>
+    <img id="heatmap" alt="ヒートマップ" style="display: none;" />
+    <h3 id="ProHeatmap" style="display: none;">対角線プロ比較</h3>
+    <img id="proHeatmap" alt="プロ距離ヒートマップ" style="display: none; max-width: 100%;" />
     <h3 id="Pro" style="display: none;">プロと比較</h3>
     <img id="comparePlot" style="width: 1000px; display: none; " />
     <!-- プロのデータ表示エリア -->
@@ -360,28 +333,33 @@
             console.warn('loop_plot is null or invalid');
             loopPlotImg.style.display = 'none';
           }
-
-          if (json.self_heatmap || json.heatmap || json.pro_heatmap) {
-            document.querySelector('.heatmap-container').style.display = 'flex';
-
-            if (json.self_heatmap) {
-              document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
-              document.getElementById('selfHeatmap').style.display = 'block';
-            }
-
-            if (json.heatmap) {
-              document.getElementById('heatmap').src = `data:image/png;base64,${json.heatmap}`;
-              document.getElementById('heatmap').style.display = 'block';
-            }
-
-            if (json.pro_heatmap) {
-              document.getElementById('proHeatmap').src = `data:image/png;base64,${json.pro_heatmap}`;
-              document.getElementById('proHeatmap').style.display = 'block';
-            }
+          if (json.self_heatmap) {
+            document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
+            document.getElementById('selfHeatmap').style.display = 'block';
+            document.getElementById('Self').style.display = 'block';
           } else {
-            document.querySelector('.heatmap-container').style.display = 'none';
+            document.getElementById('selfHeatmap').style.display = 'none';
+            document.getElementById('Self').style.display = 'none';
           }
 
+
+
+          if (json.heatmap) {
+            heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
+            heatmapImg.style.display = 'block';
+          } else {
+            heatmapImg.style.display = 'none';
+            console.warn('heatmap is null or undefined');
+          }
+
+          if (json.pro_heatmap) {
+            document.getElementById('proHeatmap').src = `data:image/png;base64,${json.pro_heatmap}`;
+            document.getElementById('proHeatmap').style.display = 'block';
+            document.getElementById('ProHeatmap').style.display = 'block';
+          } else {
+            document.getElementById('proHeatmap').style.display = 'none';
+            document.getElementById('ProHeatmap').style.display = 'none';
+          }
 
 
           if (json.compare_plot) {

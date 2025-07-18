@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>履歴一覧</title>
+  <style>
+    img { max-width: 400px; display: block; margin: 10px 0; }
+    .result { border-bottom: 1px solid #ccc; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>解析履歴</h1>
+  <div id="history"></div>
+
+  <script>
+    async function fetchHistory() {
+      const res = await fetch('/results');
+      const data = await res.json();
+      const container = document.getElementById('history');
+      container.innerHTML = '';
+
+      for (const item of data) {
+        const div = document.createElement('div');
+        div.className = 'result';
+        div.innerHTML = `
+          <p>ID: ${item.id} / ${item.timestamp}</p>
+          <p>スコア: ${item.score.toFixed(1)}</p>
+          <p>ループ数: ${item.loop_count} / 安定ループ開始: ${item.stable_loop ?? 'なし'}</p>
+          <button onclick="viewDetail(${item.id})">詳細を見る</button>
+          <div id="detail-${item.id}"></div>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    async function viewDetail(id) {
+      const res = await fetch(`/results/${id}`);
+      const detail = await res.json();
+      const container = document.getElementById(`detail-${id}`);
+      container.innerHTML = `
+        <h3>詳細</h3>
+        <p>平均ループ時間: ${detail.loop_mean_duration ?? '-'} 秒</p>
+        <p>ループ時間の標準偏差: ${detail.loop_std_duration ?? '-'} 秒</p>
+        <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
+        <img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ">
+        ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
+      `;
+    }
+
+    fetchHistory();
+  </script>
+</body>
+</html>

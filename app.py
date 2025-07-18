@@ -446,7 +446,8 @@ def analyze():
 
 @app.route('/viewer')
 def viewer():
-    return send_file('/viewer.html')
+    return send_file('viewer.html')
+
 
 
 

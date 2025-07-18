@@ -47,8 +47,7 @@
   <div class="container">
     <button id="btnConnect">接続 &amp; センシング開始</button>
     <button id="btnStop" disabled>センシング終了 &amp; 解析</button>
-    <h1>Yo-Yo Skill Analyzer</h1>
-    <button onclick="location.href='/viewer'">履歴を見る</button>
+    <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
     <div id="loading" style="display: none;">解析中...</div>
 
     <canvas id="liveChart" width="800" height="300" style="display: none;"></canvas>
@@ -106,6 +105,7 @@
 
       const btnConnect = document.getElementById('btnConnect');
       const btnStop    = document.getElementById('btnStop');
+      const btnRi    = document.getElementById('btnRi');
       const scoreDiv   = document.getElementById('score');
       const loopPlotImg = document.getElementById('loopPlot');
       const heatmapImg  = document.getElementById('heatmap');

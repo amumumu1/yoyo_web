@@ -266,16 +266,30 @@ def analyze():
             dz, _ = fastdtw(segments[a]['z'], segments[b]['z'], dist=lambda x,y: abs(x-y))
             dtw_mat[a, b] = dw + dx + dy + dz
 
-    # === プロ代表ループとの比較 ===
-    distances = []
+    # --- ユーザー側ループのsegmentsを生成 ---
+    segments = []
+    for v1, p, v2 in loops:
+        mask = (quat_df['time'] >= t_sec.iloc[v1]) & (quat_df['time'] <= t_sec.iloc[v2])
+        segments.append(quat_df[mask].reset_index(drop=True))
+
+    # --- プロ代表ループの決定 ---
     try:
         gyro_pro, quats_pro = load_and_compute_quaternions("3_acc2.csv", "3_gyro2.csv")
         pro_segments = segment_loops(gyro_pro, quats_pro)
         if len(pro_segments) >= 3:
-            # プロ代表ループを決定（同じまま）
-            ...
+            M = len(pro_segments)
+            pro_dtw = np.zeros((M, M))
+            for i in range(M):
+                for j in range(M):
+                    pro_dtw[i,j] = sum(
+                        fastdtw(pro_segments[i][k], pro_segments[j][k], dist=lambda a,b:abs(a-b))[0]
+                        for k in ['w','x','y','z']
+                    )
+            valid_indices = np.arange(M)[1:-1]
+            row_sums = pro_dtw.sum(axis=1)
+            ref_idx = valid_indices[np.argmin(row_sums[1:-1])]
             ref_loop = pro_segments[ref_idx]
-            # 各ユーザーループとの距離
+            # --- プロとの距離を計算 ---
             distances = [
                 sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0] for k in ['w','x','y','z'])
                 for seg in segments
@@ -286,11 +300,11 @@ def analyze():
         print("プロ比較エラー:", e)
         distances = [0]*len(segments)
 
-    # === 対角線をプロ距離で置き換え ===
+    # --- 対角線をプロ距離で置き換え ---
     for i, d in enumerate(distances):
         dtw_mat[i, i] = d
 
-    # === ヒートマップ作成 ===
+    # --- ヒートマップ作成 ---
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(dtw_mat, cmap='coolwarm')
     plt.colorbar(cax)
@@ -305,6 +319,9 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
+
+
 
 
 

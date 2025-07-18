@@ -319,8 +319,26 @@ def analyze():
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-    compare_plot_b64 = None  # 棒グラフは削除
+    # --- プロ比較専用の行列を作成（対角線だけ距離、他はNaN） ---
+    pro_mat = np.full((n, n), np.nan)  # 全部NaNで初期化（白表示用）
+    for i, d in enumerate(distances):
+        pro_mat[i, i] = d  # 対角線だけプロ距離を埋める
 
+    # --- ヒートマップ作成 ---
+    fig, ax = plt.subplots(figsize=(6, 6))
+    cax = ax.matshow(pro_mat, cmap='coolwarm')  # NaN部分は白で表示される
+    plt.colorbar(cax)
+    ax.set_title('Pro vs Each Loop (Diagonal Only)')
+    tick_labels = [str(i+1) for i in range(n)]
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+    plt.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    pro_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
 
 

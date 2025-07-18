@@ -4,19 +4,52 @@
   <meta charset="UTF-8">
   <title>履歴一覧</title>
   <style>
-    img { max-width: 400px; display: block; margin: 10px 0; }
-    .result { border-bottom: 1px solid #ccc; margin-bottom: 20px; }
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+    img { 
+      max-width: 800px; 
+      display: block; 
+      margin: 10px auto; /* 中央寄せ */
+    }
+    button, .button {
+      margin: 5px;
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #333;
+      display: inline-block;
+    }
+    button:hover, .button:hover {
+      background-color: #ddd;
+    }
+    .result { 
+      margin: 20px auto; 
+      border-bottom: 1px solid #ccc; 
+      padding-bottom: 10px;
+      max-width: 900px; /* 横幅制限して中央 */
+    }
+    p {
+      margin: 5px 0;
+    }
+
+  
   </style>
 </head>
 <body>
   <h1>解析履歴</h1>
+  <a href="index.html" class="button">戻る</a>
   <div id="history"></div>
 
   <script>
   async function fetchHistory() {
-    const res = await fetch('https://yoyo-backend.kajilab.dev/results'); // フルURLに
+    const res = await fetch('https://yoyo-backend.kajilab.dev/results');
     const data = await res.json();
-    console.log(data); // 取得データを確認
     const container = document.getElementById('history');
     container.innerHTML = '';
 
@@ -30,31 +63,41 @@
       div.className = 'result';
       div.innerHTML = `
         <p>ID: ${item.id} / ${item.timestamp}</p>
-        <p>スコア: ${item.score.toFixed(1)}</p>
-        <p>ループ数: ${item.loop_count} / 安定ループ開始: ${item.stable_loop ?? 'なし'}</p>
-        <button onclick="viewDetail(${item.id})">詳細を見る</button>
-        <div id="detail-${item.id}"></div>
+        <button id="toggle-btn-${item.id}" onclick="toggleDetail(${item.id})">詳細を見る</button>
+        <div id="detail-${item.id}" style="display:none;"></div>
       `;
       container.appendChild(div);
     }
   }
 
-  async function viewDetail(id) {
-    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
-    const detail = await res.json();
+  async function toggleDetail(id) {
     const container = document.getElementById(`detail-${id}`);
-    container.innerHTML = `
-      <h3>詳細</h3>
-      <p>平均ループ時間: ${detail.loop_mean_duration ?? '-'} 秒</p>
-      <p>ループ時間の標準偏差: ${detail.loop_std_duration ?? '-'} 秒</p>
-      <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
-      <img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ">
-      ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
-    `;
+    const button = document.getElementById(`toggle-btn-${id}`);
+
+    if (container.style.display === 'none') {
+      // 詳細を取得して表示
+      const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
+      const detail = await res.json();
+      container.innerHTML = `
+        <p>スコア: ${detail.score?.toFixed(1) ?? 0.0}</p>
+        <p>ループ数: ${detail.loop_count} / 安定ループ開始: ${detail.stable_loop ?? 'なし'}</p>
+        <p>平均ループ時間: ${detail.loop_mean_duration ?? '-'} 秒</p>
+        <p>ループ時間の標準偏差: ${detail.loop_std_duration ?? '-'} 秒</p>
+        <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
+        <img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ">
+        ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
+      `;
+      container.style.display = 'block';
+      button.textContent = '閉じる';
+    } else {
+      // 閉じる
+      container.style.display = 'none';
+      container.innerHTML = '';
+      button.textContent = '詳細を見る';
+    }
   }
 
   fetchHistory();
-</script>
-
+  </script>
 </body>
 </html>

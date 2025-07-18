@@ -169,6 +169,8 @@
         document.getElementById('Ken').style.display = 'none';
         document.getElementById('Rui').style.display = 'none';
         document.getElementById('Pro').style.display = 'none';
+        document.getElementById('saveSection').style.display = 'none';
+
 
         acc.length = 0;
         gyro.length = 0;
@@ -248,7 +250,14 @@
       btnStop.onclick = async () => {
         try {
           loadingDiv.style.display = 'block';
-        
+
+          // 解析中はボタンと名前入力を隠す
+          btnConnect.style.display = 'none';
+          btnStop.style.display = 'none';
+          btnRi.style.display = 'none';
+          document.getElementById('saveSection').style.display = 'none';
+                
+              
 
           // 🔽 解析中は他の要素を非表示にする
           document.getElementById('liveChart').style.display = 'none';
@@ -272,7 +281,7 @@
           document.getElementById('Ken').style.display = 'none';
           document.getElementById('Rui').style.display = 'none';
           document.getElementById('Pro').style.display = 'none';
-          document.getElementById('saveSection').style.display = 'block';
+    
 
           accOutput.style.display = 'none';
           gyroOutput.style.display = 'none';
@@ -359,6 +368,11 @@
           alert('解析失敗: ' + err.message);
         } finally {
           loadingDiv.style.display = 'none';
+          // 解析終了後にボタン類を戻す
+          btnConnect.style.display = 'inline-block';
+          btnStop.style.display = 'inline-block';
+          btnRi.style.display = 'inline-block';
+          document.getElementById('saveSection').style.display = 'block';
           btnConnect.disabled = false;
           btnConnect.textContent = 'もう一度センシング';
           document.getElementById('proExample').style.display = 'block';

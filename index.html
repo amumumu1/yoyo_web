@@ -237,6 +237,8 @@
       }
     }
 
+    let lastResult = null;  // 解析結果を保持
+
 
       // センシング終了 → 解析
       btnStop.onclick = async () => {
@@ -287,6 +289,7 @@
             body: JSON.stringify({ acc, gyro })
           });
           const json = await res.json();
+          lastResult = json;  // 結果を保持
 
           document.getElementById('Title').style.display = 'block';
           document.getElementById('csvTitle').style.display = 'block'; 
@@ -351,6 +354,32 @@
           btnConnect.textContent = 'もう一度センシング';
           document.getElementById('proExample').style.display = 'block';
         }
+
+        // --- 結果をDBに保存する処理 ---
+        const btnSaveResult = document.createElement('button');
+        btnSaveResult.textContent = '結果を保存';
+        btnSaveResult.style.display = 'none';
+        btnSaveResult.onclick = async () => {
+          if (!lastResult) {
+            alert('保存する結果がありません');
+            return;
+          }
+          const res = await fetch('https://yoyo-backend.kajilab.dev/save_result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(lastResult)
+          });
+          const result = await res.json();
+          alert(result.status === 'saved' ? '結果を保存しました' : '保存に失敗しました');
+        };
+        document.body.appendChild(btnSaveResult);
+
+        // 解析完了後に保存ボタンを表示
+        btnStop.addEventListener('click', () => {
+          btnSaveResult.style.display = 'inline-block';
+        });
+
+        
 
         // 保存ボタンの処理
         document.getElementById('btnSaveCsv').onclick = () => {

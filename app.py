@@ -440,9 +440,16 @@ def analyze():
         'loop_duration_list': loop_duration_list if len(loops) >= 2 else [],
         'compare_plot': compare_plot_b64
     }
-
-    save_result_to_db(result)
     return jsonify(result)
+
+# --- 新しい保存用のエンドポイント ---
+@app.route("/save_result", methods=["POST"])
+def save_result():
+    result = request.get_json()
+    if not result:
+        return jsonify({"error": "No result data"}), 400
+    save_result_to_db(result)
+    return jsonify({"status": "saved"})
 
 @app.route('/viewer')
 def viewer():

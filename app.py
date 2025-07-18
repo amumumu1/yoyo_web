@@ -197,6 +197,13 @@ def analyze():
     gyro_pro, quats_pro = load_and_compute_quaternions(pro_acc_path, pro_gyro_path)
     pro_segments = segment_loops(gyro_pro, quats_pro)
 
+    # ユーザーとの比較（プロ代表ループと）
+    distances = [
+        sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0] for k in ['w','x','y','z'])
+        for seg in segments
+    ]
+
+
     # JSON 受信
     payload = request.get_json(force=True)
     acc_df  = pd.DataFrame(payload['acc'])
@@ -259,11 +266,35 @@ def analyze():
             dz, _ = fastdtw(segments[a]['z'], segments[b]['z'], dist=lambda x,y: abs(x-y))
             dtw_mat[a, b] = dw + dx + dy + dz
 
-    # ヒートマップを PNG 生成
+    # === プロ代表ループとの比較 ===
+    distances = []
+    try:
+        gyro_pro, quats_pro = load_and_compute_quaternions("3_acc2.csv", "3_gyro2.csv")
+        pro_segments = segment_loops(gyro_pro, quats_pro)
+        if len(pro_segments) >= 3:
+            # プロ代表ループを決定（同じまま）
+            ...
+            ref_loop = pro_segments[ref_idx]
+            # 各ユーザーループとの距離
+            distances = [
+                sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0] for k in ['w','x','y','z'])
+                for seg in segments
+            ]
+        else:
+            distances = [0]*len(segments)
+    except Exception as e:
+        print("プロ比較エラー:", e)
+        distances = [0]*len(segments)
+
+    # === 対角線をプロ距離で置き換え ===
+    for i, d in enumerate(distances):
+        dtw_mat[i, i] = d
+
+    # === ヒートマップ作成 ===
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(dtw_mat, cmap='coolwarm')
     plt.colorbar(cax)
-    ax.set_title('Loop Similarity')
+    ax.set_title('Loop Similarity (Diagonal = Pro Distance)')
     tick_labels = [str(i+1) for i in range(dtw_mat.shape[0])]
     ax.set_xticks(range(dtw_mat.shape[0]))
     ax.set_yticks(range(dtw_mat.shape[0]))
@@ -274,6 +305,7 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 
 

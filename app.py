@@ -82,13 +82,14 @@ def save_result_to_db(result):
 def get_results():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, timestamp, score, loop_count, stable_loop FROM results ORDER BY id DESC LIMIT 20")
+    cur.execute("SELECT id, timestamp, name, score, loop_count, stable_loop FROM results ORDER BY id DESC LIMIT 20")
     rows = cur.fetchall()
     conn.close()
     return jsonify([
         {
             "id": r[0],
             "timestamp": r[1],
+            "name": r[2] or "無題",
             "score": r[2],
             "loop_count": r[3],
             "stable_loop": r[4]
@@ -102,7 +103,7 @@ def get_result_detail(result_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("""
-        SELECT timestamp, score, loop_count, stable_loop,
+        SELECT timestamp, name, score, loop_count, stable_loop,
                loop_mean_duration, loop_std_duration,
                loop_plot, heatmap, compare_plot
         FROM results WHERE id = ?
@@ -114,6 +115,7 @@ def get_result_detail(result_id):
 
     return jsonify({
         "timestamp": row[0],
+        "name": r[2] or "無題",
         "score": row[1],
         "loop_count": row[2],
         "stable_loop": row[3],

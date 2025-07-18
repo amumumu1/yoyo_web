@@ -64,8 +64,8 @@ def save_result_to_db(result):
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        result.get("score"),
         result.get("name"),
+        result.get("score"),
         result.get("loop_count"),
         result.get("stable_loop"),
         result.get("loop_mean_duration"),
@@ -90,9 +90,9 @@ def get_results():
             "id": r[0],
             "timestamp": r[1],
             "name": r[2] or "無題",
-            "score": r[2],
-            "loop_count": r[3],
-            "stable_loop": r[4]
+            "score": r[3],
+            "loop_count": r[4],
+            "stable_loop": r[5]
         }
         for r in rows
     ])
@@ -115,15 +115,15 @@ def get_result_detail(result_id):
 
     return jsonify({
         "timestamp": row[0],
-        "name": r[2] or "無題",
-        "score": row[1],
-        "loop_count": row[2],
-        "stable_loop": row[3],
-        "loop_mean_duration": row[4],
-        "loop_std_duration": row[5],
-        "loop_plot": row[6],
-        "heatmap": row[7],
-        "compare_plot": row[8]
+        "name": row[1] or "無題",
+        "score": row[2],
+        "loop_count": row[3],
+        "stable_loop": row[4],
+        "loop_mean_duration": row[5],
+        "loop_std_duration": row[6],
+        "loop_plot": row[7],
+        "heatmap": row[8],
+        "compare_plot": row[9]
     })
 
 @app.route('/')

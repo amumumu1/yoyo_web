@@ -59,9 +59,9 @@ def save_result_to_db(result):
         INSERT INTO results (
             timestamp, name, score, loop_count, stable_loop,
             loop_mean_duration, loop_std_duration,
-            loop_plot, heatmap, compare_plot
+            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
@@ -71,7 +71,9 @@ def save_result_to_db(result):
         result.get("loop_mean_duration"),
         result.get("loop_std_duration"),
         result.get("loop_plot"),
+        result.get("self_heatmap"),
         result.get("heatmap"),
+        result.get("pro_heatmap"),
         result.get("compare_plot")
     ))
     conn.commit()
@@ -105,7 +107,7 @@ def get_result_detail(result_id):
     cur.execute("""
         SELECT timestamp, name, score, loop_count, stable_loop,
                loop_mean_duration, loop_std_duration,
-               loop_plot, heatmap, compare_plot
+               loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot
         FROM results WHERE id = ?
     """, (result_id,))
     row = cur.fetchone()
@@ -122,8 +124,10 @@ def get_result_detail(result_id):
         "loop_mean_duration": row[5],
         "loop_std_duration": row[6],
         "loop_plot": row[7],
-        "heatmap": row[8],
-        "compare_plot": row[9]
+        "self_heatmap": row[8],
+        "heatmap": row[9],
+        "pro_heatmap": row[10],
+        "compare_plot": row[11]
     })
 
 @app.route('/')

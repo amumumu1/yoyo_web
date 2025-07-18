@@ -444,6 +444,10 @@ def analyze():
     save_result_to_db(result)
     return jsonify(result)
 
+@app.route('/viewer')
+def viewer():
+    return send_file('/viewer.html')
+
 
 
 

@@ -270,6 +270,10 @@ def analyze():
         mask = (quat_df['time'] >= t_sec.iloc[v1]) & (quat_df['time'] <= t_sec.iloc[v2])
         segments.append(quat_df[mask].reset_index(drop=True))
 
+     # --- プロ距離を上書きする前に、自分自身のDTW行列を保存 ---
+    self_dtw_mat = dtw_mat.copy()
+
+
     # --- プロ代表ループとの比較 ---
     distances = []
     try:
@@ -341,9 +345,7 @@ def analyze():
     plt.close(fig)
     pro_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-    # --- プロ距離を上書きする前に、自分自身のDTW行列を保存 ---
-    self_dtw_mat = dtw_mat.copy()
-
+   
     # ... （プロとの距離を対角線に上書きする処理はそのまま）
     for i, d in enumerate(distances):
         dtw_mat[i, i] = d

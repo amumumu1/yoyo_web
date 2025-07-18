@@ -197,11 +197,7 @@ def analyze():
     gyro_pro, quats_pro = load_and_compute_quaternions(pro_acc_path, pro_gyro_path)
     pro_segments = segment_loops(gyro_pro, quats_pro)
 
-    # ユーザーとの比較（プロ代表ループと）
-    distances = [
-        sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0] for k in ['w','x','y','z'])
-        for seg in segments
-    ]
+    
 
 
     # JSON 受信
@@ -272,11 +268,13 @@ def analyze():
         mask = (quat_df['time'] >= t_sec.iloc[v1]) & (quat_df['time'] <= t_sec.iloc[v2])
         segments.append(quat_df[mask].reset_index(drop=True))
 
-    # --- プロ代表ループの決定 ---
+    # --- プロ代表ループとの比較 ---
+    distances = []
     try:
         gyro_pro, quats_pro = load_and_compute_quaternions("3_acc2.csv", "3_gyro2.csv")
         pro_segments = segment_loops(gyro_pro, quats_pro)
         if len(pro_segments) >= 3:
+            # プロ代表ループを選定
             M = len(pro_segments)
             pro_dtw = np.zeros((M, M))
             for i in range(M):
@@ -289,7 +287,8 @@ def analyze():
             row_sums = pro_dtw.sum(axis=1)
             ref_idx = valid_indices[np.argmin(row_sums[1:-1])]
             ref_loop = pro_segments[ref_idx]
-            # --- プロとの距離を計算 ---
+
+            # 各ループとの距離を計算
             distances = [
                 sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0] for k in ['w','x','y','z'])
                 for seg in segments
@@ -300,11 +299,11 @@ def analyze():
         print("プロ比較エラー:", e)
         distances = [0]*len(segments)
 
-    # --- 対角線をプロ距離で置き換え ---
+    # --- 対角線にプロ距離を埋め込む ---
     for i, d in enumerate(distances):
         dtw_mat[i, i] = d
 
-    # --- ヒートマップ作成 ---
+    # --- ヒートマップ描画（これが唯一の比較結果）---
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(dtw_mat, cmap='coolwarm')
     plt.colorbar(cax)
@@ -319,6 +318,9 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
+    compare_plot_b64 = None  # 棒グラフは削除
+
 
 
 

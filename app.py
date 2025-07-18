@@ -42,7 +42,9 @@ def init_db():
         loop_mean_duration REAL,
         loop_std_duration REAL,
         loop_plot TEXT,
+        self_heatmap TEXT,
         heatmap TEXT,
+        pro_heatmap TEXT,
         compare_plot TEXT
     )
     """)

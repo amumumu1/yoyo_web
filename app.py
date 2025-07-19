@@ -570,6 +570,9 @@ def save_result():
 def viewer():
     return send_file('viewer.html')
 
+from flask import Response
+import urllib.parse
+
 @app.route("/results/<int:result_id>/csv", methods=["GET"])
 def download_result_csv(result_id):
     conn = sqlite3.connect(DB_PATH)
@@ -584,7 +587,7 @@ def download_result_csv(result_id):
     acc_csv, gyro_csv, name = row
     safe_name = name or "result"
 
-    # ZIPにまとめて返す
+    # ZIPを作成
     import io, zipfile
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -592,11 +595,17 @@ def download_result_csv(result_id):
         zf.writestr(f"{safe_name}_gyro.csv", gyro_csv or '')
     buffer.seek(0)
 
+    # HTTPヘッダ用にURLエンコード（UTF-8対応）
+    quoted_name = urllib.parse.quote(f"{safe_name}_csv.zip")
+
     return Response(
         buffer,
         mimetype="application/zip",
-        headers={"Content-Disposition": f"attachment; filename={safe_name}_csv.zip"}
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quoted_name}"
+        }
     )
+
 
 
 

@@ -574,27 +574,28 @@ def viewer():
 def download_result_csv(result_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT acc_csv, gyro_csv, timestamp, name FROM results WHERE id = ?", (result_id,))
+    cur.execute("SELECT acc_csv, gyro_csv, name FROM results WHERE id = ?", (result_id,))
     row = cur.fetchone()
     conn.close()
 
     if not row:
         return jsonify({"error": "Result not found"}), 404
 
-    acc_csv, gyro_csv, timestamp, name = row
+    acc_csv, gyro_csv, name = row
+    safe_name = name or "result"
 
     # ZIPにまとめて返す
     import io, zipfile
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(f"{timestamp}_acc.csv", acc_csv or '')
-        zf.writestr(f"{timestamp}_gyro.csv", gyro_csv or '')
+        zf.writestr(f"{safe_name}_acc.csv", acc_csv or '')
+        zf.writestr(f"{safe_name}_gyro.csv", gyro_csv or '')
     buffer.seek(0)
 
     return Response(
         buffer,
         mimetype="application/zip",
-        headers={"Content-Disposition": f"attachment; filename={name or 'result'}_{result_id}.zip"}
+        headers={"Content-Disposition": f"attachment; filename={safe_name}_csv.zip"}
     )
 
 

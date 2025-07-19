@@ -12,9 +12,7 @@ import math  # ← 追加
 from matplotlib import font_manager
 import sqlite3
 import os
-from flask import Flask, request, jsonify, send_file, render_template_string
-from datetime import datetime
-from flask import Response
+from flask import Flask, request, jsonify, send_file, render_template_string, Response
 from datetime import datetime, timedelta
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
@@ -61,7 +59,7 @@ init_db()
 def save_result_to_db(result):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    jst_now = datetime.utcnow() + timedelta(hours=9)
+    jst_now = datetime.utcnow() - timedelta(hours=9)
     cur.execute("""
         INSERT INTO results (
             timestamp, name, score, loop_count, stable_loop,

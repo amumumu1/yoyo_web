@@ -27,7 +27,7 @@ plt.rcParams['font.family'] = font_prop.get_name()
 app = Flask(__name__)
 CORS(app)
 
-DB_PATH = "/home/ueji/shared_db/results.db"
+DB_PATH = "results.db"
 
 # --- データベース初期化 ---
 def init_db():

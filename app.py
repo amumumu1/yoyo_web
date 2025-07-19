@@ -586,15 +586,22 @@ def download_result_csv(result_id):
     if not row:
         return jsonify({"error": "Result not found"}), 404
 
-    acc_csv, gyro_csv, name = row
+    acc_csv, gyro_csv, timestamp, name = row
     safe_name = name or "result"
+
+    jst_dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+
 
     # ZIPを作成
     import io, zipfile
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(f"{safe_name}_acc.csv", acc_csv or '')
-        zf.writestr(f"{safe_name}_gyro.csv", gyro_csv or '')
+        for label, content in [("acc", acc_csv or ''), ("gyro", gyro_csv or '')]:
+            zi = zipfile.ZipInfo(f"{name or 'result'}_{label}.csv")
+            # ZIPに書き込むファイルの更新日時をJSTで設定
+            zi.date_time = (jst_dt.year, jst_dt.month, jst_dt.day,
+                            jst_dt.hour, jst_dt.minute, jst_dt.second)
+            zf.writestr(zi, content)
     buffer.seek(0)
 
     # HTTPヘッダ用にURLエンコード（UTF-8対応）

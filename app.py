@@ -12,7 +12,8 @@ import math  # ← 追加
 from matplotlib import font_manager
 import sqlite3
 import os
-from flask import Flask, request, jsonify, send_file, render_template_string, Response
+from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Response
 from datetime import datetime, timedelta
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'

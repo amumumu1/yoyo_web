@@ -614,6 +614,16 @@ def download_result_csv(result_id):
         }
     )
 
+@app.route("/results/<int:result_id>", methods=["DELETE"])
+def delete_result(result_id):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM results WHERE id = ?", (result_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "deleted", "id": result_id})
+
+
 
 
 

@@ -9,9 +9,9 @@
       font-family: Arial, sans-serif;
     }
     img { 
-      max-width: 800px; 
-      display: block; 
-      margin: 10px auto; /* 中央寄せ */
+      max-width: 100%;
+      display: block;
+      margin: 10px auto;
     }
     button, .button {
       margin: 5px;
@@ -32,13 +32,28 @@
       margin: 20px auto; 
       border-bottom: 1px solid #ccc; 
       padding-bottom: 10px;
-      max-width: 900px; /* 横幅制限して中央 */
+      max-width: 900px;
     }
     p {
       margin: 5px 0;
     }
 
-  
+    /* 3つのヒートマップを横並びにして縮小 */
+    .heatmap-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px auto;
+      flex-wrap: wrap;
+    }
+    .heatmap-row div {
+      flex: 1 1 250px;
+      text-align: center;
+    }
+    .heatmap-row img {
+      max-width: 100%;
+      height: auto;
+    }
   </style>
 </head>
 <body>
@@ -62,7 +77,7 @@
       const div = document.createElement('div');
       div.className = 'result';
       div.innerHTML = `
-        <p>ID: ${item.id} / ${item.timestamp}</p>
+        <p>${item.timestamp}</p>
         <p>名前: ${item.name ?? '無題'}</p>
         <button id="toggle-btn-${item.id}" onclick="toggleDetail(${item.id})">詳細を見る</button>
         <div id="detail-${item.id}" style="display:none;"></div>
@@ -76,28 +91,25 @@
     const button = document.getElementById(`toggle-btn-${id}`);
 
     if (container.style.display === 'none') {
-      // 詳細を取得して表示
       const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
       const detail = await res.json();
       container.innerHTML = `
         <p>スコア: ${detail.score?.toFixed(1) ?? 0.0}</p>
-        <p>ループ数: ${detail.loop_count} / 安定ループ開始: ${detail.stable_loop ?? 'なし'}</p>
+        <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
+        <p>安定ループ開始: ${detail.stable_loop ?? 'なし'}</p>
         <p>平均ループ時間: ${detail.loop_mean_duration ?? '-'} 秒</p>
         <p>ループ時間の標準偏差: ${detail.loop_std_duration ?? '-'} 秒</p>
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
-         <!-- 3つのヒートマップを横並び表示 -->
-        <div style="display:flex; gap:20px; justify-content:center; margin:20px 0;">
+        <div class="heatmap-row">
           ${detail.self_heatmap ? `<div><h4>自分 vs 自分（オリジナル）</h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}
           ${detail.heatmap ? `<div><h4>自分 vs 自分（対角線=プロ）</h4><img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ"></div>` : ''}
           ${detail.pro_heatmap ? `<div><h4>対角線プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}" alt="プロ距離ヒートマップ"></div>` : ''}
         </div>
-
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
       container.style.display = 'block';
       button.textContent = '閉じる';
     } else {
-      // 閉じる
       container.style.display = 'none';
       container.innerHTML = '';
       button.textContent = '詳細を見る';

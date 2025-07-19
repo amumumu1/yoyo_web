@@ -114,6 +114,11 @@
       container.innerHTML = '';
       button.textContent = '詳細を見る';
     }
+    container.innerHTML += `
+      <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">
+        この結果のCSVをダウンロード
+      </button>
+    `;
   }
 
   fetchHistory();

@@ -14,6 +14,7 @@ import sqlite3
 import os
 from flask import Flask, request, jsonify, send_file, render_template_string
 from datetime import datetime
+from flask import Response
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 font_prop = font_manager.FontProperties(fname=font_path)
@@ -46,6 +47,8 @@ def init_db():
         heatmap TEXT,
         pro_heatmap TEXT,
         compare_plot TEXT
+        acc_csv TEXT,
+        gyro_csv TEXT
     )
     """)
     conn.commit()
@@ -61,9 +64,9 @@ def save_result_to_db(result):
         INSERT INTO results (
             timestamp, name, score, loop_count, stable_loop,
             loop_mean_duration, loop_std_duration,
-            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot
+            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, acc_csv, gyro_csv
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
@@ -76,7 +79,9 @@ def save_result_to_db(result):
         result.get("self_heatmap"),
         result.get("heatmap"),
         result.get("pro_heatmap"),
-        result.get("compare_plot")
+        result.get("compare_plot"),
+        result.get("acc_csv"),  # 追加
+        result.get("gyro_csv")  # 追加
     ))
     conn.commit()
     conn.close()
@@ -564,6 +569,33 @@ def save_result():
 @app.route('/viewer')
 def viewer():
     return send_file('viewer.html')
+
+@app.route("/results/<int:result_id>/csv", methods=["GET"])
+def download_result_csv(result_id):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT acc_csv, gyro_csv, timestamp, name FROM results WHERE id = ?", (result_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Result not found"}), 404
+
+    acc_csv, gyro_csv, timestamp, name = row
+
+    # ZIPにまとめて返す
+    import io, zipfile
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"{timestamp}_acc.csv", acc_csv or '')
+        zf.writestr(f"{timestamp}_gyro.csv", gyro_csv or '')
+    buffer.seek(0)
+
+    return Response(
+        buffer,
+        mimetype="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={name or 'result'}_{result_id}.zip"}
+    )
 
 
 

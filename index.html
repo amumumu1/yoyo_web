@@ -438,7 +438,14 @@
             return;
           }
           const name = document.getElementById('resultName').value.trim() || '無題';
-          const payload = { ...lastResult, name };  // 名前を追加
+          const accCsv = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
+          const gyroCsv = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
+          const payload = {
+            ...lastResult,
+            name,
+            acc_csv: accCsv,
+            gyro_csv: gyroCsv
+          };
           const res = await fetch('https://yoyo-backend.kajilab.dev/save_result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

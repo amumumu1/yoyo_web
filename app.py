@@ -70,7 +70,7 @@ def save_result_to_db(result):
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        jst_now.strftime("%Y-%m-%d %H:%M:%S"),  # ← JSTを保存
         result.get("name"),
         result.get("score"),
         result.get("loop_count"),

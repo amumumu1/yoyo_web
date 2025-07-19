@@ -59,7 +59,7 @@ init_db()
 def save_result_to_db(result):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    jst_now = datetime.utcnow() + timedelta(hours=9)
+    jst_now = datetime.utcnow() - timedelta(hours=9)
     cur.execute("""
         INSERT INTO results (
             timestamp, name, score, loop_count, stable_loop,

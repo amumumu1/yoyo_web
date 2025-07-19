@@ -47,7 +47,7 @@ def init_db():
         self_heatmap TEXT,
         heatmap TEXT,
         pro_heatmap TEXT,
-        compare_plot TEXT
+        compare_plot TEXT,
         acc_csv TEXT,
         gyro_csv TEXT
     )
@@ -572,14 +572,13 @@ def save_result():
 def viewer():
     return send_file('viewer.html')
 
-from flask import Response
 import urllib.parse
 
 @app.route("/results/<int:result_id>/csv", methods=["GET"])
 def download_result_csv(result_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT acc_csv, gyro_csv, name FROM results WHERE id = ?", (result_id,))
+    cur.execute("SELECT acc_csv, gyro_csv, timestamp, name FROM results WHERE id = ?", (result_id,))
     row = cur.fetchone()
     conn.close()
 

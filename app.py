@@ -99,7 +99,11 @@ def save_result_to_db(result):
 def get_results():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, timestamp, name, score, loop_count, stable_loop FROM results ORDER BY id DESC LIMIT 20")
+    cur.execute("""
+        SELECT id, timestamp, name, score, total_score, pro_distance_mean,
+               loop_count, stable_loop
+        FROM results ORDER BY id DESC LIMIT 20
+    """)
     rows = cur.fetchall()
     conn.close()
     return jsonify([
@@ -108,11 +112,14 @@ def get_results():
             "timestamp": r[1],
             "name": r[2] or "無題",
             "score": r[3],
-            "loop_count": r[4],
-            "stable_loop": r[5]
+            "total_score": r[4],
+            "pro_distance_mean": r[5],
+            "loop_count": r[6],
+            "stable_loop": r[7]
         }
         for r in rows
     ])
+
 
 # --- 特定の結果を取得（グラフ画像含む） ---
 @app.route("/results/<int:result_id>", methods=["GET"])
@@ -120,7 +127,8 @@ def get_result_detail(result_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("""
-        SELECT timestamp, name, score, loop_count, stable_loop,
+        SELECT timestamp, name, score, total_score, radar_chart, pro_distance_mean,
+               loop_count, stable_loop,
                loop_mean_duration, loop_std_duration,
                loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot
         FROM results WHERE id = ?
@@ -134,15 +142,18 @@ def get_result_detail(result_id):
         "timestamp": row[0],
         "name": row[1] or "無題",
         "score": row[2],
-        "loop_count": row[3],
-        "stable_loop": row[4],
-        "loop_mean_duration": row[5],
-        "loop_std_duration": row[6],
-        "loop_plot": row[7],
-        "self_heatmap": row[8],
-        "heatmap": row[9],
-        "pro_heatmap": row[10],
-        "compare_plot": row[11]
+        "total_score": row[3],
+        "radar_chart": row[4],
+        "pro_distance_mean": row[5],
+        "loop_count": row[6],
+        "stable_loop": row[7],
+        "loop_mean_duration": row[8],
+        "loop_std_duration": row[9],
+        "loop_plot": row[10],
+        "self_heatmap": row[11],
+        "heatmap": row[12],
+        "pro_heatmap": row[13],
+        "compare_plot": row[14]
     })
 
 @app.route('/')

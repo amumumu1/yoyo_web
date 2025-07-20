@@ -274,6 +274,10 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
+    # デフォルトのグリッド（円）を消す
+    ax.grid(False)
+    ax.set_frame_on(False)
+
     # 角度の目盛りを非表示
     ax.set_thetagrids([])
 

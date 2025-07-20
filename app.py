@@ -259,7 +259,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     # --- レーダーチャートを作成 ---
     labels = [
         '自身の類似度',
-        '平均ループ時間',
+        '　平均ループ時間',
         'ループ時間のばらつき',
         '安定開始ループ',
         'プロ類似度'

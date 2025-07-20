@@ -386,13 +386,16 @@
           accOutput.style.display = 'block';
           gyroOutput.style.display = 'block';
 
-
-          // レーダーチャート表示処理
+          // レーダーチャート
           if (json.radar_chart && typeof json.radar_chart === 'string' && json.radar_chart.length > 0) {
             const radarImg = document.getElementById('radarChart');
             radarImg.src = `data:image/png;base64,${json.radar_chart}`;
             radarImg.style.display = 'block';
-            document.getElementById('RadarTitle').style.display = 'block';
+
+            // 総合評価点を表示（20点満点）
+            const radarTitle = document.getElementById('RadarTitle');
+            radarTitle.textContent = `総合評価: ${json.total_score.toFixed(1)} 点`;  // ← ここでタイトルを差し替え
+            radarTitle.style.display = 'block';
           } else {
             document.getElementById('radarChart').style.display = 'none';
             document.getElementById('RadarTitle').style.display = 'none';

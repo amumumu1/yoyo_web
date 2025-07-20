@@ -265,6 +265,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
         'プロ類似度'
     ]
     values = [s_score, s_mean, s_std, s_stable, s_pro]
+    avg_score = np.mean(values) * 20 
     values += values[:1]  # 円を閉じる
 
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
@@ -300,7 +301,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     buf = BytesIO()
     fig.savefig(buf, format='png', bbox_inches='tight')
     plt.close(fig)
-    return base64.b64encode(buf.getvalue()).decode('ascii')
+    return base64.b64encode(buf.getvalue()).decode('ascii'), float(avg_score)
 
 
 
@@ -654,7 +655,7 @@ def analyze():
     pro_distance_mean = float(np.mean(distances)) if distances else 70
 
     # レーダーチャート生成
-    radar_b64 = generate_radar_chart(
+    radar_b64, total_score = generate_radar_chart(
         score=score,
         loop_mean=loop_mean_duration,
         loop_std=loop_std_duration,
@@ -666,6 +667,7 @@ def analyze():
     # --- 結果まとめ ---
     result = {
         'score': score if len(loops) >= 2 else 0.0,
+        'total_score': total_score, 
         'self_heatmap': self_heatmap_b64,  # ← 純粋な自分同士比較
         'heatmap': heatmap_b64,
         'pro_heatmap': pro_heatmap_b64,  # プロ距離だけのヒートマップ（新規）

@@ -655,7 +655,7 @@ def analyze():
     if distances:
         pro_distance_mean = float(np.mean(distances))
     else:
-        pro_distance_mean = "なし"  # セグメントが検出されなかった場合
+        pro_distance_mean = None  # セグメントが検出されなかった場合
 
 
     # レーダーチャート生成

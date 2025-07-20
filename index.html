@@ -450,14 +450,20 @@
 
 
           scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${json.stable_loop !== null ? `安定開始ループ: ${json.stable_loop}周目` : '安定開始ループ: なし'}`;
+          
           // プロ距離の平均を表示
           if (json.pro_distance_mean !== null && json.pro_distance_mean !== undefined) {
-            const avgElem = document.getElementById('proDistance');
-            avgElem.textContent = `プロとの平均距離: ${json.pro_distance_mean.toFixed(1)}`;
-            avgElem.style.display = 'block';
+              const avgElem = document.getElementById('proDistance');
+              if (typeof json.pro_distance_mean === 'number') {
+                  avgElem.textContent = `プロとの平均距離: ${json.pro_distance_mean.toFixed(1)}`;
+              } else {
+                  avgElem.textContent = `プロとの平均距離: なし`;
+              }
+              avgElem.style.display = 'block';
           } else {
-            document.getElementById('proDistance').style.display = 'none';
+              document.getElementById('proDistance').style.display = 'none';
           }
+
 
 
           const meanStr = (json.loop_mean_duration !== null) ? `平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒` : `平均ループ時間: なし`;

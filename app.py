@@ -257,7 +257,13 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
         s_pro = 5 * (120 - pro_distance) / (120 - 20)
 
     # --- レーダーチャートを作成 ---
-    labels = ['類似度スコア(100)', '平均ループ時間(0.4s)', '時間の標準偏差(0.05s)', '安定開始ループ(2周目)', 'プロ距離(20)']
+    labels = [
+    '類似度スコア\n(100)',
+    '平均ループ時間\n(0.4s)',
+    '時間の標準偏差\n(0.05s)',
+    '安定開始ループ\n(2周目)',
+    'プロ距離\n(20)'
+    ]
     values = [s_score, s_mean, s_std, s_stable, s_pro]
     values += values[:1]  # 最初の点を閉じる
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)

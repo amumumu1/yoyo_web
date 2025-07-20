@@ -82,7 +82,7 @@ def save_result_to_db(result):
         result.get("heatmap"),
         result.get("pro_heatmap"),
         result.get("compare_plot"),
-        result.get("acc_csv"),  # 追加
+        result.get("acc_csv"),  # 追加　
         result.get("gyro_csv")  # 追加
     ))
     conn.commit()
@@ -143,47 +143,7 @@ def get_result_detail(result_id):
 def index():
     return send_file('index.html')
 
-# --- スケーリング関数（0〜5に変換） ---
-def scale_score(value, min_val, max_val, invert=False):
-    if value is None or np.isnan(value):
-        return 0
-    if invert:
-        # 値が小さいほどスコアが高い
-        if value <= min_val: return 5
-        if value >= max_val: return 0
-        return 5 * (max_val - value) / (max_val - min_val)
-    else:
-        # 値が大きいほどスコアが高い
-        if value <= min_val: return 0
-        if value >= max_val: return 5
-        return 5 * (value - min_val) / (max_val - min_val)
 
-# --- レーダーチャート生成 ---
-def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
-    s_score = scale_score(score, 0, 100) / 20  # 100点→5点（100/20=5）
-    s_mean  = scale_score(loop_mean, 0.9, 0.4, invert=True)   # 0.4sで5, 0.9sで0
-    s_std   = scale_score(loop_std, 0.2, 0.05, invert=True)   # 0.05で5, 0.2で0
-    s_stable = scale_score(stable_loop, 7, 2, invert=True)    # 2周目で5, 7周目で0
-    s_pro   = scale_score(pro_distance, 70, 20, invert=True)  # 20で5, 70で0
-
-    labels = ['類似度スコア', '平均ループ時間', '時間の標準偏差', '安定開始ループ', 'プロ距離']
-    values = [s_score, s_mean, s_std, s_stable, s_pro]
-    values += values[:1]
-    angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
-
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-    ax.set_theta_offset(np.pi / 2)
-    ax.set_theta_direction(-1)
-    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels, fontproperties=font_prop)
-    ax.plot(angles, values, color='blue', linewidth=2)
-    ax.fill(angles, values, color='skyblue', alpha=0.4)
-    ax.set_ylim(0, 5)
-    ax.grid(True)
-
-    buf = BytesIO()
-    fig.savefig(buf, format='png')
-    plt.close(fig)
-    return base64.b64encode(buf.getvalue()).decode('ascii')
 
 
 
@@ -242,6 +202,49 @@ def segment_loops(gyro, quats):
         mask = (quats["time"] >= t_start) & (quats["time"] <= t_end)
         segments.append(quats[mask].reset_index(drop=True))
     return segments
+
+
+# --- スケーリング関数（0〜5に変換） ---
+def scale_score(value, min_val, max_val, invert=False):
+    if value is None or np.isnan(value):
+        return 0
+    if invert:
+        # 値が小さいほどスコアが高い
+        if value <= min_val: return 5
+        if value >= max_val: return 0
+        return 5 * (max_val - value) / (max_val - min_val)
+    else:
+        # 値が大きいほどスコアが高い
+        if value <= min_val: return 0
+        if value >= max_val: return 5
+        return 5 * (value - min_val) / (max_val - min_val)
+
+# --- レーダーチャート生成 ---
+def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
+    s_score = scale_score(score, 0, 100) / 20  # 100点→5点（100/20=5）
+    s_mean  = scale_score(loop_mean, 0.9, 0.4, invert=True)   # 0.4sで5, 0.9sで0
+    s_std   = scale_score(loop_std, 0.2, 0.05, invert=True)   # 0.05で5, 0.2で0
+    s_stable = scale_score(stable_loop, 7, 2, invert=True)    # 2周目で5, 7周目で0
+    s_pro   = scale_score(pro_distance, 70, 20, invert=True)  # 20で5, 70で0
+
+    labels = ['類似度スコア', '平均ループ時間', '時間の標準偏差', '安定開始ループ', 'プロ距離']
+    values = [s_score, s_mean, s_std, s_stable, s_pro]
+    values += values[:1]
+    angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
+
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels, fontproperties=font_prop)
+    ax.plot(angles, values, color='blue', linewidth=2)
+    ax.fill(angles, values, color='skyblue', alpha=0.4)
+    ax.set_ylim(0, 5)
+    ax.grid(True)
+
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode('ascii')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -586,11 +589,11 @@ def analyze():
         loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
 
     # 仮の距離（プロ比較用）
-    distances = [35] * n  # 例として35固定。実際はプロ比較で計算済みを使う
+    # distances = [35] * n  # 例として35固定。実際はプロ比較で計算済みを使う
 
     # スコア仮計算
-    score = 100.0 if n >= 2 else 0.0
-    stable_loop = 3 if n >= 2 else None
+    # score = 100.0 if n >= 2 else 0.0
+    # stable_loop = 3 if n >= 2 else None
 
     # レーダーチャート生成
     radar_b64 = generate_radar_chart(

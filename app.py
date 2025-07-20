@@ -262,7 +262,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     values += values[:1]  # 最初の点を閉じる
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
 
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 

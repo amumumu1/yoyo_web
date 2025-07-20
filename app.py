@@ -204,33 +204,62 @@ def segment_loops(gyro, quats):
     return segments
 
 
-# --- スケーリング関数（0〜5に変換） ---
-def scale_score(value, min_val, max_val, invert=False):
-    if value is None or np.isnan(value):
-        return 0
-    if invert:
-        # 値が小さいほどスコアが高い
-        if value <= min_val: return 5
-        if value >= max_val: return 0
-        return 5 * (max_val - value) / (max_val - min_val)
-    else:
-        # 値が大きいほどスコアが高い
-        if value <= min_val: return 0
-        if value >= max_val: return 5
-        return 5 * (value - min_val) / (max_val - min_val)
-
-# --- レーダーチャート生成 ---
+# --- レーダーチャート生成（各項目を個別スケーリング） ---
 def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
-    s_score = scale_score(score, 0, 100) / 20  # 100点→5点（100/20=5）
-    s_mean  = scale_score(loop_mean, 0.9, 0.4, invert=True)   # 0.4sで5, 0.9sで0
-    s_std   = scale_score(loop_std, 0.2, 0.05, invert=True)   # 0.05で5, 0.2で0
-    s_stable = scale_score(stable_loop, 7, 2, invert=True)    # 2周目で5, 7周目で0
-    s_pro   = scale_score(pro_distance, 70, 20, invert=True)  # 20で5, 70で0
-    
+    # 1. 類似度スコア（100点で5、0点で0）
+    if score is None:
+        s_score = 0
+    elif score >= 100:
+        s_score = 5
+    elif score <= 0:
+        s_score = 0
+    else:
+        s_score = (score / 100) * 5  # 100点で5点
 
+    # 2. 平均ループ時間（0.4s以下で5、0.9s以上で0）
+    if loop_mean is None:
+        s_mean = 0
+    elif loop_mean <= 0.4:
+        s_mean = 5
+    elif loop_mean >= 0.9:
+        s_mean = 0
+    else:
+        s_mean = 5 * (0.9 - loop_mean) / (0.9 - 0.4)  # 線形補間
+
+    # 3. ループ時間の標準偏差（0.05s以内で5、0.2s以上で0）
+    if loop_std is None:
+        s_std = 0
+    elif loop_std <= 0.05:
+        s_std = 5
+    elif loop_std >= 0.2:
+        s_std = 0
+    else:
+        s_std = 5 * (0.2 - loop_std) / (0.2 - 0.05)  # 線形補間
+
+    # 4. 安定開始ループ（2周目で5、7周目以降で0）
+    if stable_loop is None:
+        s_stable = 0
+    elif stable_loop <= 2:
+        s_stable = 5
+    elif stable_loop >= 7:
+        s_stable = 0
+    else:
+        s_stable = 5 * (7 - stable_loop) / (7 - 2)
+
+    # 5. プロ距離（平均が20以下で5、70以上で0）
+    if pro_distance is None:
+        s_pro = 0
+    elif pro_distance <= 20:
+        s_pro = 5
+    elif pro_distance >= 70:
+        s_pro = 0
+    else:
+        s_pro = 5 * (70 - pro_distance) / (70 - 20)
+
+    # --- レーダーチャートを作成 ---
     labels = ['類似度スコア', '平均ループ時間', '時間の標準偏差', '安定開始ループ', 'プロ距離']
     values = [s_score, s_mean, s_std, s_stable, s_pro]
-    values += values[:1]
+    values += values[:1]  # 最初の点を閉じる
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
 
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
@@ -246,6 +275,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     fig.savefig(buf, format='png')
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -593,14 +623,18 @@ def analyze():
 
     
 
+    # プロ距離の平均を事前に計算
+    pro_distance_mean = float(np.mean(distances)) if distances else 70
+
     # レーダーチャート生成
     radar_b64 = generate_radar_chart(
         score=score,
         loop_mean=loop_mean_duration,
         loop_std=loop_std_duration,
         stable_loop=stable_loop if stable_loop else 7,
-        pro_distance=np.mean(distances) if distances else 70
+        pro_distance=pro_distance_mean
     )
+
 
     # --- 結果まとめ ---
     result = {

@@ -272,19 +272,16 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    # グリッドと半径方向の目盛り設定
-    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=18)
+    # ラベルの文字サイズを大きくする
+    ax.set_thetagrids(
+        angles[:-1] * 180/np.pi, 
+        labels, 
+        fontproperties=font_prop, 
+        fontsize=18  # ← ラベルを大きくする
+    )
 
-    # ラベルを手動で外側に配置（r=5.5 くらいにする）
-    for angle, label in zip(angles[:-1], labels):
-        x = angle
-        ax.text(
-            x, 5.5,  # 半径方向を5より外側に配置
-            label,
-            ha='center', va='center',
-            fontsize=18,
-            fontproperties=font_prop
-        )
+    # 半径方向(1〜5)の目盛りの文字サイズも大きくする
+    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=18)
 
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)
@@ -294,8 +291,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     buf = BytesIO()
     fig.savefig(buf, format='png')
     plt.close(fig)
-    radar_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
-
+    return base64.b64encode(buf.getvalue()).decode('ascii')
 
 
 

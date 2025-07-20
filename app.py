@@ -266,16 +266,15 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    # ラベルの文字サイズを大きくする
-    ax.set_thetagrids(
-        angles[:-1] * 180/np.pi, 
-        labels, 
-        fontproperties=font_prop, 
-        fontsize=16  # ← ラベルを大きくする
-    )
+    # ラベルを手動で配置（円の外側に）
+    for angle, label in zip(angles[:-1], labels):
+        x = (5.5) * np.cos(angle - np.pi/2)  # 半径を5.5にして円の外側へ
+        y = (5.5) * np.sin(angle - np.pi/2)
+        ax.text(x, y, label, fontproperties=font_prop, fontsize=22,
+                ha='center', va='center')
 
     # 半径方向(1〜5)の目盛りの文字サイズも大きくする
-    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=14)
+    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=22)
 
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)

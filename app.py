@@ -38,7 +38,10 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp TEXT,
         name TEXT,
+        total_score REAL,
+        radar_chart TEXT,
         score REAL,
+        pro_distance_mean REAL,
         loop_count INTEGER,
         stable_loop INTEGER,
         loop_mean_duration REAL,
@@ -64,15 +67,18 @@ def save_result_to_db(result):
     jst_now = datetime.utcnow() + timedelta(hours=9)
     cur.execute("""
         INSERT INTO results (
-            timestamp, name, score, loop_count, stable_loop,
+            timestamp, name, total_score, radar_chart, score, pro_distance_mean, loop_count, stable_loop,
             loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, acc_csv, gyro_csv
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),  # ← JSTを保存
         result.get("name"),
+        result.get("total_score"),
+        result.get("radar_chart"),
         result.get("score"),
+        result.get("pro_distance_mean"),
         result.get("loop_count"),
         result.get("stable_loop"),
         result.get("loop_mean_duration"),

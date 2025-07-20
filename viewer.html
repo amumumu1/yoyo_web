@@ -110,7 +110,11 @@
       const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
       const detail = await res.json();
       container.innerHTML = `
-        <p>スコア: ${detail.score?.toFixed(1) ?? 0.0}</p>
+
+        <p>総合評価: ${detail.total_score ? detail.total_score.toFixed(1) + '点' : 'なし'}</p>
+        ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート">` : ''}
+        <p>類似度スコア: ${detail.score?.toFixed(1) ?? 0.0}</p>
+        <p>プロとの平均距離: ${detail.pro_distance_mean !== null ? detail.pro_distance_mean.toFixed(1) : 'なし'}</p>
         <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
         <p>安定開始ループ: ${detail.stable_loop+'周目' ?? 'なし'}</p>
         <p>平均ループ時間: ${detail.loop_mean_duration.toFixed(3) ?? '-'} 秒</p>

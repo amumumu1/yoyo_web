@@ -251,13 +251,13 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
         s_pro = 0
     elif pro_distance <= 20:
         s_pro = 5
-    elif pro_distance >= 70:
+    elif pro_distance >= 120:
         s_pro = 0
     else:
-        s_pro = 5 * (70 - pro_distance) / (70 - 20)
+        s_pro = 5 * (120 - pro_distance) / (120 - 20)
 
     # --- レーダーチャートを作成 ---
-    labels = ['類似度スコア', '平均ループ時間', '時間の標準偏差', '安定開始ループ', 'プロ距離']
+    labels = ['類似度スコア(100)', '平均ループ時間(0.4s)', '時間の標準偏差(0.05s)', '安定開始ループ(2周目)', 'プロ距離(20)']
     values = [s_score, s_mean, s_std, s_stable, s_pro]
     values += values[:1]  # 最初の点を閉じる
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
@@ -265,7 +265,18 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
-    ax.set_thetagrids(angles[:-1] * 180/np.pi, labels, fontproperties=font_prop)
+
+    # ラベルの文字サイズを大きくする
+    ax.set_thetagrids(
+        angles[:-1] * 180/np.pi, 
+        labels, 
+        fontproperties=font_prop, 
+        fontsize=16  # ← ラベルを大きくする
+    )
+
+    # 半径方向(1〜5)の目盛りの文字サイズも大きくする
+    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=14)
+
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)
     ax.set_ylim(0, 5)
@@ -275,6 +286,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     fig.savefig(buf, format='png')
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 
 @app.route('/analyze', methods=['POST'])

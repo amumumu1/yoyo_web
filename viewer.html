@@ -112,9 +112,9 @@
       container.innerHTML = `
         <p>スコア: ${detail.score?.toFixed(1) ?? 0.0}</p>
         <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
-        <p>安定ループ開始: ${detail.stable_loop ?? 'なし'}</p>
-        <p>平均ループ時間: ${detail.loop_mean_duration ?? '-'} 秒</p>
-        <p>ループ時間の標準偏差: ${detail.loop_std_duration ?? '-'} 秒</p>
+        <p>安定開始ループ: ${detail.stable_loop+'周目' ?? 'なし'}</p>
+        <p>平均ループ時間: ${detail.loop_mean_duration.toFixed(3) ?? '-'} 秒</p>
+        <p>ループ時間の標準偏差: ${detail.loop_std_duration.toFixed(3) ?? '-'} 秒</p>
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
         <div class="heatmap-row">
           ${detail.self_heatmap ? `<div><h4>自分 vs 自分（オリジナル）</h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}

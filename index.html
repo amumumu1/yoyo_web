@@ -66,7 +66,12 @@
     <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
     <div id="loading" style="display: none;">解析中...</div>
 
-    <canvas id="liveChart" width="800" height="300" style="display: none;"></canvas>
+    <!-- 加速度と角速度を別々のリアルタイムグラフで表示 -->
+    <h3 style="display:none;" id="accTitle">加速度</h3>
+    <canvas id="accChart" width="800" height="150" style="display: none;"></canvas>
+    <h3 style="display:none;" id="gyroTitle">角速度</h3>
+    <canvas id="gyroChart" width="800" height="150" style="display: none;"></canvas>
+
     <hr id="hrTitle" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="saveSection" style="display: none;">
       <input type="text" id="resultName" placeholder="結果の名前を入力" style="font-size:16px; padding:5px; width:200px;" />
@@ -74,6 +79,9 @@
     </div>
 
     <h2 id="Title" style="display: none;">解析結果</h2>
+    <h3 id="RadarTitle" style="display: none;">総合評価（レーダーチャート）</h3>
+    <img id="radarChart" style="display: none; width: 500px; max-width: 90%; margin-bottom: 30px;" />
+
     <div id="score"></div>
     <div id="loopSummary"></div>
     <pre id="loopDetails" style="display: none;"></pre>
@@ -101,7 +109,8 @@
     <hr id="hrPro" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="proExample" style="display: none;">
       <h2>参考データ（プロ）</h2>
-
+      <h3>平均ループ時間: 0.429 秒</h3>
+      <h3>ループ時間の標準偏差: 0.072 秒</h3>
       <h3>プロのループ検出</h3>
       <img src="/pro_segu.png" alt="プロのループ検出図" style="width: 100%; max-width: 1200px;" />
 
@@ -138,6 +147,24 @@
       let buffer = '';
       const acc = [], gyro = [];
 
+      const accCtx = document.getElementById('accChart').getContext('2d');
+      const gyroCtx = document.getElementById('gyroChart').getContext('2d');
+
+      const accData = { labels: [], datasets: [
+        { label: 'ax', data: [], borderColor: 'blue', fill: false, pointRadius: 0 },
+        { label: 'ay', data: [], borderColor: 'skyblue', fill: false, pointRadius: 0 },
+        { label: 'az', data: [], borderColor: 'navy', fill: false, pointRadius: 0 }
+      ]};
+      const gyroData = { labels: [], datasets: [
+        { label: 'gx', data: [], borderColor: 'red', fill: false, pointRadius: 0 },
+        { label: 'gy', data: [], borderColor: 'orange', fill: false, pointRadius: 0 },
+        { label: 'gz', data: [], borderColor: 'darkred', fill: false, pointRadius: 0 }
+      ]};
+
+      const accChart = new Chart(accCtx, { type: 'line', data: accData, options: { animation: false, scales: { x: { display: false } } } });
+      const gyroChart = new Chart(gyroCtx, { type: 'line', data: gyroData, options: { animation: false, scales: { x: { display: false } } } });
+
+      
       const btnConnect = document.getElementById('btnConnect');
       const btnStop    = document.getElementById('btnStop');
       const btnRi    = document.getElementById('btnRi');
@@ -148,30 +175,11 @@
       const accOutput = document.getElementById('accOutput');
       const gyroOutput = document.getElementById('gyroOutput');
 
-      const ctx = document.getElementById('liveChart').getContext('2d');
-      const chartData = {
-        labels: [],
-        datasets: [
-          { label: 'ax', data: [], borderColor: 'blue', fill: false, pointRadius: 0 },
-          { label: 'ay', data: [], borderColor: 'skyblue', fill: false, pointRadius: 0 },
-          { label: 'az', data: [], borderColor: 'navy', fill: false, pointRadius: 0 },
-          { label: 'gx', data: [], borderColor: 'red', fill: false, pointRadius: 0 },
-          { label: 'gy', data: [], borderColor: 'orange', fill: false, pointRadius: 0 },
-          { label: 'gz', data: [], borderColor: 'darkred', fill: false, pointRadius: 0 }
-        ]
-      };
+    
+      
+      
 
-      const liveChart = new Chart(ctx, {
-        type: 'line',
-        data: chartData,
-        options: {
-          animation: false,
-          scales: { x: { display: false } },
-          plugins: { legend: { labels: { font: { size: 14 } } } }
-        }
-      });
-
-      let hasShownLiveChart = false; // ← 追加: グラフ表示済みかのフラグ
+      
 
 
       // センシング開始
@@ -206,10 +214,10 @@
 
         acc.length = 0;
         gyro.length = 0;
-        hasShownLiveChart = false; // ← 追加
-        chartData.labels.length = 0;
-        chartData.datasets.forEach(ds => ds.data.length = 0);
-        liveChart.update();
+       
+        accData.labels.length = 0; accData.datasets.forEach(ds => ds.data.length = 0);
+        gyroData.labels.length = 0; gyroData.datasets.forEach(ds => ds.data.length = 0);
+        accChart.update(); gyroChart.update();
 
         document.getElementById('loopPlot').style.display = 'none';
 
@@ -229,6 +237,12 @@
           await new Promise(r => setTimeout(r, 100));
           await dataChar.startNotifications();
           dataChar.addEventListener('characteristicvaluechanged', handleNotify);
+
+          document.getElementById('accTitle').style.display = 'block';
+          document.getElementById('gyroTitle').style.display = 'block';
+          document.getElementById('accChart').style.display = 'block';
+          document.getElementById('gyroChart').style.display = 'block';
+        
 
           btnConnect.disabled = true;
           btnStop.disabled = false;
@@ -251,26 +265,25 @@
           acc.push({ t, ax, ay, az });
           gyro.push({ t, gx, gy, gz });
 
-          chartData.labels.push('');
-          chartData.datasets[0].data.push(ax);
-          chartData.datasets[1].data.push(ay);
-          chartData.datasets[2].data.push(az);
-          chartData.datasets[3].data.push(gx);
-          chartData.datasets[4].data.push(gy);
-          chartData.datasets[5].data.push(gz);
+          accData.labels.push('');
+          gyroData.labels.push('');
+          
+          accData.datasets[0].data.push(ax);
+          accData.datasets[1].data.push(ay);
+          accData.datasets[2].data.push(az);
 
-          if (chartData.labels.length > 100) {
-            chartData.labels.shift();
-            chartData.datasets.forEach(ds => ds.data.shift());
-          }
+          gyroData.datasets[0].data.push(gx);
+          gyroData.datasets[1].data.push(gy);
+          gyroData.datasets[2].data.push(gz);
 
-          // 🔽 初回受信時にグラフを表示
-          if (!hasShownLiveChart) {
-            document.getElementById('liveChart').style.display = 'block';
-            hasShownLiveChart = true;
-          }
+          if (accData.labels.length > 100) { accData.labels.shift(); accData.datasets.forEach(ds => ds.data.shift()); }
+          if (gyroData.labels.length > 100) { gyroData.labels.shift(); gyroData.datasets.forEach(ds => ds.data.shift()); }
 
-          liveChart.update();
+
+          
+
+          accChart.update();
+          gyroChart.update();
         }
       }
     }
@@ -283,6 +296,13 @@
         try {
           loadingDiv.style.display = 'block';
 
+          // リアルタイムグラフも非表示
+          document.getElementById('accChart').style.display = 'none';
+          document.getElementById('gyroChart').style.display = 'none';
+          document.getElementById('accTitle').style.display = 'none';
+          document.getElementById('gyroTitle').style.display = 'none';
+
+
           // 解析中はボタンと名前入力を隠す
           btnConnect.style.display = 'none';
           btnStop.style.display = 'none';
@@ -292,7 +312,7 @@
               
 
           // 🔽 解析中は他の要素を非表示にする
-          document.getElementById('liveChart').style.display = 'none';
+        
           document.getElementById('loopPlot').style.display = 'none';
           //document.getElementById('heatmap').style.display = 'none';
           document.getElementById('comparePlot').style.display = 'none';
@@ -323,7 +343,7 @@
           await dataChar.stopNotifications();
           btnStop.disabled = true;
 
-          document.getElementById('liveChart').style.display = 'none';
+      
 
           accOutput.textContent = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
           gyroOutput.textContent = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
@@ -353,6 +373,18 @@
 
           accOutput.style.display = 'block';
           gyroOutput.style.display = 'block';
+
+          // レーダーチャート表示処理
+          if (json.radar_chart && typeof json.radar_chart === 'string' && json.radar_chart.length > 0) {
+            const radarImg = document.getElementById('radarChart');
+            radarImg.src = `data:image/png;base64,${json.radar_chart}`;
+            radarImg.style.display = 'block';
+            document.getElementById('RadarTitle').style.display = 'block';
+          } else {
+            document.getElementById('radarChart').style.display = 'none';
+            document.getElementById('RadarTitle').style.display = 'none';
+          }
+
 
           
 

@@ -78,7 +78,7 @@
       div.className = 'result';
       div.innerHTML = `
         <p>${item.timestamp}</p>
-        <p>名前: ${item.name ?? '無題'}</p>
+        <p>${item.name ?? '無題'}</p>
         <button id="toggle-btn-${item.id}" onclick="toggleDetail(${item.id})">詳細を見る</button>
         <div id="detail-${item.id}" style="display:none;"></div>
       `;

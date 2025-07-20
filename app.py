@@ -288,18 +288,18 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     ax.xaxis.set_visible(False)  # デフォルトの放射線ラベル非表示
     for r in range(1, 6):  # 1〜5の同心五角形
         grid = [r] * (len(labels) + 1)
-        ax.plot(angles, grid, color='gray', linewidth=0.8, linestyle='--')
+        ax.plot(angles, grid, color='gray', linewidth=1.0, linestyle='-')
 
     # 軸線（中心から各頂点までの線）
     for angle in angles[:-1]:
-        ax.plot([angle, angle], [0, 5], color='gray', linewidth=0.8)
+        ax.plot([angle, angle], [0, 5], color='gray', linewidth=1.0)
 
     # ラベルを外側 (r=5.5) に配置
     for angle, label in zip(angles[:-1], labels):
         ax.text(
-            angle, 6.5, label,
+            angle, 6.0, label,
             ha='center', va='center',
-            fontsize=20,
+            fontsize=25,
             fontproperties=font_prop
         )
 

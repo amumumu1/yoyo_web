@@ -258,38 +258,43 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
 
     # --- レーダーチャートを作成 ---
     labels = [
-    '類似度スコア\n(100)',
-    '平均ループ時間\n(0.4s)',
-    '時間の標準偏差\n(0.05s)',
-    '安定開始ループ\n(2周目)',
-    'プロ距離\n(20)'
+        '類似度スコア\n(100)',
+        '平均ループ時間\n(0.4s)',
+        '時間の標準偏差\n(0.05s)',
+        '安定開始ループ\n(2周目)',
+        'プロ距離\n(20)'
     ]
     values = [s_score, s_mean, s_std, s_stable, s_pro]
-    values += values[:1]  # 最初の点を閉じる
+    values += values[:1]  # 円を閉じる
+
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
 
+    # --- レーダーチャート作成 ---
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    # ラベルの文字サイズを大きくする
-    ax.set_thetagrids(
-        angles[:-1] * 180/np.pi, 
-        labels, 
-        fontproperties=font_prop, 
-        fontsize=18  # ← ラベルを大きくする
-    )
-
-    # 半径方向(1〜5)の目盛りの文字サイズも大きくする
+    # 半径方向の目盛り（1〜5）
     ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=18)
 
+    # ラベルを外側 (r=5.5) に配置
+    for angle, label in zip(angles[:-1], labels):
+        ax.text(
+            angle, 5.5, label,
+            ha='center', va='center',
+            fontsize=18,
+            fontproperties=font_prop
+        )
+
+    # プロット
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)
     ax.set_ylim(0, 5)
     ax.grid(True)
 
+    # PNGとして返す
     buf = BytesIO()
-    fig.savefig(buf, format='png')
+    fig.savefig(buf, format='png', bbox_inches='tight')
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii')
 

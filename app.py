@@ -262,27 +262,23 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     values += values[:1]  # 最初の点を閉じる
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
 
-    fig, ax = plt.subplots(figsize=(20, 20), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    # デフォルトのラベルは削除して手動で配置
-    ax.set_thetagrids([])
-
-    # ラベルを円の外側 (半径5.5) に配置
-    for angle, label in zip(angles[:-1], labels):
-        x = 5.5 * np.cos(angle)  # X座標
-        y = 5.5 * np.sin(angle)  # Y座標
-        ax.text(x, y, label, fontproperties=font_prop, fontsize=20,
-                ha='center', va='center')
+    # ラベルの文字サイズを大きくする
+    ax.set_thetagrids(
+        angles[:-1] * 180/np.pi, 
+        labels, 
+        fontproperties=font_prop, 
+        fontsize=18  # ← ラベルを大きくする
+    )
 
     # 半径方向(1〜5)の目盛りの文字サイズも大きくする
-    ax.set_rgrids([1, 2, 3, 4, 5], angle=10, fontproperties=font_prop, fontsize=20)
+    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=18)
 
-    # データ描画
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)
-
     ax.set_ylim(0, 5)
     ax.grid(True)
 

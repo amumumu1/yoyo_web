@@ -258,11 +258,11 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
 
     # --- レーダーチャートを作成 ---
     labels = [
-        '自身の類似度\n(100)',
-        '平均ループ時間\n(0.4s)',
-        'ループ時間のばらつき\n(0.05s)',
-        '安定開始ループ\n(2周目)',
-        'プロ類似度\n(20)'
+        '自身の類似度',
+        '平均ループ時間',
+        'ループ時間のばらつき',
+        '安定開始ループ',
+        'プロ類似度'
     ]
     values = [s_score, s_mean, s_std, s_stable, s_pro]
     values += values[:1]  # 円を閉じる

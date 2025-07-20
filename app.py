@@ -270,7 +270,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
 
     # --- レーダーチャート作成 ---
-    fig, ax = plt.subplots(figsize=(20, 20), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 

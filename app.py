@@ -270,17 +270,25 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
 
     angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
 
-    # --- レーダーチャート作成 ---
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
 
-    # 角度の目盛り（0°, 45°など）を非表示
-    ax.set_thetagrids([])  # ← これを追加
-
+    # 角度の目盛りを非表示
+    ax.set_thetagrids([])
 
     # 半径方向の目盛り（1〜5）
     ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=20)
+
+    # 円グリッドを消して、多角形（五角形）グリッドを描画
+    ax.xaxis.set_visible(False)  # デフォルトの放射線ラベル非表示
+    for r in range(1, 6):  # 1〜5の同心五角形
+        grid = [r] * (len(labels) + 1)
+        ax.plot(angles, grid, color='gray', linewidth=0.8, linestyle='--')
+
+    # 軸線（中心から各頂点までの線）
+    for angle in angles[:-1]:
+        ax.plot([angle, angle], [0, 5], color='gray', linewidth=0.8)
 
     # ラベルを外側 (r=5.5) に配置
     for angle, label in zip(angles[:-1], labels):
@@ -295,7 +303,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)
     ax.set_ylim(0, 5)
-    ax.grid(True)
+    ax.grid(False)  # デフォルトグリッドをOFF
 
     # PNGとして返す
     buf = BytesIO()

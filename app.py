@@ -275,7 +275,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     )
 
     # 半径方向(1〜5)の目盛りの文字サイズも大きくする
-    ax.set_rgrids([1, 2, 3, 4, 5], angle=0, fontproperties=font_prop, fontsize=14)
+    ax.set_rgrids([20, 40, 60, 80, 100], angle=0, fontproperties=font_prop, fontsize=14)
 
     ax.plot(angles, values, color='blue', linewidth=2)
     ax.fill(angles, values, color='skyblue', alpha=0.4)

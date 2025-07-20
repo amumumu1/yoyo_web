@@ -279,7 +279,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     for angle, label in zip(angles[:-1], labels):
         x = angle
         ax.text(
-            x, 7.5,  # 半径方向を5より外側に配置
+            x, 5.5,  # 半径方向を5より外側に配置
             label,
             ha='center', va='center',
             fontsize=18,

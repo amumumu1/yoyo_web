@@ -652,7 +652,7 @@ def analyze():
     
 
     # プロ距離の平均を事前に計算
-    pro_distance_mean = float(np.mean(distances)) if distances else 70
+    pro_distance_mean = float(np.mean(distances)) if distances else "なし"
 
     # レーダーチャート生成
     radar_b64, total_score = generate_radar_chart(

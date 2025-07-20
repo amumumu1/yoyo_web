@@ -11,7 +11,7 @@
     }
     body { font-family: 'Hiragino Sans', sans-serif; padding: 20px; }
     button { margin-right: 10px; padding: 10px; font-size: 16px; }
-    #score, #loopSummary, #loopDetails { font-size: 30px;}
+    #score, #loopSummary, #loopDetails, #proDistance { font-size: 30px;}
     pre { background: #f4f4f4; padding: 10px; max-height: 200px; overflow: auto; }
     #loading {
       display: none;
@@ -91,8 +91,8 @@
     <img id="radarChart" style="display: none; width: 600px; max-width: 100%; margin-bottom: 30px;" />
 
     <div id="score"></div>
+    <div id="proDistance"></div>
     <div id="loopSummary"></div>
-    <div id="proDistance" style="font-size: 28px; margin-top: 20px; display: none;"></div>
     <pre id="loopDetails" style="display: none;"></pre>
     <h3 id="Ken" style="display: none;">ループ検出</h3>
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
@@ -198,6 +198,7 @@
         //document.getElementById('heatmap').style.display = 'none';
         document.getElementById('comparePlot').style.display = 'none';
         document.getElementById('score').textContent = '';
+        document.getElementById('proDistance').textContent = '';
         document.getElementById('loopSummary').textContent = '';
         document.getElementById('loopDetails').style.display = 'none';
         document.getElementById('proExample').style.display = 'none';
@@ -346,6 +347,8 @@
           document.getElementById('HeatmapTitle').style.display = 'none';
           document.getElementById('Rui').style.display = 'none';
           document.getElementById('Pro').style.display = 'none';
+          document.getElementById('RadarTitle').style.display = 'none';
+          document.getElementById('proDistance').textContent = '';
     
 
           accOutput.style.display = 'none';

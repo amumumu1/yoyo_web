@@ -226,6 +226,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     s_std   = scale_score(loop_std, 0.2, 0.05, invert=True)   # 0.05で5, 0.2で0
     s_stable = scale_score(stable_loop, 7, 2, invert=True)    # 2周目で5, 7周目で0
     s_pro   = scale_score(pro_distance, 70, 20, invert=True)  # 20で5, 70で0
+    
 
     labels = ['類似度スコア', '平均ループ時間', '時間の標準偏差', '安定開始ループ', 'プロ距離']
     values = [s_score, s_mean, s_std, s_stable, s_pro]
@@ -555,6 +556,8 @@ def analyze():
         print("プロ比較エラー:", e)
         compare_plot_b64 = None
 
+    pro_distance_mean = float(np.mean(distances)) if distances else None
+
 
     # --- ループ検出グラフ描画 ---
     if len(loops) >= 2:
@@ -588,12 +591,7 @@ def analyze():
         plt.close(fig2)
         loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
 
-    # 仮の距離（プロ比較用）
-    # distances = [35] * n  # 例として35固定。実際はプロ比較で計算済みを使う
-
-    # スコア仮計算
-    # score = 100.0 if n >= 2 else 0.0
-    # stable_loop = 3 if n >= 2 else None
+    
 
     # レーダーチャート生成
     radar_b64 = generate_radar_chart(
@@ -617,7 +615,8 @@ def analyze():
         'loop_std_duration': loop_std_duration if len(loops) >= 2 else None,
         'loop_duration_list': loop_duration_list if len(loops) >= 2 else [],
         'compare_plot': compare_plot_b64,
-        'radar_chart': radar_b64
+        'radar_chart': radar_b64,
+        'pro_distance_mean': pro_distance_mean 
     }
     return jsonify(result)
 

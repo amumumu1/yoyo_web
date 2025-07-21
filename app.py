@@ -502,8 +502,11 @@ def analyze():
     vmin_self, vmax_self = np.nanmin(off_diag), np.nanmax(off_diag)
     vmin_pro,   vmax_pro   = np.nanmin(diag_mat), np.nanmax(diag_mat)
 
+    range_self = vmax_self - vmin_self
+    range_pro  = vmax_pro   - vmin_pro
+
     # 3) プロット
-    fig, ax = plt.subplots(figsize=(7, 7))
+    fig, ax = plt.subplots(figsize=(6, 6))
     # off-diagonal（自己比較）を先に
     cax1 = ax.matshow(off_diag, cmap='coolwarm',
                     vmin=vmin_self, vmax=vmax_self)
@@ -519,11 +522,13 @@ def analyze():
     ax.set_yticks(ticks); ax.set_yticklabels(labels)
     plt.tight_layout()
 
-    # 4) カラーバーを２つ表示（好きな方だけでもOK）
-    cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
-    cbar1.set_label('Self Range')
-    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.15)
-    cbar2.set_label('Pro Range')
+    # レンジが大きい方のカラーバーだけを表示
+    if range_self >= range_pro:
+        cbar = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label('Self Range')
+    else:
+        cbar = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label('Pro Range')
 
     # 5) PNG → Base64
     buf = BytesIO()

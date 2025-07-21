@@ -522,8 +522,8 @@ def analyze():
     off_diag_indices = np.where(~np.eye(n, dtype=bool))
     off_diag_vals = self_dtw_mat[off_diag_indices]
     if off_diag_vals.size > 0 and np.nanmax(off_diag_vals) != np.nanmin(off_diag_vals):
-        norm_off_diag = (off_diag_vals - np.nanmin(off_diag_vals)) / (np.nanmax(off_diag_vals) - np.nanmin(off_diag_vals))
-        combined_mat[off_diag_indices] = norm_off_diag
+        # norm_off_diag = (off_diag_vals - np.nanmin(off_diag_vals)) / (np.nanmax(off_diag_vals) - np.nanmin(off_diag_vals))
+        combined_mat[off_diag_indices] 
     else:
         combined_mat[off_diag_indices] = 0.0
 
@@ -531,8 +531,8 @@ def analyze():
     diag_indices = np.diag_indices(n)
     diag_vals = np.diag(pro_mat)
     if diag_vals.size > 0 and np.nanmax(diag_vals) != np.nanmin(diag_vals):
-        norm_diag = (diag_vals - np.nanmin(diag_vals)) / (np.nanmax(diag_vals) - np.nanmin(diag_vals))
-        combined_mat[diag_indices] = norm_diag
+        # norm_diag = (diag_vals - np.nanmin(diag_vals)) / (np.nanmax(diag_vals) - np.nanmin(diag_vals))
+        combined_mat[diag_indices] 
     else:
         combined_mat[diag_indices] = 0.0
 

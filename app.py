@@ -506,7 +506,7 @@ def analyze():
     range_pro  = vmax_pro   - vmin_pro
 
     # 3) プロット
-    fig, ax = plt.subplots(figsize=(6, 6))
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=100)
     # off-diagonal（自己比較）を先に
     cax1 = ax.matshow(off_diag, cmap='coolwarm',
                     vmin=vmin_self, vmax=vmax_self)

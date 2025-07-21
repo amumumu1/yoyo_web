@@ -147,8 +147,7 @@
           ${detail.heatmap ? `<div><h4>非対角成分：自己比較<br>対角成分：プロ比較（まとめて正規化）</h4><img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ"></div>` : ''}
           ${detail.pro_heatmap ? `<div><h4>対角成分：プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}" alt="プロ距離ヒートマップ"></div>` : ''}
         </div>
-        ${detail.combined_heatmap ? `<div><h4>非対角成分：自己比較<br>対角成分：プロ比較（それぞれ正規化）</h4><img src="data:image/png;base64,${detail.combined_heatmap}" alt="合成ヒートマップ"></div>` : ''}
-
+        ${detail.combined_heatmap ? `<div><h4>非対角成分：自己比較<br>対角成分：プロ比較（それぞれ正規化）</h4><img src="data:image/png;base64,${detail.combined_heatmap}" alt="合成ヒートマップ" style="max-width:300px;"></div>` : ''}
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
       container.style.display = 'block';

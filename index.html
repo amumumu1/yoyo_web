@@ -40,6 +40,10 @@
       font-size: 30px;  /* 例：大きくしたいサイズに変更。30px や 32px も可 */
     }
 
+    #CombinedContainer{
+      text-align: center;
+    }
+
     .heatmap-grid {
       display: flex;
       justify-content: space-between;
@@ -115,10 +119,11 @@
         <h4>対角成分：プロ比較</h4>
         <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
       </div>
-      <div>
-        <h4>非対角成分：自己比較　対角成分：プロ比較（それぞれ正規化）</h4>
-        <img id="combinedHeatmap" alt="合成ヒートマップ" style="max-width: 100%;" />
-      </div>
+    </div>
+
+    <div id="CombinedContainer" style="display: none; text-align: center; margin-top: 30px;">
+      <h4>非対角成分：自己比較　対角成分：プロ比較（それぞれ正規化）</h4>
+      <img id="combinedHeatmap" alt="合成ヒートマップ" style="max-width: 90%;" />
     </div>
 
     <h3 id="Pro" style="display: none;">プロと比較</h3>
@@ -227,6 +232,7 @@
         document.getElementById('Ken').style.display = 'none';
         document.getElementById('HeatmapTitle').style.display = 'none';
         document.getElementById('Rui').style.display = 'none';
+        document.getElementById('CombinedContainer').style.display = 'none';
         document.getElementById('Pro').style.display = 'none';
         document.getElementById('saveSection').style.display = 'none';
         document.getElementById('radarChart').style.display = 'none';
@@ -355,6 +361,7 @@
           document.getElementById('Ken').style.display = 'none';
           document.getElementById('HeatmapTitle').style.display = 'none';
           document.getElementById('Rui').style.display = 'none';
+          document.getElementById('CombinedContainer').style.display = 'none';
           document.getElementById('Pro').style.display = 'none';
           document.getElementById('RadarTitle').style.display = 'none';
           document.getElementById('proDistance').textContent = '';
@@ -393,6 +400,7 @@
           document.getElementById('Ken').style.display = 'block';
           document.getElementById('HeatmapTitle').style.display = 'block';
           document.getElementById('Rui').style.display = 'block';
+          document.getElementById('CombinedContainer').style.display='block';
           document.getElementById('Pro').style.display = 'block';
 
           accOutput.style.display = 'block';
@@ -442,16 +450,19 @@
               proImg.src = `data:image/png;base64,${json.pro_heatmap}`;
               proImg.style.display = 'block';
             }
-            if (json.combined_heatmap) {
-              const combinedImg = document.getElementById('combinedHeatmap');
-              combinedImg.src = `data:image/png;base64,${json.combined_heatmap}`;
-              combinedImg.style.display = 'block';
-            }
             container.style.display = 'flex';
             title.style.display = 'block';
           } else {
             container.style.display = 'none';
             title.style.display = 'none';
+          }
+
+          // Combined Heatmap の独立表示
+          if (json.combined_heatmap) {
+            document.getElementById('combinedHeatmap').src = `data:image/png;base64,${json.combined_heatmap}`;
+            document.getElementById('CombinedContainer').style.display = 'block';
+          } else {
+            document.getElementById('CombinedContainer').style.display = 'none';
           }
 
 

@@ -518,17 +518,17 @@ def analyze():
     # --- Selfの非対角とPro距離の対角を合体したヒートマップ ---
     combined_mat = np.full_like(self_dtw_mat, np.nan, dtype=float)
 
-    # 非対角成分（自己比較の距離そのまま）
+    # 1. 非対角成分は自己比較の距離をそのまま使う
     off_diag_indices = np.where(~np.eye(n, dtype=bool))
     combined_mat[off_diag_indices] = self_dtw_mat[off_diag_indices]
 
-    # 対角成分（プロ距離そのまま）
+    # 2. 対角成分はプロ比較ヒートマップ（pro_mat）の値をそのまま使う
     diag_indices = np.diag_indices(n)
     combined_mat[diag_indices] = np.diag(pro_mat)
 
-    # 描画（距離スケールそのまま）
+    # 3. 描画（正規化なしで距離そのまま）
     fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(combined_mat, cmap='coolwarm')  # vmin/vmax指定しない
+    cax = ax.matshow(combined_mat, cmap='coolwarm')  # vmin/vmax自動
     plt.colorbar(cax)
     ax.set_title('Combined Heatmap (Self Off-Diag + Pro Diag)')
     tick_labels = [str(i+1) for i in range(n)]
@@ -541,7 +541,6 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
-
 
 
 

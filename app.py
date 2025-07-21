@@ -541,6 +541,7 @@ def analyze():
     # それぞれカラーバーを作成
     cbar1 = fig.colorbar(cax1, cax=cbar_ax1)
     cbar1.set_label("Self Range")
+    cbar1.ax.yaxis.set_label_position('left') 
 
     cbar2 = fig.colorbar(cax2, cax=cbar_ax2)
     cbar2.set_label("Pro Range")

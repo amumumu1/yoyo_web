@@ -535,8 +535,8 @@ def analyze():
 
  
     # カラーバー用の専用軸を追加して、座標で配置（左: x0, 下: y0, 幅, 高さ）
-    cbar_ax1 = fig.add_axes([0.08, 0.15, 0.02, 0.7])  # 1本目（固定）
-    cbar_ax2 = fig.add_axes([0.10, 0.15, 0.02, 0.7])  # 2本目（好きな位置）
+    cbar_ax1 = fig.add_axes([0.06, 0.15, 0.02, 0.7])  # 1本目（固定）
+    cbar_ax2 = fig.add_axes([1.00, 0.15, 0.02, 0.7])  # 2本目（好きな位置）
 
     # それぞれカラーバーを作成
     cbar1 = fig.colorbar(cax1, cax=cbar_ax1)

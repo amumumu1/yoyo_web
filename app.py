@@ -538,7 +538,7 @@ def analyze():
     cbar1.set_label('Self Range', fontsize=12)
     cbar1.ax.tick_params(labelsize=10)
 
-    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.12)
+    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.50)
     cbar2.set_label('Pro Range', fontsize=12)
     cbar2.ax.tick_params(labelsize=10)
 

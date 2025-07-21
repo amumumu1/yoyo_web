@@ -513,7 +513,7 @@ def analyze():
 
     # 3) 描画
     # 図の比率を正方形寄りにしてフォントサイズを調整
-    fig, ax = plt.subplots(figsize=(7, 4), dpi=120)
+    fig, ax = plt.subplots(figsize=(7, 5), dpi=120)
 
     # まず off-diagonal（自己比較距離）を描画
     cax1 = ax.matshow(off_diag, cmap='coolwarm',
@@ -535,8 +535,8 @@ def analyze():
 
  
     # カラーバー用の専用軸を追加して、座標で配置（左: x0, 下: y0, 幅, 高さ）
-    cbar_ax1 = fig.add_axes([0.80, 0.15, 0.02, 0.7])  # 1本目（固定）
-    cbar_ax2 = fig.add_axes([1.20, 0.15, 0.02, 0.7])  # 2本目（好きな位置）
+    cbar_ax1 = fig.add_axes([0.50, 0.15, 0.02, 0.7])  # 1本目（固定）
+    cbar_ax2 = fig.add_axes([0.80, 0.15, 0.02, 0.7])  # 2本目（好きな位置）
 
     # それぞれカラーバーを作成
     cbar1 = fig.colorbar(cax1, cax=cbar_ax1)

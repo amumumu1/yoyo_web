@@ -512,7 +512,8 @@ def analyze():
         vmin_pro, vmax_pro = np.nanmin(diag_mat), np.nanmax(diag_mat)
 
     # 3) 描画
-    fig, ax = plt.subplots(figsize=(20, 6), dpi=100)
+    # 図の比率を正方形寄りにしてフォントサイズを調整
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=120)
 
     # まず off-diagonal（自己比較距離）を描画
     cax1 = ax.matshow(off_diag, cmap='coolwarm',
@@ -532,11 +533,17 @@ def analyze():
     ax.set_yticklabels(labels)
     plt.tight_layout()
 
-    # 4) カラーバーを2つ表示
+    # カラーバーを左右に配置してフォントサイズ調整
     cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
-    cbar1.set_label('Self Range')
-    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.15)
-    cbar2.set_label('Pro Range')
+    cbar1.set_label('Self Range', fontsize=12)
+    cbar1.ax.tick_params(labelsize=10)
+
+    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.12)
+    cbar2.set_label('Pro Range', fontsize=12)
+    cbar2.ax.tick_params(labelsize=10)
+
+    # 余白調整（タイトルと軸が重ならないように）
+    plt.subplots_adjust(top=0.9, bottom=0.1, left=0.15, right=0.85)
 
     # 5) PNG → Base64 変換
     buf = BytesIO()

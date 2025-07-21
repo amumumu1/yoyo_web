@@ -434,14 +434,7 @@ def analyze():
 
 
 
-    # --- ユーザー側ループのsegmentsを生成 ---
-    segments = []
-    for v1, p, v2 in loops:
-        mask = (quat_df['time'] >= t_sec.iloc[v1]) & (quat_df['time'] <= t_sec.iloc[v2])
-        segments.append(quat_df[mask].reset_index(drop=True))
-
-     # --- プロ距離を上書きする前に、自分自身のDTW行列を保存 ---
-    self_dtw_mat = dtw_mat.copy()
+    
 
 
     # --- プロ代表ループとの比較 ---

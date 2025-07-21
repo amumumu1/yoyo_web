@@ -503,7 +503,7 @@ def analyze():
     vmin_pro,   vmax_pro   = np.nanmin(diag_mat), np.nanmax(diag_mat)
 
     # 3) プロット
-    fig, ax = plt.subplots(figsize=(10, 6),dpi =100)
+    fig, ax = plt.subplots(figsize=(15, 6),dpi =100)
     # off-diagonal（自己比較）を先に
     cax1 = ax.matshow(off_diag, cmap='coolwarm',
                     vmin=vmin_self, vmax=vmax_self)

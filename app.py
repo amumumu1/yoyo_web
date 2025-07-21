@@ -528,7 +528,6 @@ def analyze():
     combined_mat[off_diag_indices] = self_dtw_mat[off_diag_indices]
 
     # 対角成分（プロ距離）
-    diag_indices = np.diag_indices(n)
     for i, d in enumerate(distances):
         combined_mat[i, i] = d
 

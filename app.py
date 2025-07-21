@@ -492,6 +492,12 @@ def analyze():
     # --- combined_heatmap の描画（一例） ---
     fig, ax = plt.subplots(figsize=(6, 6), dpi=100)
 
+    cax1 = ax.matshow(off_diag, cmap='coolwarm',
+                  vmin=vmin_self, vmax=vmax_self)
+    # diagonal（プロ比較）を上に重ね
+    cax2 = ax.matshow(diag_mat, cmap='coolwarm',
+                    vmin=vmin_pro,   vmax=vmax_pro)
+
     # off-diagonal（自己比較）
     off_diag = orig_self_mat.copy()
     np.fill_diagonal(off_diag, np.nan)
@@ -515,11 +521,11 @@ def analyze():
     plt.tight_layout()
 
     # レンジが大きい方のイメージのみカラーバー表示（ラベルなし）
-    range_self = vmax_self - vmin_self
-    if range_self >= (vmax_pro - vmin_pro):
-        cax = fig.colorbar(ax.images[-2], ax=ax, fraction=0.046, pad=0.04)
-    else:
-        cax = fig.colorbar(ax.images[-1], ax=ax, fraction=0.046, pad=0.04)
+    # 4) カラーバーを２つ表示（好きな方だけでもOK）
+    cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
+    
+    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.15)
+   
 
     # Base64 エンコード
     buf = BytesIO()

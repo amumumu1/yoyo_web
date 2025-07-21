@@ -99,16 +99,20 @@
     <h3 id="HeatmapTitle" style="display: none;">ループ類似度</h3>
     <div id="Rui" style="display: none;" class="heatmap-grid">
       <div>
-        <h4>自分 vs 自分</h4>
+        <h4>自己比較</h4>
         <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
       </div>
       <div>
-        <h4>自分 vs 自分（対角線=プロ）</h4>
+        <h4>非対角成分：自己比較　対角成分：プロ比較（まとめて正規化）</h4>
         <img id="heatmap" alt="ヒートマップ" style="max-width: 100%;" />
       </div>
       <div>
-        <h4>対角線プロ比較</h4>
+        <h4>対角成分：プロ比較</h4>
         <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
+      </div>
+      <div>
+        <h4>非対角成分：自己比較　対角成分：プロ比較（それぞれ正規化）</h4>
+        <img id="combinedHeatmap" alt="合成ヒートマップ" style="max-width: 100%;" />
       </div>
     </div>
 
@@ -432,6 +436,11 @@
               const proImg = document.getElementById('proHeatmap');
               proImg.src = `data:image/png;base64,${json.pro_heatmap}`;
               proImg.style.display = 'block';
+            }
+            if (json.combined_heatmap) {
+              const combinedImg = document.getElementById('combinedHeatmap');
+              combinedImg.src = `data:image/png;base64,${json.combined_heatmap}`;
+              combinedImg.style.display = 'block';
             }
             container.style.display = 'flex';
             title.style.display = 'block';

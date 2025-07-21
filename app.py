@@ -512,6 +512,44 @@ def analyze():
     plt.close(fig)
     self_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
+        # --- Selfの非対角とPro距離の対角を合体したヒートマップ ---
+    combined_mat = np.full_like(self_dtw_mat, np.nan, dtype=float)
+
+    # 非対角成分（self_dtw_mat）をコピー
+    off_diag_indices = np.where(~np.eye(n, dtype=bool))
+    off_diag_vals = self_dtw_mat[off_diag_indices]
+    if off_diag_vals.size > 0 and np.nanmax(off_diag_vals) != np.nanmin(off_diag_vals):
+        norm_off_diag = (off_diag_vals - np.nanmin(off_diag_vals)) / (np.nanmax(off_diag_vals) - np.nanmin(off_diag_vals))
+        combined_mat[off_diag_indices] = norm_off_diag
+    else:
+        combined_mat[off_diag_indices] = 0.0
+
+    # 対角成分（pro_matの距離）をコピー
+    diag_indices = np.diag_indices(n)
+    diag_vals = np.diag(pro_mat)
+    if diag_vals.size > 0 and np.nanmax(diag_vals) != np.nanmin(diag_vals):
+        norm_diag = (diag_vals - np.nanmin(diag_vals)) / (np.nanmax(diag_vals) - np.nanmin(diag_vals))
+        combined_mat[diag_indices] = norm_diag
+    else:
+        combined_mat[diag_indices] = 0.0
+
+    # 描画
+    fig, ax = plt.subplots(figsize=(6, 6))
+    cax = ax.matshow(combined_mat, cmap='coolwarm', vmin=0, vmax=1)
+    plt.colorbar(cax)
+    ax.set_title('Combined Heatmap (Self Off-Diag + Pro Diag)')
+    tick_labels = [str(i+1) for i in range(n)]
+    ax.set_xticks(range(n))
+    ax.set_yticks(range(n))
+    ax.set_xticklabels(tick_labels)
+    ax.set_yticklabels(tick_labels)
+    plt.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
+
 
 
 
@@ -704,6 +742,7 @@ def analyze():
         'self_heatmap': self_heatmap_b64,  # ← 純粋な自分同士比較
         'heatmap': heatmap_b64,
         'pro_heatmap': pro_heatmap_b64,  # プロ距離だけのヒートマップ（新規）
+        'combined_heatmap': combined_heatmap_b64,  # ← 追加
         'loop_plot': loop_plot_b64,
         'stable_loop': stable_loop if len(loops) >= 2 else None,
         'loop_count': n,

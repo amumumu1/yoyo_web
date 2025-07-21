@@ -515,30 +515,20 @@ def analyze():
     plt.close(fig)
     self_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-        # --- Selfの非対角とPro距離の対角を合体したヒートマップ ---
+    # --- Selfの非対角とPro距離の対角を合体したヒートマップ ---
     combined_mat = np.full_like(self_dtw_mat, np.nan, dtype=float)
 
-    # 非対角成分（self_dtw_mat）をコピー
+    # 非対角成分（自己比較の距離そのまま）
     off_diag_indices = np.where(~np.eye(n, dtype=bool))
-    off_diag_vals = self_dtw_mat[off_diag_indices]
-    if off_diag_vals.size > 0 and np.nanmax(off_diag_vals) != np.nanmin(off_diag_vals):
-        # norm_off_diag = (off_diag_vals - np.nanmin(off_diag_vals)) / (np.nanmax(off_diag_vals) - np.nanmin(off_diag_vals))
-        combined_mat[off_diag_indices] 
-    else:
-        combined_mat[off_diag_indices] = 0.0
+    combined_mat[off_diag_indices] = self_dtw_mat[off_diag_indices]
 
-    # 対角成分（pro_matの距離）をコピー
+    # 対角成分（プロ距離そのまま）
     diag_indices = np.diag_indices(n)
-    diag_vals = np.diag(pro_mat)
-    if diag_vals.size > 0 and np.nanmax(diag_vals) != np.nanmin(diag_vals):
-        # norm_diag = (diag_vals - np.nanmin(diag_vals)) / (np.nanmax(diag_vals) - np.nanmin(diag_vals))
-        combined_mat[diag_indices] 
-    else:
-        combined_mat[diag_indices] = 0.0
+    combined_mat[diag_indices] = np.diag(pro_mat)
 
-    # 描画
+    # 描画（距離スケールそのまま）
     fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(combined_mat, cmap='coolwarm', vmin=0, vmax=1)
+    cax = ax.matshow(combined_mat, cmap='coolwarm')  # vmin/vmax指定しない
     plt.colorbar(cax)
     ax.set_title('Combined Heatmap (Self Off-Diag + Pro Diag)')
     tick_labels = [str(i+1) for i in range(n)]
@@ -551,6 +541,7 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 
 

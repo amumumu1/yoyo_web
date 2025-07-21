@@ -520,32 +520,32 @@ def analyze():
     plt.close(fig)
     self_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-    # --- Selfの非対角成分（オリジナル）とPro距離の対角成分を合体 ---
-    combined_mat = np.full((n, n), np.nan, dtype=float)
-
-    # 非対角成分（自己比較）
-    off_diag_indices = np.where(~np.eye(n, dtype=bool))
-    combined_mat[off_diag_indices] = self_dtw_mat[off_diag_indices]
-
-    # 対角成分（プロ距離）
+        # --- combined_heatmap の生成 ---
+    # self_dtw_mat をコピーして、対角成分だけをプロ距離で上書き
+    combined_mat = self_dtw_mat.copy()
     for i, d in enumerate(distances):
         combined_mat[i, i] = d
 
-    # 描画
+    # ヒートマップ描画
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(combined_mat, cmap='coolwarm')
     plt.colorbar(cax)
-    ax.set_title('Combined Heatmap (Self Off-Diag + Pro Diag)')
+    ax.set_title('Combined Loop Similarity\n(Off-diagonal: Self, Diagonal: Pro)')
     tick_labels = [str(i+1) for i in range(n)]
     ax.set_xticks(range(n))
     ax.set_yticks(range(n))
     ax.set_xticklabels(tick_labels)
     ax.set_yticklabels(tick_labels)
     plt.tight_layout()
-    buf = BytesIO()
-    fig.savefig(buf, format='png')
+
+    # PNG をバッファに書き出し、Base64 エンコード
+    buf_comb = BytesIO()
+    fig.savefig(buf_comb, format='png')
     plt.close(fig)
-    combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+    combined_heatmap_b64 = base64.b64encode(buf_comb.getvalue()).decode('ascii')
+
+
+    
 
     
 

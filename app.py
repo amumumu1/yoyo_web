@@ -534,13 +534,14 @@ def analyze():
     plt.tight_layout()
 
     # カラーバーを左右に配置してフォントサイズ調整
-    cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
-    cbar1.set_label('Self Range', fontsize=12)
-    cbar1.ax.tick_params(labelsize=10)
 
-    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.50)
-    cbar2.set_label('Pro Range', fontsize=12)
+    cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04, use_gridspec=False)
+    cbar1.set_label('Self Range')
+    cbar1.ax.tick_params(labelsize=10)
+    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.20, use_gridspec=False)
+    cbar2.set_label('Pro Range')
     cbar2.ax.tick_params(labelsize=10)
+
 
     # 余白調整（タイトルと軸が重ならないように）
     plt.subplots_adjust(top=0.9, bottom=0.1, left=0.15, right=0.85)

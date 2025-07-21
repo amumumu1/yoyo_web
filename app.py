@@ -489,8 +489,7 @@ def analyze():
     pro_heatmap_b64 = encode_heatmap(pro_mat, 'Pro vs Each Loop (Diagonal Only)')
 
    # --- combined_heatmap: Self の非対角 + Pro の対角 を
-    #     元の色スケールのまま重ねる ---
-    # 1) 自己比較行列を off_diag、プロ距離行列を diag_mat として用意
+    # 1) off_diag, diag_mat は既に作成済みの想定
     off_diag = orig_self_mat.copy()
     np.fill_diagonal(off_diag, np.nan)
 
@@ -498,43 +497,50 @@ def analyze():
     for i, d in enumerate(distances):
         diag_mat[i, i] = d
 
-    # 2) 各々の vmin/vmax を計算
-    vmin_self, vmax_self = np.nanmin(off_diag), np.nanmax(off_diag)
-    vmin_pro,   vmax_pro   = np.nanmin(diag_mat), np.nanmax(diag_mat)
+    # 2) vmin/vmax の安全な算出
+    # プロ側の vmin/vmax は必ず取得できる前提とします
+    vmin_pro = np.nanmin(diag_mat)
+    vmax_pro = np.nanmax(diag_mat)
 
-    range_self = vmax_self - vmin_self
-    range_pro  = vmax_pro   - vmin_pro
+    # 自己側は有効値がない（全て NaN）ならプロのレンジを使う
+    mask_self = np.isfinite(off_diag)
+    if mask_self.any():
+        vmin_self = np.nanmin(off_diag)
+        vmax_self = np.nanmax(off_diag)
+    else:
+        vmin_self, vmax_self = vmin_pro, vmax_pro
 
     # 3) プロット
     fig, ax = plt.subplots(figsize=(6, 6), dpi=100)
-    # off-diagonal（自己比較）を先に
-    cax1 = ax.matshow(off_diag, cmap='coolwarm',
-                    vmin=vmin_self, vmax=vmax_self)
-    # diagonal（プロ比較）を上に重ね
-    cax2 = ax.matshow(diag_mat, cmap='coolwarm',
-                    vmin=vmin_pro,   vmax=vmax_pro)
+    # 自己オフダイアグ
+    ax.matshow(off_diag, cmap='coolwarm', vmin=vmin_self, vmax=vmax_self)
+    # プロ対角
+    ax.matshow(diag_mat, cmap='coolwarm', vmin=vmin_pro,   vmax=vmax_pro)
 
-    # タイトル・軸回り
-    ax.set_title('Combined Heatmap\n(Self Off‑Diag in Self‑Scale + Pro Diag in Pro‑Scale)')
+    # 軸ラベルなど
     ticks = list(range(n))
     labels = [str(i+1) for i in ticks]
     ax.set_xticks(ticks); ax.set_xticklabels(labels)
     ax.set_yticks(ticks); ax.set_yticklabels(labels)
+    ax.set_title('Combined Heatmap\n(Self Off‑Diag + Pro Diag)')
     plt.tight_layout()
 
-    # レンジが大きい方のカラーバーだけを表示
+    # レンジの大きい方だけカラーバー
+    range_self = vmax_self - vmin_self
+    range_pro  = vmax_pro  - vmin_pro
     if range_self >= range_pro:
-        cbar = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label('Self Range')
+        cax = fig.colorbar(ax.images[-2], ax=ax, fraction=0.046, pad=0.04)
+        cax.set_label('Self Range')
     else:
-        cbar = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label('Pro Range')
+        cax = fig.colorbar(ax.images[-1], ax=ax, fraction=0.046, pad=0.04)
+        cax.set_label('Pro Range')
 
-    # 5) PNG → Base64
+    # 4) Base64 エンコード
     buf = BytesIO()
-    fig.savefig(buf, format='png')
+    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', pad_inches=0.1)
     plt.close(fig)
     combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 
     

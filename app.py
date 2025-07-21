@@ -27,6 +27,22 @@ plt.rcParams['font.family'] = font_prop.get_name()
 app = Flask(__name__)
 CORS(app)
 
+def encode_heatmap(mat: np.ndarray, title: str) -> str:
+    """行列 mat をヒートマップ化して Base64 文字列で返す"""
+    fig, ax = plt.subplots(figsize=(6, 6))
+    cax = ax.matshow(mat, cmap='coolwarm')
+    plt.colorbar(cax)
+    ax.set_title(title)
+    ticks = list(range(mat.shape[0]))
+    labels = [str(i+1) for i in ticks]
+    ax.set_xticks(ticks); ax.set_xticklabels(labels)
+    ax.set_yticks(ticks); ax.set_yticklabels(labels)
+    plt.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode('ascii')
+
 DB_PATH = "results.db"
 
 # --- データベース初期化 ---
@@ -412,6 +428,11 @@ def analyze():
             dtw_mat[a, b] = dw + dx + dy + dz
 
 
+    # --- オリジナルの自己比較行列をバックアップ ---
+    orig_self_mat = dtw_mat.copy()
+
+
+
 
     # --- ユーザー側ループのsegmentsを生成 ---
     segments = []
@@ -454,101 +475,31 @@ def analyze():
         print("プロ比較エラー:", e)
         distances = [0]*len(segments)
 
+    
+    
 
-        # --- combined_heatmap の生成 ---
-    # self_dtw_mat をコピーして、対角成分だけをプロ距離で上書き
-    combined_mat = self_dtw_mat.copy()
+    
+
+    # --- プロ距離を対角に埋め込んだ行列（heatmap_b64 用） ---
+    combined_for_heatmap = orig_self_mat.copy()
+    for i, d in enumerate(distances):
+        combined_for_heatmap[i, i] = d
+    heatmap_b64 = encode_heatmap(combined_for_heatmap, 'Loop Similarity\n(Self Off‑Diag + Pro Diag)')
+
+    # --- 純粋な自己比較ヒートマップ ---
+    self_heatmap_b64 = encode_heatmap(orig_self_mat, 'Self Loop Similarity (Original)')
+
+    # --- プロ対角のみ行列 & ヒートマップ ---
+    pro_mat = np.full((n, n), np.nan)
+    for i, d in enumerate(distances):
+        pro_mat[i, i] = d
+    pro_heatmap_b64 = encode_heatmap(pro_mat, 'Pro vs Each Loop (Diagonal Only)')
+
+    # --- combined_heatmap: Self 非対角 + Pro 対角 ---
+    combined_mat = orig_self_mat.copy()
     for i, d in enumerate(distances):
         combined_mat[i, i] = d
-
-    # ヒートマップ描画
-    fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(combined_mat, cmap='coolwarm')
-    plt.colorbar(cax)
-    ax.set_title('Combined Loop Similarity\n(Off-diagonal: Self, Diagonal: Pro)')
-    tick_labels = [str(i+1) for i in range(n)]
-    ax.set_xticks(range(n))
-    ax.set_yticks(range(n))
-    ax.set_xticklabels(tick_labels)
-    ax.set_yticklabels(tick_labels)
-    plt.tight_layout()
-
-    # PNG をバッファに書き出し、Base64 エンコード
-    buf_comb = BytesIO()
-    fig.savefig(buf_comb, format='png')
-    plt.close(fig)
-    combined_heatmap_b64 = base64.b64encode(buf_comb.getvalue()).decode('ascii')
-
-
-    
-    
-
-    
-
-    # --- 対角線にプロ距離を埋め込む ---
-    for i, d in enumerate(distances):
-        dtw_mat[i, i] = d
-
-    # --- ヒートマップ描画（これが唯一の比較結果）---
-    fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(dtw_mat, cmap='coolwarm')
-    plt.colorbar(cax)
-    ax.set_title('Loop Similarity (Diagonal = Pro Distance)')
-    tick_labels = [str(i+1) for i in range(dtw_mat.shape[0])]
-    ax.set_xticks(range(dtw_mat.shape[0]))
-    ax.set_yticks(range(dtw_mat.shape[0]))
-    ax.set_xticklabels(tick_labels)
-    ax.set_yticklabels(tick_labels)
-    plt.tight_layout()
-    buf = BytesIO()
-    fig.savefig(buf, format='png')
-    plt.close(fig)
-    heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
-
-    # --- プロ比較専用のヒートマップ（対角線だけ距離、他は真っ白） ---
-    pro_mat = np.full((n, n), np.nan)  # NaNで塗りつぶし（白表示用）
-    for i, d in enumerate(distances):
-        pro_mat[i, i] = d  # 対角線にプロ距離
-
-    fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(pro_mat, cmap='coolwarm')
-    plt.colorbar(cax)
-    ax.set_title('Pro vs Each Loop (Diagonal Only)')
-    tick_labels = [str(i+1) for i in range(n)]
-    ax.set_xticks(range(n))
-    ax.set_yticks(range(n))
-    ax.set_xticklabels(tick_labels)
-    ax.set_yticklabels(tick_labels)
-    plt.tight_layout()
-    buf = BytesIO()
-    fig.savefig(buf, format='png')
-    plt.close(fig)
-    pro_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
-
-   
-    # ... （プロとの距離を対角線に上書きする処理はそのまま）
-    for i, d in enumerate(distances):
-        dtw_mat[i, i] = d
-
-    # --- 自分自身のオリジナルDTWヒートマップ ---
-    fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(self_dtw_mat, cmap='coolwarm')
-    plt.colorbar(cax)
-    ax.set_title('Self Loop Similarity (Original)')
-    tick_labels = [str(i+1) for i in range(n)]
-    ax.set_xticks(range(n))
-    ax.set_yticks(range(n))
-    ax.set_xticklabels(tick_labels)
-    ax.set_yticklabels(tick_labels)
-    plt.tight_layout()
-    buf = BytesIO()
-    fig.savefig(buf, format='png')
-    plt.close(fig)
-    self_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
-
-    
-
-    
+    combined_heatmap_b64 = encode_heatmap(combined_mat, 'Combined Heatmap\n(Self Off‑Diag + Pro Diag)')
 
     
 

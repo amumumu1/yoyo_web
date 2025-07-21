@@ -530,10 +530,9 @@ def analyze():
     range_pro  = vmax_pro  - vmin_pro
     if range_self >= range_pro:
         cax = fig.colorbar(ax.images[-2], ax=ax, fraction=0.046, pad=0.04)
-        cax.set_label('Self Range')
     else:
         cax = fig.colorbar(ax.images[-1], ax=ax, fraction=0.046, pad=0.04)
-        cax.set_label('Pro Range')
+     
 
     # 4) Base64 エンコード
     buf = BytesIO()

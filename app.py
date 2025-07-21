@@ -473,38 +473,29 @@ def analyze():
 
     
 
-    # --- プロ距離を対角に埋め込んだ行列（heatmap_b64 用） ---
-    combined_for_heatmap = orig_self_mat.copy()
-    for i, d in enumerate(distances):
-        combined_for_heatmap[i, i] = d
-    heatmap_b64 = encode_heatmap(combined_for_heatmap, 'Loop Similarity\n(Self Off‑Diag + Pro Diag)')
-
-    # --- 純粋な自己比較ヒートマップ ---
-    self_heatmap_b64 = encode_heatmap(orig_self_mat, 'Self Loop Similarity (Original)')
-
     # --- プロ対角のみ行列 & ヒートマップ ---
     pro_mat = np.full((n, n), np.nan)
     for i, d in enumerate(distances):
         pro_mat[i, i] = d
-    # 色のスケール: 0が青、最大が赤になるように
+
+    # 色のスケール: 0が青、最大が赤になるように固定
     vmin, vmax = 0, np.nanmax(pro_mat) if not np.all(np.isnan(pro_mat)) else 1
 
-    # 描画
     fig, ax = plt.subplots(figsize=(6, 6))
-    cax = ax.matshow(pro_mat, cmap='coolwarm', vmin=vmin, vmax=vmax)  # vmin固定
+    cax = ax.matshow(pro_mat, cmap='coolwarm', vmin=vmin, vmax=vmax)
     plt.colorbar(cax)
-    ax.set_title(title)
+    ax.set_title('Pro vs Each Loop (Diagonal Only)')
     ticks = list(range(n))
     labels = [str(i+1) for i in ticks]
     ax.set_xticks(ticks); ax.set_xticklabels(labels)
     ax.set_yticks(ticks); ax.set_yticklabels(labels)
     plt.tight_layout()
 
-    # Base64へ変換
     buf = BytesIO()
     fig.savefig(buf, format='png')
     plt.close(fig)
-    return base64.b64encode(buf.getvalue()).decode('ascii')
+    pro_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
    # --- combined_heatmap: Self の非対角 + Pro の対角 ---
     # 元の色スケールのまま別々に重ねる

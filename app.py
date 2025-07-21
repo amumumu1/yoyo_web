@@ -491,7 +491,7 @@ def analyze():
         pro_mat[i, i] = d
 
     # 色のスケール: 0が青、最大が赤になるように固定
-    vmin, vmax = 0, np.nanmax(pro_mat) if not np.all(np.isnan(pro_mat)) else 1
+    vmin, vmax = 20, 120
 
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(pro_mat, cmap='coolwarm', vmin=vmin, vmax=vmax)

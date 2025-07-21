@@ -521,17 +521,14 @@ def analyze():
     for i, d in enumerate(distances):
         diag_mat[i, i] = d
 
-    # 2) vmin/vmax を計算（空でない場合のみ）
-    # if np.all(np.isnan(off_diag)):  # 自己比較が存在しない（n<=1 の場合）
-    #     vmin_self, vmax_self = 0, 1  # ダミー範囲
-    # else:
-    #     vmin_self, vmax_self = np.nanmin(off_diag), np.nanmax(off_diag)
+    # ---- vmin/vmax 設定 ----
+    # 自己比較スケール
+    if np.all(np.isnan(off_diag)):  # n<=1 の場合
+        vmin_self, vmax_self = 0, 1
+    else:
+        vmin_self, vmax_self = np.nanmin(off_diag), np.nanmax(off_diag)
 
-    # if np.all(np.isnan(diag_mat)):  # プロ距離が全て NaN の場合
-    #     vmin_pro, vmax_pro = 0, 1
-    # else:
-    #     vmin_pro, vmax_pro = np.nanmin(diag_mat), np.nanmax(diag_mat)
-
+    # プロ比較スケール（pro_heatmap_b64と同じ固定範囲）
     vmin_pro, vmax_pro = 20, 120
 
     # 3) 描画

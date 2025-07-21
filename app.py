@@ -489,33 +489,22 @@ def analyze():
     pro_heatmap_b64 = encode_heatmap(pro_mat, 'Pro vs Each Loop (Diagonal Only)')
 
    # --- combined_heatmap: Self の非対角 + Pro の対角 を
-    # 1) off_diag, diag_mat は既に作成済みの想定
+    # --- combined_heatmap の描画（一例） ---
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=100)
+
+    # off-diagonal（自己比較）
     off_diag = orig_self_mat.copy()
     np.fill_diagonal(off_diag, np.nan)
+    vmin_self, vmax_self = (np.nanmin(off_diag), np.nanmax(off_diag)) \
+        if np.isfinite(off_diag).any() else (vmin_pro, vmax_pro)
+    ax.matshow(off_diag, cmap='coolwarm', vmin=vmin_self, vmax=vmax_self)
 
+    # diagonal（プロ比較）
     diag_mat = np.full_like(orig_self_mat, np.nan, dtype=float)
     for i, d in enumerate(distances):
         diag_mat[i, i] = d
-
-    # 2) vmin/vmax の安全な算出
-    # プロ側の vmin/vmax は必ず取得できる前提とします
-    vmin_pro = np.nanmin(diag_mat)
-    vmax_pro = np.nanmax(diag_mat)
-
-    # 自己側は有効値がない（全て NaN）ならプロのレンジを使う
-    mask_self = np.isfinite(off_diag)
-    if mask_self.any():
-        vmin_self = np.nanmin(off_diag)
-        vmax_self = np.nanmax(off_diag)
-    else:
-        vmin_self, vmax_self = vmin_pro, vmax_pro
-
-    # 3) プロット
-    fig, ax = plt.subplots(figsize=(6, 6), dpi=100)
-    # 自己オフダイアグ
-    ax.matshow(off_diag, cmap='coolwarm', vmin=vmin_self, vmax=vmax_self)
-    # プロ対角
-    ax.matshow(diag_mat, cmap='coolwarm', vmin=vmin_pro,   vmax=vmax_pro)
+    vmin_pro, vmax_pro = np.nanmin(diag_mat), np.nanmax(diag_mat)
+    ax.matshow(diag_mat, cmap='coolwarm', vmin=vmin_pro, vmax=vmax_pro)
 
     # 軸ラベルなど
     ticks = list(range(n))
@@ -525,16 +514,14 @@ def analyze():
     ax.set_title('Combined Heatmap\n(Self Off‑Diag + Pro Diag)')
     plt.tight_layout()
 
-    # レンジの大きい方だけカラーバー
+    # レンジが大きい方のイメージのみカラーバー表示（ラベルなし）
     range_self = vmax_self - vmin_self
-    range_pro  = vmax_pro  - vmin_pro
-    if range_self >= range_pro:
+    if range_self >= (vmax_pro - vmin_pro):
         cax = fig.colorbar(ax.images[-2], ax=ax, fraction=0.046, pad=0.04)
     else:
         cax = fig.colorbar(ax.images[-1], ax=ax, fraction=0.046, pad=0.04)
-     
 
-    # 4) Base64 エンコード
+    # Base64 エンコード
     buf = BytesIO()
     fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', pad_inches=0.1)
     plt.close(fig)

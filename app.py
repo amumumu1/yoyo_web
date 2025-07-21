@@ -533,14 +533,17 @@ def analyze():
     ax.set_yticklabels(labels)
     plt.tight_layout()
 
-    # カラーバーを左右に配置してフォントサイズ調整
+ 
+    # カラーバー用の専用軸を追加して、座標で配置（左: x0, 下: y0, 幅, 高さ）
+    cbar_ax1 = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # 1本目（固定）
+    cbar_ax2 = fig.add_axes([0.96, 0.15, 0.02, 0.7])  # 2本目（好きな位置）
 
-    cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04, use_gridspec=False)
-    cbar1.set_label('Self Range')
-    cbar1.ax.tick_params(labelsize=10)
-    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.20, use_gridspec=False)
-    cbar2.set_label('Pro Range')
-    cbar2.ax.tick_params(labelsize=10)
+    # それぞれカラーバーを作成
+    cbar1 = fig.colorbar(cax1, cax=cbar_ax1)
+    cbar1.set_label("Self Range")
+
+    cbar2 = fig.colorbar(cax2, cax=cbar_ax2)
+    cbar2.set_label("Pro Range")
 
 
     # 余白調整（タイトルと軸が重ならないように）

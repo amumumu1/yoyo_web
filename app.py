@@ -51,6 +51,7 @@ def init_db():
         heatmap TEXT,
         pro_heatmap TEXT,
         compare_plot TEXT,
+        combined_heatmap TEXT,
         acc_csv TEXT,
         gyro_csv TEXT
     )
@@ -69,9 +70,9 @@ def save_result_to_db(result):
         INSERT INTO results (
             timestamp, name, total_score, radar_chart, score, pro_distance_mean, loop_count, stable_loop,
             loop_mean_duration, loop_std_duration,
-            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, acc_csv, gyro_csv
+            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap, acc_csv, gyro_csv
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),  # ← JSTを保存
         result.get("name"),
@@ -88,6 +89,7 @@ def save_result_to_db(result):
         result.get("heatmap"),
         result.get("pro_heatmap"),
         result.get("compare_plot"),
+        result.get("combined_heatmap"),
         result.get("acc_csv"),  # 追加　
         result.get("gyro_csv")  # 追加
     ))
@@ -130,7 +132,7 @@ def get_result_detail(result_id):
         SELECT timestamp, name, score, total_score, radar_chart, pro_distance_mean,
                loop_count, stable_loop,
                loop_mean_duration, loop_std_duration,
-               loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot
+               loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap
         FROM results WHERE id = ?
     """, (result_id,))
     row = cur.fetchone()
@@ -153,7 +155,8 @@ def get_result_detail(result_id):
         "self_heatmap": row[11],
         "heatmap": row[12],
         "pro_heatmap": row[13],
-        "compare_plot": row[14]
+        "compare_plot": row[14],
+        "combined_heatmap": row[15]
     })
 
 @app.route('/')

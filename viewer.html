@@ -59,6 +59,14 @@
       max-width: 100%;
       height: auto;
     }
+    .heatmap-row h4 {
+      min-height: 3em;  /* どのタイトルも最低2行分の高さを確保 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
   </style>
 </head>
 <body>
@@ -131,9 +139,14 @@
         <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : '-'} 秒</p>
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
         <div class="heatmap-row">
-          ${detail.self_heatmap ? `<div><h4>自分 vs 自分（オリジナル）</h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}
-          ${detail.heatmap ? `<div><h4>自分 vs 自分（対角線=プロ）</h4><img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ"></div>` : ''}
-          ${detail.pro_heatmap ? `<div><h4>対角線プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}" alt="プロ距離ヒートマップ"></div>` : ''}
+          ${detail.self_heatmap ? `<div><h4>自己比較 </h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}
+          ${detail.heatmap ? `<div><h4>非対角成分：自己比較　対角成分：プロ比較（まとめて正規化）</h4><img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ"></div>` : ''}
+          ${detail.pro_heatmap ? `<div><h4>対角成分：プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}" alt="プロ距離ヒートマップ"></div>` : ''}
+          ${detail.combined_heatmap ? `
+            <div>
+              <h4>非対角成分：自己比較　対角成分：プロ比較（それぞれ正規化）</h4>
+              <img src="data:image/png;base64,${detail.combined_heatmap}" alt="合成ヒートマップ">
+            </div>` : ''}
         </div>
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;

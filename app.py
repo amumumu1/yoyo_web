@@ -468,6 +468,11 @@ def analyze():
         print("プロ比較エラー:", e)
         distances = [0]*len(segments)
 
+
+    # --- 純粋な自己比較ヒートマップ ---
+    self_heatmap_b64 = encode_heatmap(orig_self_mat, 'Self Loop Similarity (Original)')
+
+
     
     
 

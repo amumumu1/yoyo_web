@@ -515,16 +515,16 @@ def analyze():
     plt.close(fig)
     self_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
-    # --- Selfの非対角成分とPro距離の対角成分を合体 ---
+        # --- Selfの非対角成分（オリジナル）とPro距離の対角成分を合体 ---
     combined_mat = np.full_like(self_dtw_mat, np.nan, dtype=float)
 
-    # 非対角成分（自己比較の距離そのまま）
+    # 非対角成分：self_dtw_mat の値をコピー
     off_diag_indices = np.where(~np.eye(n, dtype=bool))
     combined_mat[off_diag_indices] = self_dtw_mat[off_diag_indices]
 
-    # 対角成分（プロ距離そのまま）
+    # 対角成分：pro_mat の値をコピー
     diag_indices = np.diag_indices(n)
-    combined_mat[diag_indices] = pro_mat[diag_indices]  # ← プロ比較の対角線をそのままコピー
+    combined_mat[diag_indices] = pro_mat[diag_indices]  # プロ比較の対角線のみ
 
     # 描画（スケーリングなし、距離そのまま）
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -541,6 +541,7 @@ def analyze():
     fig.savefig(buf, format='png')
     plt.close(fig)
     combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 
 

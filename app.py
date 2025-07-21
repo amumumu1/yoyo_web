@@ -513,7 +513,7 @@ def analyze():
 
     # 3) 描画
     # 図の比率を正方形寄りにしてフォントサイズを調整
-    fig, ax = plt.subplots(figsize=(6, 6), dpi=100)
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=100)
 
     # まず off-diagonal（自己比較距離）を描画
     cax1 = ax.matshow(off_diag, cmap='coolwarm',

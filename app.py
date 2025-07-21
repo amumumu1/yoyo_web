@@ -472,6 +472,13 @@ def analyze():
     # --- 純粋な自己比較ヒートマップ ---
     self_heatmap_b64 = encode_heatmap(orig_self_mat, 'Self Loop Similarity (Original)')
 
+    # --- プロ距離を対角に埋め込んだ行列（まとめて正規化用） ---
+    combined_for_heatmap = orig_self_mat.copy()
+    for i, d in enumerate(distances):
+        combined_for_heatmap[i, i] = d
+    heatmap_b64 = encode_heatmap(combined_for_heatmap, 'Loop Similarity\n(Self Off‑Diag + Pro Diag)')
+
+
 
     
     

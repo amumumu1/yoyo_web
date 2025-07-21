@@ -486,7 +486,25 @@ def analyze():
     pro_mat = np.full((n, n), np.nan)
     for i, d in enumerate(distances):
         pro_mat[i, i] = d
-    pro_heatmap_b64 = encode_heatmap(pro_mat, 'Pro vs Each Loop (Diagonal Only)')
+    # 色のスケール: 0が青、最大が赤になるように
+    vmin, vmax = 0, np.nanmax(pro_mat) if not np.all(np.isnan(pro_mat)) else 1
+
+    # 描画
+    fig, ax = plt.subplots(figsize=(6, 6))
+    cax = ax.matshow(pro_mat, cmap='coolwarm', vmin=vmin, vmax=vmax)  # vmin固定
+    plt.colorbar(cax)
+    ax.set_title(title)
+    ticks = list(range(n))
+    labels = [str(i+1) for i in ticks]
+    ax.set_xticks(ticks); ax.set_xticklabels(labels)
+    ax.set_yticks(ticks); ax.set_yticklabels(labels)
+    plt.tight_layout()
+
+    # Base64へ変換
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode('ascii')
 
    # --- combined_heatmap: Self の非対角 + Pro の対角 ---
     # 元の色スケールのまま別々に重ねる

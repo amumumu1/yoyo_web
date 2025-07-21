@@ -488,11 +488,49 @@ def analyze():
         pro_mat[i, i] = d
     pro_heatmap_b64 = encode_heatmap(pro_mat, 'Pro vs Each Loop (Diagonal Only)')
 
-    # --- combined_heatmap: Self 非対角 + Pro 対角 ---
-    combined_mat = orig_self_mat.copy()
+   # --- combined_heatmap: Self の非対角 + Pro の対角 を
+    #     元の色スケールのまま重ねる ---
+    # 1) 自己比較行列を off_diag、プロ距離行列を diag_mat として用意
+    off_diag = orig_self_mat.copy()
+    np.fill_diagonal(off_diag, np.nan)
+
+    diag_mat = np.full_like(orig_self_mat, np.nan, dtype=float)
     for i, d in enumerate(distances):
-        combined_mat[i, i] = d
-    combined_heatmap_b64 = encode_heatmap(combined_mat, 'Combined Heatmap\n(Self Off‑Diag + Pro Diag)')
+        diag_mat[i, i] = d
+
+    # 2) 各々の vmin/vmax を計算
+    vmin_self, vmax_self = np.nanmin(off_diag), np.nanmax(off_diag)
+    vmin_pro,   vmax_pro   = np.nanmin(diag_mat), np.nanmax(diag_mat)
+
+    # 3) プロット
+    fig, ax = plt.subplots(figsize=(6, 6))
+    # off-diagonal（自己比較）を先に
+    cax1 = ax.matshow(off_diag, cmap='coolwarm',
+                    vmin=vmin_self, vmax=vmax_self)
+    # diagonal（プロ比較）を上に重ね
+    cax2 = ax.matshow(diag_mat, cmap='coolwarm',
+                    vmin=vmin_pro,   vmax=vmax_pro)
+
+    # タイトル・軸回り
+    ax.set_title('Combined Heatmap\n(Self Off‑Diag in Self‑Scale + Pro Diag in Pro‑Scale)')
+    ticks = list(range(n))
+    labels = [str(i+1) for i in ticks]
+    ax.set_xticks(ticks); ax.set_xticklabels(labels)
+    ax.set_yticks(ticks); ax.set_yticklabels(labels)
+    plt.tight_layout()
+
+    # 4) カラーバーを２つ表示（好きな方だけでもOK）
+    cbar1 = fig.colorbar(cax1, ax=ax, fraction=0.046, pad=0.04)
+    cbar1.set_label('Self Range')
+    cbar2 = fig.colorbar(cax2, ax=ax, fraction=0.046, pad=0.15)
+    cbar2.set_label('Pro Range')
+
+    # 5) PNG → Base64
+    buf = BytesIO()
+    fig.savefig(buf, format='png')
+    plt.close(fig)
+    combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+
 
     
 

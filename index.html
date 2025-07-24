@@ -9,6 +9,13 @@
       margin: 0 auto;
       text-align: center;
     }
+    #heatmap,
+    #combinedHeatmap,
+    #comparePlot,
+    #CombinedContainer {
+      display: none !important;
+    }
+
     body { font-family: 'Hiragino Sans', sans-serif; padding: 20px; }
     button { margin-right: 10px; padding: 10px; font-size: 25px; }
     #score, #loopSummary, #loopDetails, #proDistance { font-size: 30px;}
@@ -111,23 +118,23 @@
         <h4>自己比較</h4>
         <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
       </div>
-      <div>
+      <!-- <div>
         <h4>非対角成分：自己比較　対角成分：プロ比較（まとめて正規化）</h4>
         <img id="heatmap" alt="ヒートマップ" style="max-width: 100%;" />
-      </div>
+      </div> -->
       <div>
         <h4>対角成分：プロ比較</h4>
         <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
       </div>
     </div>
 
-    <div id="CombinedContainer" style="display: none; text-align: center; margin-top: 30px;">
+    <!-- <div id="CombinedContainer" style="display: none; text-align: center; margin-top: 30px;">
       <h4>非対角成分：自己比較　対角成分：プロ比較（それぞれ正規化）</h4>
       <img id="combinedHeatmap" alt="合成ヒートマップ" style="max-width: 90%;" />
-    </div>
+    </div> -->
 
-    <h3 id="Pro" style="display: none;">プロと比較</h3>
-    <img id="comparePlot" style="width: 1000px; display: none; " />
+    <!-- <h3 id="Pro" style="display: none;">プロと比較</h3>
+    <img id="comparePlot" style="width: 1000px; display: none; " /> -->
     <!-- プロのデータ表示エリア -->
     <hr id="hrPro" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="proExample" style="display: none;">
@@ -210,7 +217,7 @@
         // 🔽 前回の表示を初期化
         document.getElementById('loopPlot').style.display = 'none';
         //document.getElementById('heatmap').style.display = 'none';
-        document.getElementById('comparePlot').style.display = 'none';
+        // document.getElementById('comparePlot').style.display = 'none';
         document.getElementById('score').textContent = '';
         document.getElementById('proDistance').textContent = '';
         document.getElementById('loopSummary').textContent = '';
@@ -232,12 +239,13 @@
         document.getElementById('Ken').style.display = 'none';
         document.getElementById('HeatmapTitle').style.display = 'none';
         document.getElementById('Rui').style.display = 'none';
-        document.getElementById('CombinedContainer').style.display = 'none';
-        document.getElementById('Pro').style.display = 'none';
+        //document.getElementById('Pro').style.display = 'none';
         document.getElementById('saveSection').style.display = 'none';
         document.getElementById('radarChart').style.display = 'none';
         document.getElementById('RadarTitle').style.display = 'none';
         document.getElementById('radarChart').src = '';
+
+        // document.getElementById('CombinedContainer').style.display = 'none';
 
 
         acc.length = 0;
@@ -343,7 +351,7 @@
         
           document.getElementById('loopPlot').style.display = 'none';
           //document.getElementById('heatmap').style.display = 'none';
-          document.getElementById('comparePlot').style.display = 'none';
+          // document.getElementById('comparePlot').style.display = 'none';
           document.getElementById('score').textContent = '';
           document.getElementById('loopSummary').textContent = '';
           document.getElementById('loopDetails').style.display = 'none';
@@ -361,8 +369,8 @@
           document.getElementById('Ken').style.display = 'none';
           document.getElementById('HeatmapTitle').style.display = 'none';
           document.getElementById('Rui').style.display = 'none';
-          document.getElementById('CombinedContainer').style.display = 'none';
-          document.getElementById('Pro').style.display = 'none';
+          // document.getElementById('CombinedContainer').style.display = 'none';
+          // document.getElementById('Pro').style.display = 'none';
           document.getElementById('RadarTitle').style.display = 'none';
           document.getElementById('proDistance').textContent = '';
     
@@ -400,8 +408,8 @@
           document.getElementById('Ken').style.display = 'block';
           document.getElementById('HeatmapTitle').style.display = 'block';
           document.getElementById('Rui').style.display = 'block';
-          document.getElementById('CombinedContainer').style.display='block';
-          document.getElementById('Pro').style.display = 'block';
+          // document.getElementById('CombinedContainer').style.display='block';
+          // document.getElementById('Pro').style.display = 'block';
 
           accOutput.style.display = 'block';
           gyroOutput.style.display = 'block';
@@ -440,11 +448,11 @@
               selfImg.src = `data:image/png;base64,${json.self_heatmap}`;
               selfImg.style.display = 'block';
             }
-            if (json.heatmap) {
-              const heatmapImg = document.getElementById('heatmap');
-              heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
-              heatmapImg.style.display = 'block';
-            }
+            // if (json.heatmap) {
+            //   const heatmapImg = document.getElementById('heatmap');
+            //   heatmapImg.src = `data:image/png;base64,${json.heatmap}`;
+            //   heatmapImg.style.display = 'block';
+            // }
             if (json.pro_heatmap) {
               const proImg = document.getElementById('proHeatmap');
               proImg.src = `data:image/png;base64,${json.pro_heatmap}`;
@@ -457,21 +465,21 @@
             title.style.display = 'none';
           }
 
-          // Combined Heatmap の独立表示
-          if (json.combined_heatmap) {
-            document.getElementById('combinedHeatmap').src = `data:image/png;base64,${json.combined_heatmap}`;
-            document.getElementById('CombinedContainer').style.display = 'block';
-          } else {
-            document.getElementById('CombinedContainer').style.display = 'none';
-          }
+          // // Combined Heatmap の独立表示
+          // if (json.combined_heatmap) {
+          //   document.getElementById('combinedHeatmap').src = `data:image/png;base64,${json.combined_heatmap}`;
+          //   document.getElementById('CombinedContainer').style.display = 'block';
+          // } else {
+          //   document.getElementById('CombinedContainer').style.display = 'none';
+          // }
 
 
 
 
-          if (json.compare_plot) {
-            document.getElementById('comparePlot').src = `data:image/png;base64,${json.compare_plot}`;
-            document.getElementById('comparePlot').style.display = 'block';
-          }
+          // if (json.compare_plot) {
+          //   document.getElementById('comparePlot').src = `data:image/png;base64,${json.compare_plot}`;
+          //   document.getElementById('comparePlot').style.display = 'block';
+          // }
 
 
           scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${json.stable_loop !== null ? `安定開始ループ: ${json.stable_loop}周目` : '安定開始ループ: なし'}`;

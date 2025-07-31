@@ -650,9 +650,9 @@ def analyze():
             if not acc_segment.empty:
                 norm = np.sqrt(acc_segment['ax']**2 + acc_segment['ay']**2 + acc_segment['az']**2)
                 max_norm = norm.max()
-                loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒 / {max_norm:.2f} G")
+                loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒 / {max_norm:.2f} m/s²")
             else:
-                loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒 / - G")
+                loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒 / - m/s²")
 
     else:
         loop_mean_duration = None  # ← 修正
@@ -788,7 +788,7 @@ def analyze():
         if not acc_segment.empty:
             norm = np.sqrt(acc_segment['ax']**2 + acc_segment['ay']**2 + acc_segment['az']**2)
             max_norm = norm.max()
-            loop_max_acc_list.append(f"ループ {i+1}: {max_norm:.3f} G")
+            loop_max_acc_list.append(f"ループ {i+1}: {max_norm:.3f}  m/s²")
 
 
 

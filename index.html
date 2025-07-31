@@ -505,8 +505,7 @@
 
         if (json.loop_duration_list?.length) {
           const durations = json.loop_duration_list.join('\n');
-          const norms = json.loop_max_acc_list?.join('\n') || '';
-          loopDetails.textContent = durations + '\n\n' + norms;
+          loopDetails.textContent = durations 
           loopDetails.style.display = 'block';
         }else {
           loopDetails.textContent = '';

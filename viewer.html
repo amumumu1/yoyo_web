@@ -137,6 +137,7 @@
         <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + '周目' : 'なし'}</p>
         <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : '-'} 秒</p>
         <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : '-'} 秒</p>
+        <pre id="loopStats-${id}" style="font-size: 20px; white-space: pre-wrap;"></pre>
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
         <div class="heatmap-row">
           ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}
@@ -144,6 +145,26 @@
         </div>
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
+
+      // ★ スナップ中央値などの統計表示処理
+      const statsEl = document.getElementById(`loopStats-${id}`);
+      const mean = detail.loop_mean_duration?.toFixed(3);
+      const std = detail.loop_std_duration?.toFixed(3);
+      const median = detail.snap_median?.toFixed(2);
+      const snapStd = detail.snap_std?.toFixed(2);
+      const durations = JSON.parse(detail.loop_duration_list || "[]");
+      const maxAccs = JSON.parse(detail.loop_max_acc_list || "[]");
+
+      let summary = `平均ループ時間: ${mean} 秒　ループ時間の標準偏差: ${std} 秒\n`;
+      summary += `スナップ中央値：${median} m/s²　スナップの標準偏差：${snapStd} m/s²\n\n`;
+
+      durations.forEach((dur, i) => {
+        const acc = maxAccs[i] ?? "?";
+        summary += `ループ ${i + 1}: ${dur.toFixed(3)} 秒 / ${acc.toFixed(2)} m/s²\n`;
+      });
+
+      statsEl.textContent = summary;
+      
       container.style.display = 'block';
       button.textContent = '閉じる';
     } else {

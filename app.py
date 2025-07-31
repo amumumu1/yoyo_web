@@ -69,7 +69,12 @@ def init_db():
         compare_plot TEXT,
         combined_heatmap TEXT,
         acc_csv TEXT,
-        gyro_csv TEXT
+        gyro_csv TEXT,
+        snap_median REAL,
+        snap_std REAL,
+        loop_duration_list TEXT,
+        loop_max_acc_list TEXT
+
     )
     """)
     conn.commit()
@@ -86,9 +91,9 @@ def save_result_to_db(result):
         INSERT INTO results (
             timestamp, name, total_score, radar_chart, score, pro_distance_mean, loop_count, stable_loop,
             loop_mean_duration, loop_std_duration,
-            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap, acc_csv, gyro_csv
+            loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap, acc_csv, gyro_csv,snap_median, snap_std, loop_duration_list, loop_max_acc_list
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),  # ← JSTを保存
         result.get("name"),
@@ -107,7 +112,11 @@ def save_result_to_db(result):
         result.get("compare_plot"),
         result.get("combined_heatmap"),
         result.get("acc_csv"),  # 追加　
-        result.get("gyro_csv")  # 追加
+        result.get("gyro_csv"),  # 追加
+        result.get("snap_median"),
+        result.get("snap_std"),
+        result.get("loop_duration_list"),  # list → JSON文字列に変換
+        result.get("loop_max_acc_list")
     ))
     conn.commit()
     conn.close()
@@ -148,7 +157,7 @@ def get_result_detail(result_id):
         SELECT timestamp, name, score, total_score, radar_chart, pro_distance_mean,
                loop_count, stable_loop,
                loop_mean_duration, loop_std_duration,
-               loop_plot, self_heatmap, pro_heatmap, compare_plot
+               loop_plot, self_heatmap, pro_heatmap, compare_plot, loop_duration_list, loop_max_acc_list, snap_median, snap_std 
         FROM results WHERE id = ?
     """, (result_id,))
     row = cur.fetchone()
@@ -170,7 +179,13 @@ def get_result_detail(result_id):
         "loop_plot": row[10],
         "self_heatmap": row[11],
         "pro_heatmap": row[12],
-        "compare_plot": row[13]
+        "compare_plot": row[13],
+        "loop_duration_list": row[14],     # 例: [0.639, 0.411, ...]
+        "loop_max_acc_list": row[15],      # 例: [163.04, 102.58, ...]
+        "snap_median": row[16],            # 例: 100.06
+        "snap_std": row[17]           # 例: 25.40
+
+
     })
 
 @app.route('/')

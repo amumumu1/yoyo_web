@@ -159,12 +159,18 @@
       summary += `スナップ中央値：${median} m/s²　スナップの標準偏差：${snapStd} m/s²\n\n`;
 
       durations.forEach((dur, i) => {
-        const acc = maxAccs[i] ?? "?";
-        summary += `ループ ${i + 1}: ${dur.toFixed(3)} 秒 / ${acc.toFixed(2)} m/s²\n`;
+        const durNum = parseFloat(dur);
+        const accNum = parseFloat(maxAccs[i]);
+
+        const durStr = isNaN(durNum) ? "?" : durNum.toFixed(3);
+        const accStr = isNaN(accNum) ? "?" : accNum.toFixed(2);
+
+        summary += `ループ ${i + 1}: ${durStr} 秒 / ${accStr} m/s²\n`;
       });
 
+
       statsEl.textContent = summary;
-      
+
       container.style.display = 'block';
       button.textContent = '閉じる';
     } else {

@@ -88,6 +88,8 @@ def save_result_to_db(result):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     jst_now = datetime.utcnow() + timedelta(hours=9)
+    result["loop_duration_list"] = json.dumps(result.get("loop_duration_list", [])),
+    result["loop_max_acc_list"] = json.dumps(result.get("loop_max_acc_list", []))
     cur.execute("""
         INSERT INTO results (
             timestamp, name, total_score, radar_chart, score, pro_distance_mean, loop_count, stable_loop,
@@ -117,7 +119,7 @@ def save_result_to_db(result):
         result.get("snap_median"),
         result.get("snap_std"),
         json.dumps(result.get("loop_duration_list")),  # ← ここ
-        json.dumps(result.get("loop_max_acc_list")),
+        json.dumps(result.get("loop_max_acc_list"))
     ))
     conn.commit()
     conn.close()

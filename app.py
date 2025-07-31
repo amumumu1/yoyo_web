@@ -196,6 +196,28 @@ def index():
     return send_file('index.html')
 
 
+@app.route("/results/<int:result_id>")
+def get_result(result_id):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM results WHERE id = ?", (result_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        keys = [column[0] for column in cur.description]
+        result = dict(zip(keys, row))
+
+        # 追加: JSONフィールドを辞書に変換
+        result["loop_duration_list"] = json.loads(result.get("loop_duration_list") or "[]")
+        result["loop_max_acc_list"] = json.loads(result.get("loop_max_acc_list") or "[]")
+
+        return jsonify(result)
+    else:
+        return jsonify({"error": "Not found"}), 404
+
+
+
 
 
 

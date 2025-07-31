@@ -43,9 +43,7 @@
       font-size: 40px;
     }
 
-    #CombinedContainer{
-      text-align: center;
-    }
+   
 
     /* 3つのヒートマップを横並びにして縮小 */
     .heatmap-row {
@@ -56,8 +54,6 @@
       flex-wrap: wrap;
     }
     .heatmap-row div {
-      flex: 1 1 200px; /* 1つあたり最小200pxにする */
-      max-width: 220px; /* 上限を設定して横並びを強制 */
       text-align: center;
     }
     .heatmap-row img {
@@ -144,10 +140,8 @@
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
         <div class="heatmap-row">
           ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}" alt="自分ヒートマップ"></div>` : ''}
-          ${detail.heatmap ? `<div><h4>非対角成分：自己比較<br>対角成分：プロ比較（まとめて正規化）</h4><img src="data:image/png;base64,${detail.heatmap}" alt="ヒートマップ"></div>` : ''}
           ${detail.pro_heatmap ? `<div><h4>対角成分：プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}" alt="プロ距離ヒートマップ"></div>` : ''}
         </div>
-        ${detail.combined_heatmap ? `<div><h4>非対角成分：自己比較<br>対角成分：プロ比較（それぞれ正規化）</h4><img src="data:image/png;base64,${detail.combined_heatmap}" alt="合成ヒートマップ" style="max-width:300px;"></div>` : ''}
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
       container.style.display = 'block';

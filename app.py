@@ -148,7 +148,7 @@ def get_result_detail(result_id):
         SELECT timestamp, name, score, total_score, radar_chart, pro_distance_mean,
                loop_count, stable_loop,
                loop_mean_duration, loop_std_duration,
-               loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap
+               loop_plot, self_heatmap, pro_heatmap, compare_plot
         FROM results WHERE id = ?
     """, (result_id,))
     row = cur.fetchone()

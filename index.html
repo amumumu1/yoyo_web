@@ -502,13 +502,18 @@
           : `　ループ時間の標準偏差: なし`;
         document.getElementById('loopSummary').textContent = `${meanStr}\n${stdStr}`;
         const loopDetails = document.getElementById('loopDetails');
+
         if (json.loop_duration_list?.length) {
-          loopDetails.textContent = json.loop_duration_list.join('\n');
+          const durations = json.loop_duration_list.join('\n');
+          const norms = json.loop_max_acc_list?.join('\n') || '';
+          loopDetails.textContent = durations + '\n\n' + norms;
           loopDetails.style.display = 'block';
-        } else {
+        }else {
           loopDetails.textContent = '';
           loopDetails.style.display = 'none';
         }
+
+
         // CSVモードでも保存ボタンを出す
         document.getElementById('saveSection').style.display = 'block';
         btnSaveResult.style.display = 'inline-block';

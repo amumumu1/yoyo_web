@@ -169,10 +169,8 @@ def get_result_detail(result_id):
         "loop_std_duration": row[9],
         "loop_plot": row[10],
         "self_heatmap": row[11],
-        "heatmap": row[12],
-        "pro_heatmap": row[13],
-        "compare_plot": row[14],
-        "combined_heatmap": row[15]
+        "pro_heatmap": row[12],
+        "compare_plot": row[13]
     })
 
 @app.route('/')
@@ -472,11 +470,11 @@ def analyze():
     # --- 純粋な自己比較ヒートマップ ---
     self_heatmap_b64 = encode_heatmap(orig_self_mat, 'Self Loop Similarity (Original)')
 
-    # --- プロ距離を対角に埋め込んだ行列（まとめて正規化用） ---
-    combined_for_heatmap = orig_self_mat.copy()
-    for i, d in enumerate(distances):
-        combined_for_heatmap[i, i] = d
-    heatmap_b64 = encode_heatmap(combined_for_heatmap, 'Loop Similarity\n(Self Off‑Diag + Pro Diag)')
+    # # --- プロ距離を対角に埋め込んだ行列（まとめて正規化用） ---
+    # combined_for_heatmap = orig_self_mat.copy()
+    # for i, d in enumerate(distances):
+    #     combined_for_heatmap[i, i] = d
+    # heatmap_b64 = encode_heatmap(combined_for_heatmap, 'Loop Similarity\n(Self Off‑Diag + Pro Diag)')
 
 
 
@@ -574,7 +572,7 @@ def analyze():
     buf = BytesIO()
     fig.savefig(buf, format='png')
     plt.close(fig)
-    combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+    # combined_heatmap_b64 = base64.b64encode(buf.getvalue()).decode('ascii')
 
 
 
@@ -812,9 +810,9 @@ def analyze():
         'score': score if len(loops) >= 2 else 0.0,
         'total_score': total_score, 
         'self_heatmap': self_heatmap_b64,  # ← 純粋な自分同士比較
-        'heatmap': heatmap_b64,
+        # 'heatmap': heatmap_b64,
         'pro_heatmap': pro_heatmap_b64,  # プロ距離だけのヒートマップ（新規）
-        'combined_heatmap': combined_heatmap_b64,  # ← 追加
+        # 'combined_heatmap': combined_heatmap_b64,  # ← 追加
         'loop_plot': loop_plot_b64,
         'stable_loop': stable_loop if len(loops) >= 2 else None,
         'loop_count': n,

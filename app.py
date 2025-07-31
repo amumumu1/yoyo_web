@@ -639,9 +639,21 @@ def analyze():
     if loop_durations:
         loop_mean_duration = float(np.mean(loop_durations))
         loop_std_duration  = float(np.std(loop_durations))
-        loop_duration_list = [
-            f"ループ {i+1}: {d:.3f} 秒" for i, d in enumerate(loop_durations)
-        ]
+        loop_duration_list = []
+        for i, (v1, _, v2) in enumerate(loops):
+            t_start = t_sec.iloc[v1]
+            t_end = t_sec.iloc[v2]
+            duration = float(t_end - t_start)
+
+            # 加速度セグメントの抽出とノルム最大値
+            acc_segment = acc_df[(acc_df['t']/1000 >= t_start) & (acc_df['t']/1000 <= t_end)]
+            if not acc_segment.empty:
+                norm = np.sqrt(acc_segment['ax']**2 + acc_segment['ay']**2 + acc_segment['az']**2)
+                max_norm = norm.max()
+                loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒 / {max_norm:.2f} G")
+            else:
+                loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒 / - G")
+
     else:
         loop_mean_duration = None  # ← 修正
         loop_std_duration  = None  # ← 修正

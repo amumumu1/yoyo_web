@@ -512,6 +512,12 @@
           loopDetails.style.display = 'none';
         }
 
+        if (json.snap_median !== null && json.snap_std !== null) {
+          const loopSummary = document.getElementById('loopSummary');
+          loopSummary.textContent += `\nスナップ中央値：${json.snap_median.toFixed(2)} m/s²　スナップの標準偏差：${json.snap_std.toFixed(2)} m/s²`;
+        }
+
+
 
         // CSVモードでも保存ボタンを出す
         document.getElementById('saveSection').style.display = 'block';

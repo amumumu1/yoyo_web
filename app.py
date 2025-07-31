@@ -791,6 +791,21 @@ def analyze():
             loop_max_acc_list.append(f"ループ {i+1}: {max_norm:.3f}  m/s²")
 
 
+    # スナップ中央値・標準偏差の計算
+    snap_values = []
+    for i, (v1, _, v2) in enumerate(loops):
+        t_start = t_sec.iloc[v1]
+        t_end = t_sec.iloc[v2]
+        acc_segment = acc_df[(acc_df['t']/1000 >= t_start) & (acc_df['t']/1000 <= t_end)]
+        if not acc_segment.empty:
+            norm = np.sqrt(acc_segment['ax']**2 + acc_segment['ay']**2 + acc_segment['az']**2)
+            snap_values.append(norm.max())
+
+    snap_median = float(np.median(snap_values)) if snap_values else None
+    snap_std = float(np.std(snap_values)) if snap_values else None
+
+
+
 
     # --- 結果まとめ ---
     result = {
@@ -809,7 +824,10 @@ def analyze():
         'compare_plot': compare_plot_b64,
         'radar_chart': radar_b64,
         'pro_distance_mean': pro_distance_mean,
-        'loop_max_acc_list': loop_max_acc_list
+        'loop_max_acc_list': loop_max_acc_list,
+        'snap_median': snap_median,
+        'snap_std': snap_std
+
     }
     return jsonify(result)
 

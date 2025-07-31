@@ -119,8 +119,8 @@ def save_result_to_db(result):
         result.get("gyro_csv"),  # 追加
         result.get("snap_median"),
         result.get("snap_std"),
-        json.dumps(result.get("loop_duration_list")),  # ← ここ
-        json.dumps(result.get("loop_max_acc_list"))
+        result.get("loop_duration_list"),  # ← ここ
+        result.get("loop_max_acc_list")
     ))
     conn.commit()
     conn.close()

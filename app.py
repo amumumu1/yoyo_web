@@ -1,3 +1,4 @@
+import json
 import matplotlib
 matplotlib.use('Agg')
 from flask_cors import CORS 
@@ -115,8 +116,8 @@ def save_result_to_db(result):
         result.get("gyro_csv"),  # 追加
         result.get("snap_median"),
         result.get("snap_std"),
-        result.get("loop_duration_list"),  # list → JSON文字列に変換
-        result.get("loop_max_acc_list")
+        json.dumps(result.get("loop_duration_list")),  # ← ここ
+        json.dumps(result.get("loop_max_acc_list")),
     ))
     conn.commit()
     conn.close()

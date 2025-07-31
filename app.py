@@ -767,6 +767,18 @@ def analyze():
         pro_distance=pro_distance_mean
     )
 
+    # 加速度ノルムの最大値を各ループで計算
+    loop_max_acc_list = []
+    for i, (v1, p, v2) in enumerate(loops):
+        t_start = t_sec.iloc[v1]
+        t_end = t_sec.iloc[v2]
+        acc_segment = acc_df[(acc_df['t']/1000 >= t_start) & (acc_df['t']/1000 <= t_end)]
+        if not acc_segment.empty:
+            norm = np.sqrt(acc_segment['ax']**2 + acc_segment['ay']**2 + acc_segment['az']**2)
+            max_norm = norm.max()
+            loop_max_acc_list.append(f"ループ {i+1}: {max_norm:.3f} G")
+
+
 
     # --- 結果まとめ ---
     result = {
@@ -784,7 +796,8 @@ def analyze():
         'loop_duration_list': loop_duration_list if len(loops) >= 2 else [],
         'compare_plot': compare_plot_b64,
         'radar_chart': radar_b64,
-        'pro_distance_mean': pro_distance_mean 
+        'pro_distance_mean': pro_distance_mean,
+        'loop_max_acc_list': loop_max_acc_list
     }
     return jsonify(result)
 

@@ -96,12 +96,7 @@
     <button id="btnCsvMode">CSVから解析</button>
     <button id="btnStop" disabled>センシング終了 &amp; 解析</button>
     <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
-    <div id="loading" style="display: none;">
-      <p>解析中...</p>
-      <progress id="progressBar" value="0" max="100" style="width: 400px; height: 30px;"></progress>
-    </div>
-
-
+    <div id="loading" style="display: none;">解析中...</div>
 
     <!-- 加速度と角速度を別々のリアルタイムグラフで表示 -->
     <h3 style="display:none;" id="accTitle">加速度</h3>
@@ -181,28 +176,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-      let progress = 0;
-      let progressInterval = null;
-
-      function startFakeProgress() {
-        const bar = document.getElementById("progressBar");
-        progress = 0;
-        bar.value = 0;
-
-        progressInterval = setInterval(() => {
-          if (progress < 90) {
-            progress += Math.random() * 3 + 1; // 1〜4%ずつ増やす
-            bar.value = Math.min(progress, 90);
-          }
-        }, 200); // 0.2秒ごとに更新
-      }
-
-      function completeProgress() {
-        clearInterval(progressInterval);
-        const bar = document.getElementById("progressBar");
-        bar.value = 100;
-      }
-
       const csvInput = document.getElementById('csvFiles');
       const btnSaveResult = document.getElementById('btnSaveResult');
       const btnConnect = document.getElementById('btnConnect');
@@ -283,21 +256,17 @@
         btnStop.style.display = 'none';
         btnRi.style.display = 'none';
         loadingDiv.style.display = 'block';
-        startFakeProgress(); // ← 追加
         try {
-          await startRealAnalysis(accDataJson, gyroDataJson);  // ← 差し替えここだけ！
-          // const res = await fetch(API_BASE, {
-          //   method: 'POST', headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
-          // });
-          // const json = await res.json();
-          // renderResult(json);
-          
+          const res = await fetch(API_BASE, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
+          });
+          const json = await res.json();
+          renderResult(json);
         } catch (err) {
           alert("解析失敗: " + err.message);
         } finally {
           loadingDiv.style.display = 'none';
-          completeProgress();  // ← 追加
 
           // 解析終了後にボタンを再表示
           btnConnect.style.display = 'inline-block';
@@ -366,16 +335,14 @@
           btnStop.disabled = true;
           accOutput.textContent = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
           gyroOutput.textContent = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
-          // 🔄 進捗バー付き解析開始！
-          await startRealAnalysis(acc, gyro);  // ← ここだけ変えればOK
-          // const res = await fetch(API_BASE, {
-          //   method: 'POST',
-          //   headers: { 'Content-Type': 'application/json' },
-          //   body: JSON.stringify({ acc, gyro })
-          // });
-          // const json = await res.json();
-          // lastResult = json;
-          // renderResult(json);
+          const res = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acc, gyro })
+          });
+          const json = await res.json();
+          lastResult = json;
+          renderResult(json);
         } catch (err) {
           alert('解析失敗: ' + err.message);
         } finally {
@@ -585,6 +552,5 @@
     </script>
 
   </div>
-  <script src="/public/ProgressBar.js"></script>
 </body>
 </html>

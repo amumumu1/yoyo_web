@@ -416,18 +416,29 @@ def analyze():
 
     # 15: ループ時間＆最大加速度リスト
     progress_store[task_id] = {'progress':94, 'message':'ループ時間・最大加速度計算…'}
-    loop_durations    = [float(t_sec[v2] - t_sec[v1]) for v1,_,v2 in loops]
-    loop_duration_list= []
+    loop_duration_list = []
     loop_max_acc_list = []
-    for i,(v1,_,v2) in enumerate(loops):
-        t_start, t_end = t_sec.iloc[v1], t_sec.iloc[v2]
-        loop_duration_list.append(f"ループ {i+1}: {(t_end-t_start):.3f} 秒")
-        seg = acc_df[(acc_df['t']/1000>=t_start)&(acc_df['t']/1000<=t_end)]
+    for i, (v1, _, v2) in enumerate(loops):
+        # ループ時間
+        t_start = t_sec.iloc[v1]
+        t_end   = t_sec.iloc[v2]
+        duration = t_end - t_start
+
+        # 加速度ノルム計算
+        seg = acc_df[(acc_df['t']/1000 >= t_start) & (acc_df['t']/1000 <= t_end)]
         if not seg.empty:
             norm = np.sqrt(seg['ax']**2 + seg['ay']**2 + seg['az']**2)
-            loop_max_acc_list.append(f"ループ {i+1}: {norm.max():.3f} m/s²")
+            max_norm = norm.max()
+            # 秒と m/s² を両方含める
+            loop_duration_list.append(
+                f"ループ {i+1}: {duration:.3f} 秒 / {max_norm:.2f} m/s²"
+            )
         else:
-            loop_max_acc_list.append(f"ループ {i+1}: -")
+            loop_duration_list.append(
+                f"ループ {i+1}: {duration:.3f} 秒 / - m/s²"
+            )
+        # （必要であれば別途保持したい場合）
+        loop_max_acc_list.append(max_norm if not seg.empty else None)
 
     # 16: スナップ統計
     progress_store[task_id] = {'progress':96, 'message':'スナップ統計計算…'}

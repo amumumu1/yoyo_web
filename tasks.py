@@ -9,9 +9,14 @@ import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 
-celery = Celery('tasks',
-                broker='redis://localhost:6379/0',
-                backend='redis://localhost:6379/0')
+from celery import Celery
+
+celery = Celery(
+    "tasks",
+    broker="redis://localhost:6379/0",
+    backend="redis://localhost:6379/0"  # ← ✅ 結果バックエンドを追加
+)
+
 
 @celery.task(bind=True)
 def analyze_task(self, acc_data, gyro_data):

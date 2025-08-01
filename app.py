@@ -17,6 +17,8 @@ from flask import Flask, request, jsonify, send_file, render_template_string
 from datetime import datetime
 from flask import Response
 from datetime import datetime, timedelta
+from celery import Celery
+from celery.result import AsyncResult
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 font_prop = font_manager.FontProperties(fname=font_path)
@@ -28,6 +30,15 @@ plt.rcParams['font.family'] = font_prop.get_name()
 app = Flask(__name__)
 CORS(app)
 
+# Celery setup (1ファイル内に記述)
+app.config.update(
+    CELERY_BROKER_URL='redis://localhost:6379/0',
+    CELERY_RESULT_BACKEND='redis://localhost:6379/0'
+)
+
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+
+celery.conf.update(app.config)
 def encode_heatmap(mat: np.ndarray, title: str) -> str:
     """行列 mat をヒートマップ化して Base64 文字列で返す"""
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -367,6 +378,176 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     fig.savefig(buf, format='png', bbox_inches='tight')
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii'), float(avg_score)
+
+@celery.task(bind=True)
+def analyze_task(self, acc, gyro):
+    import pandas as pd, numpy as np
+    from ahrs.filters import Madgwick
+    from fastdtw import fastdtw
+    from scipy.signal import find_peaks, savgol_filter
+    import base64
+    import matplotlib.pyplot as plt
+    from io import BytesIO
+
+    def encode_image(fig):
+        buf = BytesIO()
+        fig.savefig(buf, format='png')
+        plt.close(fig)
+        return base64.b64encode(buf.getvalue()).decode()
+
+    def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
+        labels = ['類似度', '平均時間', '時間ばらつき', '安定開始', 'プロ類似度']
+        values = []
+        values.append(min(score / 100 * 5, 5))
+        values.append(5 if loop_mean <= 0.4 else 0 if loop_mean >= 0.9 else 5 * (0.9 - loop_mean) / 0.5)
+        values.append(5 if loop_std <= 0.05 else 0 if loop_std >= 0.2 else 5 * (0.2 - loop_std) / 0.15)
+        values.append(5 if stable_loop <= 2 else 0 if stable_loop >= 7 else 5 * (7 - stable_loop) / 5)
+        values.append(5 if pro_distance <= 20 else 0 if pro_distance >= 120 else 5 * (120 - pro_distance) / 100)
+        angles = np.linspace(0, 2 * np.pi, len(labels) + 1, endpoint=True)
+        values += values[:1]
+        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+        ax.plot(angles, values, 'b-', linewidth=2)
+        ax.fill(angles, values, 'skyblue', alpha=0.5)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels)
+        ax.set_yticklabels([])
+        return encode_image(fig), float(np.mean(values) * 20)
+
+    self.update_state(state='PROGRESS', meta={'progress': 5})
+    acc_df = pd.DataFrame(acc)
+    gyro_df = pd.DataFrame(gyro)
+    gyro_df['z'] = pd.to_numeric(gyro_df['gz'], errors='coerce')
+    dt = (acc_df['t'].iloc[1] - acc_df['t'].iloc[0]) / 1000.0
+    fs = 1.0 / dt
+
+    mad = Madgwick(frequency=fs, gain=0.33)
+    q = [1.0, 0.0, 0.0, 0.0]
+    quats = []
+    for i in range(len(gyro_df)):
+        q = mad.updateIMU(q=q,
+                          gyr=gyro_df.loc[i, ['gx','gy','gz']],
+                          acc=acc_df.loc[i, ['ax','ay','az']])
+        quats.append([gyro_df['t'][i]/1000.0, *q])
+    quat_df = pd.DataFrame(quats, columns=['time','w','x','y','z'])
+
+    self.update_state(state='PROGRESS', meta={'progress': 20})
+
+    y = savgol_filter(gyro_df['gy'], 11, 3)
+    mu, sigma = y.mean(), y.std()
+    peaks, _ = find_peaks(y, height=mu+sigma)
+    valleys, _ = find_peaks(-y, height=abs(mu-sigma))
+    t_sec = (gyro_df['t'] - gyro_df['t'].iloc[0]) / 1000.0
+
+    loops = []
+    i = 0
+    while i < len(valleys) - 1:
+        v1 = valleys[i]
+        ps = [p for p in peaks if p > v1]
+        if not ps:
+            i += 1
+            continue
+        p = ps[0]
+        vs2 = [v for v in valleys if v > p]
+        if not vs2:
+            i += 1
+            continue
+        v2 = vs2[0]
+        if t_sec.iloc[v2] - t_sec.iloc[v1] <= 1:
+            loops.append((v1, p, v2))
+            i = valleys.tolist().index(v2)
+        else:
+            i += 1
+
+    segments = []
+    for v1, p, v2 in loops:
+        t1, t2 = t_sec.iloc[v1], t_sec.iloc[v2]
+        segments.append(quat_df[(quat_df['time'] >= t1) & (quat_df['time'] <= t2)].reset_index(drop=True))
+
+    n = len(segments)
+    dtw_mat = np.zeros((n, n))
+    for a in range(n):
+        for b in range(n):
+            dtw_mat[a, b] = sum(
+                fastdtw(segments[a][k], segments[b][k], dist=lambda x,y: abs(x-y))[0]
+                for k in ['w','x','y','z']
+            )
+
+    self.update_state(state='PROGRESS', meta={'progress': 50})
+
+    vals = dtw_mat[np.triu_indices(n, 1)]
+    score = float((100 * (1.0 - ((vals - vals.min()) / (vals.max() - vals.min()))) ).mean()) if vals.size > 0 else 0
+
+    def detect_stable(dtw):
+        N = dtw.shape[0]
+        if N < 2: return None
+        ref_idx = list(range(N - N//2, N))
+        for i in range(N - N//2):
+            mean_dist = dtw[i, ref_idx].mean()
+            if mean_dist <= vals.mean():
+                return i + 1
+        return None
+    stable_loop = detect_stable(dtw_mat)
+
+    self.update_state(state='PROGRESS', meta={'progress': 60})
+
+    pro_segments = segments[:min(5, len(segments))]
+    ref_loop = pro_segments[0] if pro_segments else None
+    distances = []
+    for seg in segments:
+        dist = sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0] for k in ['w','x','y','z'])
+        distances.append(dist)
+    pro_mean = float(np.mean(distances)) if distances else None
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    cax = ax.matshow(dtw_mat, cmap='coolwarm')
+    fig.colorbar(cax)
+    self_heatmap = encode_image(fig)
+
+    pro_mat = np.full((n, n), np.nan)
+    for i, d in enumerate(distances):
+        pro_mat[i, i] = d
+    fig2, ax2 = plt.subplots(figsize=(6, 6))
+    cax2 = ax2.matshow(pro_mat, cmap='coolwarm', vmin=20, vmax=120)
+    fig2.colorbar(cax2)
+    pro_heatmap = encode_image(fig2)
+
+    loop_durations = [t_sec.iloc[v2] - t_sec.iloc[v1] for v1, _, v2 in loops]
+    loop_mean = float(np.mean(loop_durations)) if loop_durations else None
+    loop_std = float(np.std(loop_durations)) if loop_durations else None
+    radar_chart, total_score = generate_radar_chart(score, loop_mean, loop_std, stable_loop or 7, pro_mean or 120)
+
+    snap_values = []
+    for v1, _, v2 in loops:
+        seg = acc_df[(acc_df['t']/1000 >= t_sec.iloc[v1]) & (acc_df['t']/1000 <= t_sec.iloc[v2])]
+        norm = np.sqrt(seg['ax']**2 + seg['ay']**2 + seg['az']**2)
+        snap_values.append(norm.max())
+    snap_median = float(np.median(snap_values)) if snap_values else None
+    snap_std = float(np.std(snap_values)) if snap_values else None
+
+    fig3, ax3 = plt.subplots(figsize=(10, 4))
+    ax3.plot(t_sec, y, color='orange')
+    for v1, _, v2 in loops:
+        ax3.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3)
+    loop_plot = encode_image(fig3)
+
+    self.update_state(state='PROGRESS', meta={'progress': 95})
+
+    return {
+        'score': round(score, 1),
+        'total_score': round(total_score, 1),
+        'stable_loop': stable_loop,
+        'loop_count': n,
+        'loop_mean_duration': loop_mean,
+        'loop_std_duration': loop_std,
+        'pro_distance_mean': pro_mean,
+        'snap_median': snap_median,
+        'snap_std': snap_std,
+        'self_heatmap': self_heatmap,
+        'pro_heatmap': pro_heatmap,
+        'radar_chart': radar_chart,
+        'loop_plot': loop_plot,
+        'message': '解析完了'
+    }
 
 
 
@@ -911,6 +1092,32 @@ def delete_result(result_id):
     conn.commit()
     conn.close()
     return jsonify({"status": "deleted", "id": result_id})
+
+# ==== タスク開始エンドポイント ====
+@app.route('/start_analysis', methods=['POST'])
+def start_analysis():
+    data = request.get_json()
+    acc = data.get('acc', [])
+    gyro = data.get('gyro', [])
+    task = analyze_task.apply_async(args=[acc, gyro])
+    return jsonify({'task_id': task.id})
+
+# ==== 進捗取得エンドポイント ====
+@app.route('/progress/<task_id>', methods=['GET'])
+def get_progress(task_id):
+    task = AsyncResult(task_id, app=celery)
+    if task.state == 'PENDING':
+        return jsonify({'state': task.state, 'progress': 0})
+    elif task.state == 'PROGRESS':
+        return jsonify({'state': task.state, 'progress': task.info.get('progress', 0)})
+    elif task.state == 'SUCCESS':
+        return jsonify({
+            'state': task.state,
+            'progress': 100,
+            'result': task.result  # ←結果付き
+        })
+    else:
+        return jsonify({'state': task.state, 'progress': 0})
 
 
 if __name__ == '__main__':

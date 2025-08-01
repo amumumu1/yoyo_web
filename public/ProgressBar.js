@@ -13,7 +13,7 @@ async function startRealAnalysis(accData, gyroData) {
   bar.value = 0;
 
   try {
-    const res = await fetch("/start_analysis", {
+    const res = await fetch("https://yoyo-backend.kajilab.dev/start_analysis", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ acc: accData, gyro: gyroData })
@@ -35,7 +35,7 @@ function pollProgress(taskId) {
 
   const interval = setInterval(async () => {
     try {
-      const res = await fetch(`/progress/${taskId}`);
+      const res = await fetch(`https://yoyo-backend.kajilab.dev/progress/${taskId}`);
       const data = await res.json();
 
       bar.value = data.progress;

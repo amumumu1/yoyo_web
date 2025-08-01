@@ -34,18 +34,20 @@ app = Flask(__name__)
 CORS(app)
 
 # --- 解析タスクの開始 ---
-@app.route('/start_analysis', methods=['POST'])
+@app.route("/start_analysis", methods=["POST"])  # ✅ POSTを許可！
 def start_analysis():
-    data = request.get_json()
-    acc = data.get('acc')
-    gyro = data.get('gyro')
+    try:
+        data = request.get_json()
+        acc = data.get("acc")
+        gyro = data.get("gyro")
 
-    if not acc or not gyro:
-        return jsonify({'error': 'Missing acc or gyro'}), 400
+        if not acc or not gyro:
+            return jsonify({"error": "Invalid input"}), 400
 
-    task = analyze_task.apply_async(args=[acc, gyro])
-    return jsonify({'task_id': task.id})
-
+        task = analyze_task.apply_async(args=[acc, gyro])
+        return jsonify({"task_id": task.id})  # ✅ JSONを返す
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # --- 進捗確認 ---
 @app.route('/progress/<task_id>', methods=['GET'])

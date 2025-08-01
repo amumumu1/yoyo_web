@@ -17,6 +17,11 @@ from flask import Flask, request, jsonify, send_file, render_template_string
 from datetime import datetime
 from flask import Response
 from datetime import datetime, timedelta
+from flask import Flask, request, jsonify
+from celery.result import AsyncResult
+from tasks import analyze_task  # tasks.pyのCeleryタスク
+from flask_cors import CORS
+
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 font_prop = font_manager.FontProperties(fname=font_path)
@@ -27,6 +32,36 @@ plt.rcParams['font.family'] = font_prop.get_name()
 
 app = Flask(__name__)
 CORS(app)
+
+# --- 解析タスクの開始 ---
+@app.route('/start_analysis', methods=['POST'])
+def start_analysis():
+    data = request.get_json()
+    acc = data.get('acc')
+    gyro = data.get('gyro')
+
+    if not acc or not gyro:
+        return jsonify({'error': 'Missing acc or gyro'}), 400
+
+    task = analyze_task.apply_async(args=[acc, gyro])
+    return jsonify({'task_id': task.id})
+
+
+# --- 進捗確認 ---
+@app.route('/progress/<task_id>', methods=['GET'])
+def check_progress(task_id):
+    result = AsyncResult(task_id)
+
+    if result.state == 'PENDING':
+        return jsonify({'progress': 0, 'state': 'PENDING'})
+    elif result.state == 'PROGRESS':
+        return jsonify({'progress': result.info.get('progress', 0), 'state': 'PROGRESS'})
+    elif result.state == 'SUCCESS':
+        return jsonify({'progress': 100, 'state': 'SUCCESS', 'done': True, 'result': result.result})
+    elif result.state == 'FAILURE':
+        return jsonify({'progress': 0, 'state': 'FAILURE', 'error': str(result.info)}), 500
+    else:
+        return jsonify({'progress': 0, 'state': result.state})
 
 def encode_heatmap(mat: np.ndarray, title: str) -> str:
     """行列 mat をヒートマップ化して Base64 文字列で返す"""

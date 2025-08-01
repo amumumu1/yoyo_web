@@ -383,7 +383,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii'), float(avg_score)
 
-@celery.task(bind=True)
+@celery.task(bind=True, name='app.analyze_task')
 def analyze_task(self, acc, gyro):
     import pandas as pd, numpy as np
     from ahrs.filters import Madgwick

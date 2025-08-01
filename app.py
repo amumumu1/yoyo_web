@@ -1103,6 +1103,10 @@ def delete_result(result_id):
 @app.route('/start_analysis', methods=['POST'])
 def start_analysis():
     data = request.get_json()
+    print("=== start_analysis received ===")
+    print(data)         # ← ここを追加
+    print("acc len:", len(data.get('acc', [])))
+    print("gyro len:", len(data.get('gyro', [])))
     acc = data.get('acc', [])
     gyro = data.get('gyro', [])
     task = analyze_task.apply_async(args=[acc, gyro])

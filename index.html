@@ -98,7 +98,7 @@
     <input type="file" id="csvFiles" accept=".csv" multiple style="display:none;">
     <button id="btnCsvMode">CSVから解析</button>
     <button id="btnStop" disabled>センシング終了 &amp; 解析</button>
-    <button id="btnRi">履歴を見る</button>
+    <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
 
     <!-- プログレスバー -->
     <div id="loading">
@@ -414,6 +414,9 @@
         document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
         document.getElementById('proHeatmap').src  = `data:image/png;base64,${json.pro_heatmap}`;
 
+        document.getElementById('HeatmapTitle').style.display = 'block';
+        document.getElementById('Rui').style.display         = 'flex';
+
         // Stats
         scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${
           json.stable_loop!==null?`安定開始ループ: ${json.stable_loop}周目`:'安定開始ループ: なし'
@@ -435,6 +438,25 @@
             `<p>手首を返す強さ（ループごとの中央値）：${json.snap_median.toFixed(2)} m/s²</p>`+
             `<p>手首を返す強さ（ループごとのばらつき）：${json.snap_std.toFixed(2)} m/s²</p>`;
         }
+
+        // --- ここから追加 ---
+        // CSVセクション（区切り線）
+        document.getElementById('hrCsv').style.display   = 'block';
+        // CSVタイトル
+        document.getElementById('csvTitle').style.display = 'block';
+        // CSV保存ボタン
+        document.getElementById('btnSaveCsv').style.display = 'inline-block';
+        // 生データラベル＆中身
+        document.getElementById('accLabel').style.display  = 'block';
+        document.getElementById('gyroLabel').style.display = 'block';
+        document.getElementById('accOutput').style.display  = 'block';
+        document.getElementById('gyroOutput').style.display = 'block';
+
+        // CSVの中身を埋める（センシングモード／CSVモード 両方の場合）
+        document.getElementById('accOutput').textContent  =
+          'time,x,y,z\n' + acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
+        document.getElementById('gyroOutput').textContent =
+          'time,x,y,z\n' + gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n')
       }
 
       // 保存
@@ -465,10 +487,7 @@
         saveFile(gyroCsv,`${ts}_gyro.csv`);
       };
 
-      // 履歴へ移動
-      btnRi.onclick = ()=> {
-        window.location.href = `${API_ROOT}/viewer`;
-      };
+    
     </script>
   </div>
 </body>

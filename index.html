@@ -285,7 +285,7 @@
         loadingDiv.style.display = 'block';
         startFakeProgress(); // ← 追加
         try {
-          startRealAnalysis(accDataJson, gyroDataJson);  // ← 差し替えここだけ！
+          await startRealAnalysis(accDataJson, gyroDataJson);  // ← 差し替えここだけ！
           // const res = await fetch(API_BASE, {
           //   method: 'POST', headers: { 'Content-Type': 'application/json' },
           //   body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
@@ -367,15 +367,15 @@
           accOutput.textContent = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
           gyroOutput.textContent = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
           // 🔄 進捗バー付き解析開始！
-          startRealAnalysis(acc, gyro);  // ← ここだけ変えればOK
-          const res = await fetch(API_BASE, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ acc, gyro })
-          });
-          const json = await res.json();
-          lastResult = json;
-          renderResult(json);
+          await startRealAnalysis(acc, gyro);  // ← ここだけ変えればOK
+          // const res = await fetch(API_BASE, {
+          //   method: 'POST',
+          //   headers: { 'Content-Type': 'application/json' },
+          //   body: JSON.stringify({ acc, gyro })
+          // });
+          // const json = await res.json();
+          // lastResult = json;
+          // renderResult(json);
         } catch (err) {
           alert('解析失敗: ' + err.message);
         } finally {

@@ -120,7 +120,7 @@ def get_progress(task_id):
         return jsonify({'error': 'Unknown task_id'}), 404
     return jsonify(info)
 
-# ── ユーティリティ関数 ─────────────────────────────────
+# ── ヘルパー関数 ─────────────────────────────────────
 def encode_heatmap(mat: np.ndarray, title: str) -> str:
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(mat, cmap='coolwarm')
@@ -136,23 +136,6 @@ def encode_heatmap(mat: np.ndarray, title: str) -> str:
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii')
 
-def detect_stable_loop_by_tail(dtw_matrix: np.ndarray) -> int:
-    N = dtw_matrix.shape[0]
-    if N < 2:
-        return None
-    vals = dtw_matrix[np.triu_indices(N, k=1)]
-    if vals.size == 0:
-        return None
-    d_min, d_max = vals.min(), vals.max()
-    threshold = (d_min + d_max) / 2
-    tail_len = N // 2
-    ref_idx = list(range(N - tail_len, N))
-    for i in range(N - tail_len):
-        mean_dist = dtw_matrix[i, ref_idx].mean()
-        if mean_dist <= threshold:
-            return i + 1
-    return None
-
 def load_and_compute_quaternions(acc_csv, gyro_csv, gain=0.33):
     acc  = pd.read_csv(acc_csv)
     gyro = pd.read_csv(gyro_csv)
@@ -164,7 +147,7 @@ def load_and_compute_quaternions(acc_csv, gyro_csv, gain=0.33):
     quats = []
     for i in range(len(gyro)):
         gyr = [gyro.at[i,'x'], gyro.at[i,'y'], gyro.at[i,'z']]
-        a   = [acc.at[i,'x'], acc.at[i,'y'], acc.at[i,'z']]
+        a   = [acc.at[i,'x'],  acc.at[i,'y'],  acc.at[i,'z']]
         q   = mad.updateIMU(q=q, gyr=gyr, acc=a)
         quats.append([gyro.at[i,'time']/1000, *q])
     return gyro, pd.DataFrame(quats, columns=["time","w","x","y","z"])
@@ -203,15 +186,70 @@ def segment_loops(gyro, quats):
     return segments
 
 def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
-    # スケール化（省略）
-    # …旧コードと同じ…
+    # 各指標を0〜5にスケーリング
+    if score is None:         s_score=0
+    elif score>=100:          s_score=5
+    elif score<=0:            s_score=0
+    else:                     s_score=(score/100)*5
+
+    if loop_mean is None:     s_mean=0
+    elif loop_mean<=0.4:      s_mean=5
+    elif loop_mean>=0.9:      s_mean=0
+    else:                     s_mean=5*(0.9-loop_mean)/(0.9-0.4)
+
+    if loop_std is None:      s_std=0
+    elif loop_std<=0.05:      s_std=5
+    elif loop_std>=0.2:       s_std=0
+    else:                     s_std=5*(0.2-loop_std)/(0.2-0.05)
+
+    if stable_loop is None:   s_stable=0
+    elif stable_loop<=2:      s_stable=5
+    elif stable_loop>=7:      s_stable=0
+    else:                     s_stable=5*(7-stable_loop)/(7-2)
+
+    if pro_distance is None:  s_pro=0
+    elif pro_distance<=20:    s_pro=5
+    elif pro_distance>=120:   s_pro=0
+    else:                     s_pro=5*(120-pro_distance)/(120-20)
+
     labels = ['自身の類似度','平均ループ時間','ループ時間のばらつき','安定開始ループ','プロ類似度']
-    # …同じ…
-    fig, ax = plt.subplots(figsize=(10,10),subplot_kw=dict(polar=True))
-    # …同じ…
-    buf=BytesIO(); fig.savefig(buf,format='png',bbox_inches='tight'); plt.close(fig)
-    avg_score = float(np.mean([s_score, s_mean, s_std, s_stable, s_pro]) * 20)
-    return base64.b64encode(buf.getvalue()).decode('ascii'), avg_score
+    values = [s_score, s_mean, s_std, s_stable, s_pro]
+    avg_score = np.mean(values) * 20
+    values += values[:1]
+    angles = np.linspace(0, 2*np.pi, len(labels)+1, endpoint=True)
+
+    fig, ax = plt.subplots(figsize=(10,10), subplot_kw=dict(polar=True))
+    ax.set_theta_offset(np.pi/2); ax.set_theta_direction(-1)
+    ax.grid(False); ax.set_frame_on(False); ax.set_thetagrids([])
+    ax.set_rgrids([1,2,3,4,5], angle=0, fontproperties=font_prop, fontsize=20)
+    for r in range(1,6):
+        ax.plot(angles, [r]*(len(labels)+1), color='gray', linewidth=1)
+    for angle, label in zip(angles[:-1], labels):
+        ax.text(angle, 6.3, label, ha='center', va='center', fontsize=25, fontproperties=font_prop)
+    ax.plot(angles, values, linewidth=2)
+    ax.fill(angles, values, alpha=0.4)
+
+    buf = BytesIO()
+    fig.savefig(buf, format='png', bbox_inches='tight')
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode('ascii'), float(avg_score)
+
+# 安定開始ループ検出用
+def detect_stable_loop_by_tail(dtw_matrix):
+    N = dtw_matrix.shape[0]
+    if N < 2:
+        return None
+    vals = dtw_matrix[np.triu_indices(N, k=1)]
+    if vals.size == 0:
+        return None
+    d_min, d_max = vals.min(), vals.max()
+    threshold = (d_min + d_max) / 2
+    tail_len = N // 2
+    ref_idx = list(range(N - tail_len, N))
+    for i in range(N - tail_len):
+        if dtw_matrix[i, ref_idx].mean() <= threshold:
+            return i + 1
+    return None
 
 # ── 解析エンドポイント ─────────────────────────────────
 @app.route('/analyze', methods=['POST'])
@@ -220,183 +258,213 @@ def analyze():
     if not task_id or task_id not in progress_store:
         return jsonify({'error':'Invalid task_id'}),400
 
-    progress_store[task_id]={'progress':0,'message':'解析開始…'}
+    # 0: 開始
+    progress_store[task_id] = {'progress':0,  'message':'解析開始…'}
 
-    # 1. プロデータ読み込み
-    progress_store[task_id]={'progress':5,'message':'プロデータ読込中…'}
-    pro_acc="3_acc2.csv"; pro_gyro="3_gyro2.csv"
-    gyro_pro, quats_pro = load_and_compute_quaternions(pro_acc,pro_gyro)
+    # 1: プロデータ読込
+    progress_store[task_id] = {'progress':5,  'message':'プロデータ読込中…'}
+    pro_acc, pro_gyro = "3_acc2.csv", "3_gyro2.csv"
+    gyro_pro, quats_pro = load_and_compute_quaternions(pro_acc, pro_gyro)
 
-    # 2. プロループ抽出
-    progress_store[task_id]={'progress':10,'message':'プロループ抽出中…'}
-    pro_segments = segment_loops(gyro_pro,quats_pro)
+    # 2: プロループ抽出
+    progress_store[task_id] = {'progress':10, 'message':'プロループ抽出中…'}
+    pro_segments = segment_loops(gyro_pro, quats_pro)
 
-    # 3. JSON受信
-    progress_store[task_id]={'progress':15,'message':'入力データ受信…'}
+    # 3: JSON受信
+    progress_store[task_id] = {'progress':15, 'message':'入力データ受信…'}
     payload = request.get_json(force=True)
 
-    # 4. データ前処理
-    progress_store[task_id]={'progress':20,'message':'データ前処理…'}
-    acc_df=pd.DataFrame(payload['acc'])
-    gyro_df=pd.DataFrame(payload['gyro'])
-    gyro_df['z']=pd.to_numeric(gyro_df['gz'],errors='coerce')
-    dt=(acc_df['t'].iloc[1]-acc_df['t'].iloc[0])/1000.0
+    # 4: データ前処理
+    progress_store[task_id] = {'progress':20, 'message':'データ前処理…'}
+    acc_df  = pd.DataFrame(payload['acc'])
+    gyro_df = pd.DataFrame(payload['gyro'])
+    gyro_df['z'] = pd.to_numeric(gyro_df['gz'], errors='coerce')
+    t0 = acc_df['t'].iloc[0]
+    dt = (acc_df['t'].iloc[1] - t0) / 1000.0
 
-    # 5. ユーザークォータニオン計算
-    progress_store[task_id]={'progress':25,'message':'姿勢計算中…'}
-    mad=Madgwick(frequency=1.0/dt,gain=0.33)
-    q=[1,0,0,0]; quats=[]
+    # 5: クォータニオン計算
+    progress_store[task_id] = {'progress':25, 'message':'姿勢計算中…'}
+    mad = Madgwick(frequency=1.0/dt, gain=0.33)
+    q = [1,0,0,0]; quats = []
     for i in range(len(gyro_df)):
-        gyr=gyro_df.loc[i,['gx','gy','z']].tolist()
-        acc=acc_df.loc[i,['ax','ay','az']].tolist()
-        q=mad.updateIMU(q=q,gyr=gyr,acc=acc)
-        quats.append([gyro_df['t'][i]/1000,*q])
-    quat_df=pd.DataFrame(quats,columns=['time','w','x','y','z'])
+        gyr = gyro_df.loc[i, ['gx','gy','z']].tolist()
+        a   = acc_df.loc[i, ['ax','ay','az']].tolist()
+        q = mad.updateIMU(q=q, gyr=gyr, acc=a)
+        quats.append([gyro_df['t'].iloc[i]/1000, *q])
+    quat_df = pd.DataFrame(quats, columns=['time','w','x','y','z'])
 
-    # 6. フィルタ＆ピーク検出
-    progress_store[task_id]={'progress':30,'message':'ピーク検出中…'}
-    y=savgol_filter(gyro_df['gy'],window_length=11,polyorder=3)
-    peaks,_=find_peaks(y,height=y.mean()+y.std())
-    valleys,_=find_peaks(-y,height=y.std()-y.mean())
+    # 6: フィルタ＆ピーク検出
+    progress_store[task_id] = {'progress':30, 'message':'ピーク検出中…'}
+    y = savgol_filter(gyro_df['gy'], window_length=11, polyorder=3)
+    peaks, _   = find_peaks(y, height=y.mean()+y.std())
+    valleys, _ = find_peaks(-y, height=y.std()-y.mean())
 
-    # 7. ループ検出
-    progress_store[task_id]={'progress':40,'message':'ループ検出中…'}
-    loops=[]; t_sec=(gyro_df['t']-gyro_df['t'].iloc[0])/1000.0; i=0
-    while i<len(valleys)-1:
-        v1=valleys[i]
-        ps=[p for p in peaks if p>v1 and y[p]>y.mean()+y.std()]
+    # 7: ループ検出
+    progress_store[task_id] = {'progress':40, 'message':'ループ検出中…'}
+    t_sec = (gyro_df['t'] - t0) / 1000.0
+    loops = []
+    i = 0
+    while i < len(valleys)-1:
+        v1 = valleys[i]
+        ps = [p for p in peaks if p>v1 and y[p]>y.mean()+y.std()]
         if ps:
-            p=ps[0]; vs2=[v for v in valleys if v>p and y[v]<y.mean()-y.std()]
+            p = ps[0]
+            vs2 = [v for v in valleys if v>p and y[v]<y.std()-y.mean()]
             if vs2 and (t_sec.iloc[vs2[0]]-t_sec.iloc[v1])<=1.0:
-                loops.append((v1,p,vs2[0])); i=valleys.tolist().index(vs2[0]); continue
-        i+=1
+                loops.append((v1, p, vs2[0]))
+                i = valleys.tolist().index(vs2[0])
+                continue
+        i += 1
 
-    # 8. 自己比較行列計算
-    progress_store[task_id]={'progress':50,'message':'自己比較行列計算…'}
-    n=len(loops); dtw_mat=np.zeros((n,n)); segments=[]
+    # 8: 自己比較行列計算
+    progress_store[task_id] = {'progress':50, 'message':'自己比較行列計算…'}
+    n = len(loops)
+    dtw_mat = np.zeros((n,n))
+    segments = []
     for v1,_,v2 in loops:
-        mask=(quat_df['time']>=t_sec.iloc[v1])&(quat_df['time']<=t_sec.iloc[v2])
+        mask = (quat_df['time']>=t_sec.iloc[v1]) & (quat_df['time']<=t_sec.iloc[v2])
         segments.append(quat_df[mask].reset_index(drop=True))
     for a in range(n):
         for b in range(n):
-            dtw_mat[a,b]=sum(fastdtw(segments[a][k],segments[b][k],dist=lambda x,y:abs(x-y))[0]
-                             for k in ['w','x','y','z'])
+            dtw_mat[a,b] = sum(
+                fastdtw(segments[a][k], segments[b][k], dist=lambda x,y:abs(x-y))[0]
+                for k in ['w','x','y','z']
+            )
 
-    # 9. プロ比較距離
-    progress_store[task_id]={'progress':60,'message':'プロ比較距離計算…'}
-    distances=[]
+    # 9: プロ比較距離計算
+    progress_store[task_id] = {'progress':60, 'message':'プロ比較距離計算…'}
+    distances = []
     try:
-        M=len(pro_segments)
-        pro_dtw=np.zeros((M,M))
+        M = len(pro_segments)
+        pro_dtw = np.zeros((M,M))
         for i in range(M):
             for j in range(M):
-                pro_dtw[i,j]=sum(fastdtw(pro_segments[i][k],pro_segments[j][k],dist=lambda a,b:abs(a-b))[0]
-                                 for k in ['w','x','y','z'])
-        valid_idx=np.arange(M)[1:-1]
-        ref_idx=valid_idx[np.argmin(pro_dtw.sum(axis=1)[1:-1])]
-        ref_loop=pro_segments[ref_idx]
-        distances=[sum(fastdtw(seg[k],ref_loop[k],dist=lambda a,b:abs(a-b))[0]
-                       for k in ['w','x','y','z']) for seg in segments]
+                pro_dtw[i,j] = sum(
+                    fastdtw(pro_segments[i][k], pro_segments[j][k], dist=lambda a,b:abs(a-b))[0]
+                    for k in ['w','x','y','z']
+                )
+        valid_idx = np.arange(M)[1:-1]
+        ref_idx   = valid_idx[np.argmin(pro_dtw.sum(axis=1)[1:-1])]
+        ref_loop  = pro_segments[ref_idx]
+        distances = [
+            sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0])
+            for seg in segments
+        ]
     except:
-        distances=[0]*n
+        distances = [0]*n
 
-    # 10. 各種統計をここでまとめて計算
-    stable_loop         = detect_stable_loop_by_tail(dtw_mat)
-    loop_durations      = [ float(t_sec[v2] - t_sec[v1]) for v1,_,v2 in loops ]
-    loop_mean_duration  = float(np.mean(loop_durations)) if loop_durations else None
-    loop_std_duration   = float(np.std(loop_durations))  if loop_durations else None
-
-    loop_duration_list  = []
-    loop_max_acc_list   = []
-    snap_values         = []
-    for idx,(v1,p,v2) in enumerate(loops):
-        t0, t1 = t_sec[v1], t_sec[v2]
-        duration = t1 - t0
-        acc_seg = acc_df[(acc_df['t']/1000>=t0)&(acc_df['t']/1000<=t1)]
-        if not acc_seg.empty:
-            norm = np.sqrt(acc_seg['ax']**2 + acc_seg['ay']**2 + acc_seg['az']**2)
-            max_norm = float(norm.max())
-        else:
-            max_norm = None
-        loop_duration_list.append(f"ループ {idx+1}: {duration:.3f} 秒 / {max_norm or 0:.2f} m/s²")
-        loop_max_acc_list.append(f"ループ {idx+1}: {max_norm or 0:.3f} m/s²")
-        if max_norm is not None:
-            snap_values.append(max_norm)
-
-    snap_median = float(np.median(snap_values)) if snap_values else None
-    snap_std    = float(np.std(snap_values))    if snap_values else None
-
-    # 11. Selfヒートマップ作成
-    progress_store[task_id]={'progress':65,'message':'自身ヒートマップ作成…'}
+    # 10: Self ヒートマップ
+    progress_store[task_id] = {'progress':65, 'message':'自身ヒートマップ作成…'}
     self_hm = encode_heatmap(dtw_mat, 'Self Loop Similarity')
 
-    # 12. Proヒートマップ作成
-    progress_store[task_id]={'progress':70,'message':'プロヒートマップ作成…'}
+    # 11: Pro ヒートマップ
+    progress_store[task_id] = {'progress':70, 'message':'プロヒートマップ作成…'}
     pro_mat = np.full_like(dtw_mat, np.nan)
-    for i,d in enumerate(distances): pro_mat[i,i] = d
+    for i,d in enumerate(distances):
+        pro_mat[i,i] = d
     pro_hm = encode_heatmap(pro_mat, 'Pro vs Each Loop')
 
-    # 13. ループ検出グラフ作成
-    progress_store[task_id]={'progress':75,'message':'ループ検出グラフ作成…'}
-    fig2,ax2=plt.subplots(figsize=(12,6))
-    ax2.plot(t_sec,y,color='orange')
+    # 12: ループ検出グラフ
+    progress_store[task_id] = {'progress':75, 'message':'ループ検出グラフ作成…'}
+    fig2, ax2 = plt.subplots(figsize=(12,6))
+    ax2.plot(t_sec, y, color='orange')
     for idx,(v1,p,v2) in enumerate(loops):
-        ax2.axvspan(t_sec[v1],t_sec[v2],color='red',alpha=0.3,label='1周' if idx==0 else "")
-    ax2.plot(t_sec[peaks],y[peaks],"go",label="ピーク")
-    ax2.plot(t_sec[valleys],y[valleys],"ro",label="谷")
-    ax2.set_title("ループ検出",fontproperties=font_prop)
-    ax2.set_xlabel("時間 [秒]",fontproperties=font_prop)
-    ax2.set_ylabel("角速度 gy [rad/s]",fontproperties=font_prop)
+        ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3,
+                    label='1周' if idx==0 else "")
+    ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label="ピーク")
+    ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label="谷")
+    ax2.set_title("ループ検出", fontproperties=font_prop)
+    ax2.set_xlabel("時間 [秒]", fontproperties=font_prop)
+    ax2.set_ylabel("角速度 gy [rad/s]", fontproperties=font_prop)
     ax2.legend(prop=font_prop); ax2.grid(True)
-    buf2=BytesIO(); fig2.savefig(buf2,format='png'); plt.close(fig2)
+    buf2 = BytesIO(); fig2.savefig(buf2, format='png'); plt.close(fig2)
     loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
 
-    # 14. プロ比較バーグラフ作成
-    progress_store[task_id]={'progress':80,'message':'バーグラフ作成…'}
-    fig3,ax3=plt.subplots(figsize=(8,4))
-    idxs=list(range(1,n+1))
+    # 13: プロ比較バーグラフ
+    progress_store[task_id] = {'progress':80, 'message':'バーグラフ作成…'}
+    fig3, ax3 = plt.subplots(figsize=(8,4))
+    idxs = list(range(1, n+1))
     ax3.bar(idxs, distances, edgecolor='black')
     ax3.set_title("プロと各ループの距離比較", fontproperties=font_prop)
     ax3.set_xlabel("あなたのループ番号", fontproperties=font_prop)
     ax3.set_ylabel("DTW距離", fontproperties=font_prop)
     ax3.set_xticks(idxs); ax3.grid(True)
-    buf3=BytesIO(); fig3.savefig(buf3,format='png'); plt.close(fig3)
+    buf3 = BytesIO(); fig3.savefig(buf3, format='png'); plt.close(fig3)
     compare_plot_b64 = base64.b64encode(buf3.getvalue()).decode('ascii')
 
-    # 15. レーダーチャート作成
-    progress_store[task_id]={'progress':90,'message':'レーダーチャート作成…'}
+    # スコア算出
+    vals = dtw_mat[np.triu_indices(n, 1)]
+    if vals.size > 0 and not np.isnan(vals).any():
+        norm = np.zeros_like(vals) if vals.max()==vals.min() else (vals - vals.min())/(vals.max()-vals.min())
+        score = float((100*(1.0 - norm)).mean())
+    else:
+        score = 0.0
+
+    # 14: 安定開始ループ検出
+    progress_store[task_id] = {'progress':92, 'message':'安定開始ループ検出…'}
+    stable_loop = detect_stable_loop_by_tail(dtw_mat)
+
+    # 15: ループ時間＆最大加速度リスト
+    progress_store[task_id] = {'progress':94, 'message':'ループ時間・最大加速度計算…'}
+    loop_durations    = [float(t_sec[v2] - t_sec[v1]) for v1,_,v2 in loops]
+    loop_duration_list= []
+    loop_max_acc_list = []
+    for i,(v1,_,v2) in enumerate(loops):
+        t_start, t_end = t_sec.iloc[v1], t_sec.iloc[v2]
+        loop_duration_list.append(f"ループ {i+1}: {(t_end-t_start):.3f} 秒")
+        seg = acc_df[(acc_df['t']/1000>=t_start)&(acc_df['t']/1000<=t_end)]
+        if not seg.empty:
+            norm = np.sqrt(seg['ax']**2 + seg['ay']**2 + seg['az']**2)
+            loop_max_acc_list.append(f"ループ {i+1}: {norm.max():.3f} m/s²")
+        else:
+            loop_max_acc_list.append(f"ループ {i+1}: -")
+
+    # 16: スナップ統計
+    progress_store[task_id] = {'progress':96, 'message':'スナップ統計計算…'}
+    snap_vals = []
+    for v1,_,v2 in loops:
+        seg = acc_df[(acc_df['t']/1000>=t_sec.iloc[v1])&(acc_df['t']/1000<=t_sec.iloc[v2])]
+        if not seg.empty:
+            norm = np.sqrt(seg['ax']**2 + seg['ay']**2 + seg['az']**2)
+            snap_vals.append(norm.max())
+    snap_median = float(np.median(snap_vals)) if snap_vals else None
+    snap_std    = float(np.std(snap_vals))    if snap_vals else None
+
+    # 17: レーダーチャート再作成
+    progress_store[task_id] = {'progress':98, 'message':'レーダーチャート作成中…'}
+    loop_mean_duration = float(np.mean(loop_durations)) if loop_durations else None
+    loop_std_duration  = float(np.std(loop_durations))  if loop_durations else None
     radar_b64, total_score = generate_radar_chart(
-        score=float((100*(1.0-(1.0-np.triu(dtw_mat,k=1).mean()))) if n>1 else 0.0),
+        score=score,
         loop_mean=loop_mean_duration,
         loop_std=loop_std_duration,
         stable_loop=stable_loop,
         pro_distance=float(np.mean(distances)) if distances else None
     )
 
-    # 16. 完了
-    progress_store[task_id]={'progress':100,'message':'完了'}
+    # 完了
+    progress_store[task_id] = {'progress':100,'message':'完了'}
     result = {
-        'self_heatmap'       : self_hm,
-        'pro_heatmap'        : pro_hm,
-        'loop_plot'          : loop_plot_b64,
-        'compare_plot'       : compare_plot_b64,
-        'radar_chart'        : radar_b64,
-        'total_score'        : total_score,
-        'score'              : float((100*(1.0-(1.0-np.triu(dtw_mat,k=1).mean()))) if n>1 else 0.0),
-        'loop_count'         : n,
-        'pro_distance_mean'  : float(np.mean(distances)) if distances else None,
-        # ここから不足分
-        'stable_loop'        : stable_loop,
-        'loop_mean_duration' : loop_mean_duration,
-        'loop_std_duration'  : loop_std_duration,
-        'loop_duration_list' : loop_duration_list,
-        'loop_max_acc_list'  : loop_max_acc_list,
-        'snap_median'        : snap_median,
-        'snap_std'           : snap_std
+        'self_heatmap':       self_hm,
+        'pro_heatmap':        pro_hm,
+        'loop_plot':          loop_plot_b64,
+        'compare_plot':       compare_plot_b64,
+        'radar_chart':        radar_b64,
+        'total_score':        total_score,
+        'score':              score,
+        'loop_count':         n,
+        'stable_loop':        stable_loop,
+        'loop_mean_duration': loop_mean_duration,
+        'loop_std_duration':  loop_std_duration,
+        'loop_duration_list': loop_duration_list,
+        'loop_max_acc_list':  loop_max_acc_list,
+        'snap_median':        snap_median,
+        'snap_std':           snap_std,
+        'pro_distance_mean':  float(np.mean(distances)) if distances else None
     }
     return jsonify(result)
 
-# ── 既存エンドポイント ─────────────────────────────────
+# ── 既存エンドポイント（保存・履歴取得など） ─────────────────────────────────
 @app.route("/save_result", methods=["POST"])
 def save_result():
     result = request.get_json()
@@ -464,9 +532,9 @@ def download_result_csv(result_id):
             zi.date_time=(jst_dt.year,jst_dt.month,jst_dt.day,jst_dt.hour,jst_dt.minute,jst_dt.second)
             zf.writestr(zi,content)
     buf.seek(0)
-    quoted_name = name or "result"
-    return Response(buf,mimetype="application/zip",
-                    headers={"Content-Disposition":f"attachment; filename*=UTF-8''{quoted_name}_csv.zip"})
+    quoted = name or "result"
+    return Response(buf, mimetype="application/zip",
+                    headers={"Content-Disposition":f"attachment; filename*=UTF-8''{quoted}_csv.zip"})
 
 @app.route("/results/<int:result_id>", methods=["DELETE"])
 def delete_result(result_id):

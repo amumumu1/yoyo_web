@@ -238,7 +238,7 @@
       const res = await fetch(`${BACKEND}/start_analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acc, gyro })
+        body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
       });
 
 
@@ -277,7 +277,7 @@
       const res = await fetch(`${BACKEND}/start_analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
+        body: JSON.stringify({ acc: acc, gyro: gyro })
       });
       if (!res.ok) {
         alert(`解析サーバーエラー: ${res.status}`);

@@ -36,7 +36,11 @@ app.config.update(
     CELERY_RESULT_BACKEND='redis://localhost:6379/0'
 )
 
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery = Celery(
+    app.import_name,
+    broker=app.config['broker_url'],
+    backend=app.config['result_backend']
+)
 
 celery.conf.update(app.config)
 def encode_heatmap(mat: np.ndarray, title: str) -> str:

@@ -129,9 +129,6 @@
     <div id="proDistance"></div><br>
     <div id="loopSummary"></div>
     <pre id="loopDetails" style="display: none;"></pre>
-    <!-- loopDetails の下あたりに追加 -->
-    <pre id="accMaxDetails" style="display: none; background: #f4f4f4; padding: 10px; max-height: 200px; overflow: auto;"></pre>
-
     <h3 id="Ken" style="display: none;">ループ検出</h3>
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
     <h3 id="HeatmapTitle" style="display: none;">ループ類似度</h3>
@@ -432,16 +429,6 @@
           loopDetails.textContent = json.loop_duration_list.join('\n');
           loopDetails.style.display='block';
         } else loopDetails.style.display='none';
-        
-        const accMaxDetails = document.getElementById('accMaxDetails');
-        if (json.loop_max_acc_list?.length) {
-          // もし文字列で ["ループ 1: 12.34", ...] を返しているなら、そのまま join でOK
-          accMaxDetails.textContent = json.loop_max_acc_list.join('\n');
-          accMaxDetails.style.display = 'block';
-        } else {
-          accMaxDetails.style.display = 'none';
-        }
-
 
         if(json.snap_median!==null && json.snap_std!==null){
           document.getElementById('loopSummary').innerHTML +=

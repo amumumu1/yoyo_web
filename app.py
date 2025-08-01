@@ -415,8 +415,12 @@ def analyze():
     stable_loop = detect_stable_loop_by_tail(dtw_mat)
 
     # 15: ループ時間＆最大加速度リスト
+    # 15: ループ時間＆最大加速度リスト
     progress_store[task_id] = {'progress':94, 'message':'ループ時間・最大加速度計算…'}
+
     loop_duration_list = []
+    loop_max_acc_list  = []
+
     for i, (v1, _, v2) in enumerate(loops):
         # ループ時間
         t_start = t_sec.iloc[v1]
@@ -426,17 +430,15 @@ def analyze():
         # 加速度ノルム計算
         seg = acc_df[(acc_df['t']/1000 >= t_start) & (acc_df['t']/1000 <= t_end)]
         if not seg.empty:
-            norm = np.sqrt(seg['ax']**2 + seg['ay']**2 + seg['az']**2)
+            norm     = np.sqrt(seg['ax']**2 + seg['ay']**2 + seg['az']**2)
             max_norm = norm.max()
-            loop_duration_list.append(
-                f"ループ {i+1}: {duration:.3f} 秒　{max_norm:.3f} m/s²"
-            )
+            # 秒と m/s² を一行にまとめる
+            loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒　{max_norm:.3f} m/s²")
+            loop_max_acc_list.append(max_norm)
         else:
-            loop_duration_list.append(
-                f"ループ {i+1}: {duration:.3f} 秒　- m/s²"
-            )
+            loop_duration_list.append(f"ループ {i+1}: {duration:.3f} 秒　- m/s²")
+            loop_max_acc_list.append(None)
 
-    # （もしも別途 loop_max_acc_list が不要なら捨ててしまってもOK）
 
 
     # 16: スナップ統計

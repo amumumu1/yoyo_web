@@ -81,6 +81,26 @@ def analyze_task(self, acc_data, gyro_data):
 
         self.update_state(state='PROGRESS', meta={'progress': 55})
 
+        # 安定開始ループの検出
+        def detect_stable_loop_by_tail(dtw_matrix):
+            N = dtw_matrix.shape[0]
+            if N < 2:
+                return None
+            vals = dtw_matrix[np.triu_indices(N, k=1)]
+            if vals.size == 0:
+                return None
+            d_min, d_max = vals.min(), vals.max()
+            threshold = (d_min + d_max) / 2
+            tail_len = N // 2
+            ref_idx = list(range(N - tail_len, N))
+            for i in range(N - tail_len):
+                mean_dist = dtw_matrix[i, ref_idx].mean()
+                if mean_dist <= threshold:
+                    return i + 1
+            return None
+
+        stable_loop = detect_stable_loop_by_tail(dtw_mat)
+
         vals = dtw_mat[np.triu_indices(n, 1)]
         if vals.size > 0:
             if vals.max() != vals.min():
@@ -123,7 +143,7 @@ def analyze_task(self, acc_data, gyro_data):
             'snap_median': snap_median,
             'snap_std': snap_std,
             'loop_duration_list': loop_duration_list,
-            
+            'stable_loop': stable_loop        
         }
 
         self.update_state(state='PROGRESS', meta={'progress': 100})

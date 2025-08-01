@@ -332,26 +332,36 @@ def analyze():
             )
 
     # 9: プロ比較距離計算
+        # 9: プロ比較距離計算
     progress_store[task_id] = {'progress':60, 'message':'プロ比較距離計算…'}
     distances = []
     try:
+        # プロ側のループから代表ループを選定
         M = len(pro_segments)
-        pro_dtw = np.zeros((M,M))
+        pro_dtw = np.zeros((M, M))
         for i in range(M):
             for j in range(M):
-                pro_dtw[i,j] = sum(
-                    fastdtw(pro_segments[i][k], pro_segments[j][k], dist=lambda a,b:abs(a-b))[0]
-                    for k in ['w','x','y','z']
+                pro_dtw[i, j] = sum(
+                    fastdtw(pro_segments[i][k], pro_segments[j][k], dist=lambda a, b: abs(a - b))[0]
+                    for k in ['w', 'x', 'y', 'z']
                 )
-        valid_idx = np.arange(M)[1:-1]
-        ref_idx   = valid_idx[np.argmin(pro_dtw.sum(axis=1)[1:-1])]
-        ref_loop  = pro_segments[ref_idx]
+        valid_indices = np.arange(M)[1:-1]
+        row_sums = pro_dtw.sum(axis=1)
+        ref_idx = valid_indices[np.argmin(row_sums[1:-1])]
+        ref_loop = pro_segments[ref_idx]
+
+        # 各自分ループとの距離を計算（前のapp.pyと同じロジック）
         distances = [
-            sum(fastdtw(seg[k], ref_loop[k], dist=lambda a,b:abs(a-b))[0])
+            sum(
+                fastdtw(seg[k], ref_loop[k], dist=lambda a, b: abs(a - b))[0]
+                for k in ['w', 'x', 'y', 'z']
+            )
             for seg in segments
         ]
-    except:
-        distances = [0]*n
+    except Exception as e:
+        print("プロ比較エラー:", e)
+        distances = [0] * n
+
 
     # 10: Self ヒートマップ
     progress_store[task_id] = {'progress':65, 'message':'自身ヒートマップ作成…'}

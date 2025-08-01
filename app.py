@@ -414,10 +414,11 @@ def analyze():
     progress_store[task_id] = {'progress':92, 'message':'安定開始ループ検出…'}
     stable_loop = detect_stable_loop_by_tail(dtw_mat)
 
-    # 15: ループ時間＆最大加速度リスト
+    
     # 15: ループ時間＆最大加速度リスト
     progress_store[task_id] = {'progress':94, 'message':'ループ時間・最大加速度計算…'}
 
+    loop_durations     = []
     loop_duration_list = []
     loop_max_acc_list  = []
 
@@ -426,6 +427,7 @@ def analyze():
         t_start = t_sec.iloc[v1]
         t_end   = t_sec.iloc[v2]
         duration = t_end - t_start
+        loop_durations.append(duration)
 
         # 加速度ノルム計算
         seg = acc_df[(acc_df['t']/1000 >= t_start) & (acc_df['t']/1000 <= t_end)]

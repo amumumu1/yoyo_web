@@ -177,6 +177,7 @@
     const loopPlotImg   = document.getElementById('loopPlot');
     const accOutput     = document.getElementById('accOutput');
     const gyroOutput    = document.getElementById('gyroOutput');
+    const BACKEND = 'https://yoyo-backend.kajilab.dev';
 
     let lastResult = null;
     let device, dataChar, controlChar;
@@ -233,13 +234,22 @@
       const accDataJson  = csvToJson(text0, true);
       const gyroDataJson = csvToJson(text1, false);
 
-      // 非同期タスク起動
-      const start = await fetch('/start_analysis', {
+      // OK：バックティックで `${BACKEND}` を展開
+      const res = await fetch(`${BACKEND}/start_analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
+        body: JSON.stringify({ acc, gyro })
       });
-      const { task_id } = await start.json();
+
+
+
+
+      // ステータスチェック
+      if (!res.ok) {
+        alert(`解析サーバーエラー: ${res.status}`);
+        return;
+      }
+      const { task_id } = await res.json();
 
       // 進捗ポーリング
       pollProgress(task_id);
@@ -263,12 +273,18 @@
       progText.textContent = '解析準備中…';
 
       // 非同期タスク起動
-      const start = await fetch('/start_analysis', {
+     // OK：バックティックで `${BACKEND}` を展開
+      const res = await fetch(`${BACKEND}/start_analysis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ acc, gyro })
+        body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
       });
-      const { task_id } = await start.json();
+      if (!res.ok) {
+        alert(`解析サーバーエラー: ${res.status}`);
+        return;
+      }
+
+      const { task_id } = await res.json();
 
       // 進捗ポーリング
       pollProgress(task_id);
@@ -339,7 +355,11 @@
     // 進捗ポーリング
     // ----------------------------------------------------
     async function pollProgress(taskId) {
-      const res  = await fetch(`/progress/${taskId}`);
+      const res  = await fetch(`${BACKEND}/progress/${taskId}`);
+          if (!res.ok) {
+        console.error(`進捗取得エラー: ${res.status}`);
+        return;
+      }
       const json = await res.json();
       const p    = json.progress ?? 0;
       progBar.style.width       = p + '%';

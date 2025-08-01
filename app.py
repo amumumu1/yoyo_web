@@ -416,7 +416,13 @@ def analyze_task(self, acc, gyro):
     self.update_state(state='PROGRESS', meta={'progress': 5})
     acc_df = pd.DataFrame(acc)
     gyro_df = pd.DataFrame(gyro)
-    gyro_df['z'] = pd.to_numeric(gyro_df['gz'], errors='coerce')
+    # gz カラムがなければ 'z' カラムを、そのまま使う
+    if 'gz' in gyro_df.columns:
+        gyro_df['z'] = pd.to_numeric(gyro_df['gz'], errors='coerce')
+    elif 'z' in gyro_df.columns:
+        gyro_df['z'] = pd.to_numeric(gyro_df['z'], errors='coerce')
+    else:
+        raise KeyError("gyro の入力に 'gz' も 'z' もありません")
     dt = (acc_df['t'].iloc[1] - acc_df['t'].iloc[0]) / 1000.0
     fs = 1.0 / dt
 

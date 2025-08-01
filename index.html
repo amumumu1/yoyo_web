@@ -19,74 +19,77 @@
     button { margin-right: 10px; padding: 10px; font-size: 25px; }
     #score, #loopSummary, #loopDetails, #proDistance { font-size: 30px;}
     pre { background: #f4f4f4; padding: 10px; max-height: 200px; overflow: auto; }
+
+    /* プログレスバー用 */
     #loading {
       display: none;
-      font-size: 100px;
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 9999;
       background: white;
       padding: 20px 40px;
       border-radius: 10px;
+      z-index: 9999;
     }
+    #loading #progressText {
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+    #loading .progress-container {
+      width: 80%;
+      background: #ddd;
+      border-radius: 5px;
+      height: 20px;
+      margin: auto;
+      overflow: hidden;
+    }
+    #loading .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: #3498db;
+      transition: width 0.3s;
+    }
+
     #loopPlot, #comparePlot {
       display: none;
       margin: 0 auto;
       width: auto;
       max-width: 100%;
-      margin-bottom: 40px; 
+      margin-bottom: 40px;
     }
-    h2 {
-      font-size: 40px;  /* 例：大きくしたいサイズに変更。30px や 32px も可 */
-    }
-
-    h3 {
-      font-size: 30px;  /* 例：大きくしたいサイズに変更。30px や 32px も可 */
-    }
-
-    #CombinedContainer{
-      text-align: center;
-    }
+    h2 { font-size: 40px; }
+    h3 { font-size: 30px; }
 
     .heatmap-grid {
       display: flex;
-      justify-content: center; /* 中央揃え */
+      justify-content: center;
       align-items: flex-start;
-      gap: 40px;               /* ヒートマップ間の余白 */
-      flex-wrap: nowrap;       /* 折り返し禁止 */
+      gap: 40px;
+      flex-wrap: nowrap;
       margin: 20px auto;
       max-width: 100%;
     }
-
     .heatmap-grid div {
       flex: 1;
-      max-width: 50%;          /* それぞれ50%ずつの幅 */
+      max-width: 50%;
       text-align: center;
     }
-
     .heatmap-grid img {
-      width: 100%;             /* divの幅いっぱいに表示 */
+      width: 100%;
       height: auto;
     }
-
     #radarChart {
-      display: block;        /* ブロック要素にする */
-      margin: 0 auto;        /* 左右中央寄せ */
+      display: block;
+      margin: 0 auto;
       width: 600px;
       max-width: 100%;
       margin-bottom: 30px;
     }
     .heatmap-grid h4 {
-      min-height: 3em; /* どのタイトルも最低2行分の高さを確保 */
+      min-height: 3em;
       text-align: center;
     }
-
-
-
-
-
   </style>
 </head>
 <body>
@@ -95,15 +98,23 @@
     <input type="file" id="csvFiles" accept=".csv" multiple style="display:none;">
     <button id="btnCsvMode">CSVから解析</button>
     <button id="btnStop" disabled>センシング終了 &amp; 解析</button>
-    <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
-    <div id="loading" style="display: none;">解析中...</div>
+    <button id="btnRi" onclick="location.href='/viewer'">履歴を見る</button>
 
-    <!-- 加速度と角速度を別々のリアルタイムグラフで表示 -->
+    <!-- プログレスバー -->
+    <div id="loading">
+      <div id="progressText">解析準備中…</div>
+      <div class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+      </div>
+    </div>
+
+    <!-- リアルタイムグラフ -->
     <h3 style="display:none;" id="accTitle">加速度</h3>
     <canvas id="accChart" width="800" height="150" style="display: none;"></canvas>
     <h3 style="display:none;" id="gyroTitle">角速度</h3>
     <canvas id="gyroChart" width="800" height="150" style="display: none;"></canvas>
 
+    <!-- 解析結果エリア -->
     <hr id="hrTitle" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="saveSection" style="display: none;">
       <input type="text" id="resultName" placeholder="結果の名前を入力" style="font-size:16px; padding:5px; width:200px;" />
@@ -114,10 +125,8 @@
     <h3 id="RadarTitle" style="display: none;">総合評価（レーダーチャート）</h3>
     <img id="radarChart" style="display: none; width: 600px; max-width: 100%; margin-bottom: 30px;" />
 
-    <div id="score"></div>
-    <br>
-    <div id="proDistance"></div>
-    <br>
+    <div id="score"></div><br>
+    <div id="proDistance"></div><br>
     <div id="loopSummary"></div>
     <pre id="loopDetails" style="display: none;"></pre>
     <h3 id="Ken" style="display: none;">ループ検出</h3>
@@ -128,35 +137,22 @@
         <h4>自己比較</h4>
         <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
       </div>
-      <!-- <div>
-        <h4>非対角成分：自己比較　対角成分：プロ比較（まとめて正規化）</h4>
-        <img id="heatmap" alt="ヒートマップ" style="max-width: 100%;" />
-      </div> -->
       <div>
         <h4>対角成分：プロ比較</h4>
         <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
       </div>
     </div>
 
-    <!-- <div id="CombinedContainer" style="display: none; text-align: center; margin-top: 30px;">
-      <h4>非対角成分：自己比較　対角成分：プロ比較（それぞれ正規化）</h4>
-      <img id="combinedHeatmap" alt="合成ヒートマップ" style="max-width: 90%;" />
-    </div> -->
-
-    <!-- <h3 id="Pro" style="display: none;">プロと比較</h3>
-    <img id="comparePlot" style="width: 1000px; display: none; " /> -->
-    <!-- プロのデータ表示エリア -->
     <hr id="hrPro" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="proExample" style="display: none;">
+      <!-- プロの参考データ -->
       <h2>参考データ（プロ）</h2>
       <h3>平均ループ時間: 0.429 秒</h3>
       <h3>ループ時間の標準偏差: 0.072 秒</h3>
       <h3>プロのループ検出</h3>
       <img src="/pro_segu.png" alt="プロのループ検出図" style="width: 100%; max-width: 1200px;" />
-
       <h3>プロのヒートマップ</h3>
       <img src="/pro_heatmap.png" alt="プロのヒートマップ" style="width: 100%; max-width: 800px;" />
-
       <h3>プロの実演映像</h3>
       <video controls style="max-width: 60%;">
         <source src="/pro.mp4" type="video/mp4" />
@@ -167,247 +163,74 @@
     <hr id="hrCsv" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <h2 id="csvTitle" style="display: none;">取得データ (CSV形式)</h2>
     <button id="btnSaveCsv" style="display: none;">CSVを保存</button>
-
     <h3 id="accLabel" style="display: none;">加速度データ</h3>
     <pre id="accOutput" style="display: none;"></pre>
-
     <h3 id="gyroLabel" style="display: none;">角速度データ</h3>
     <pre id="gyroOutput" style="display: none;"></pre>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-      const csvInput = document.getElementById('csvFiles');
+      // DOM要素取得
+      const btnConnect  = document.getElementById('btnConnect');
+      const btnStop     = document.getElementById('btnStop');
+      const btnCsvMode  = document.getElementById('btnCsvMode');
+      const csvInput    = document.getElementById('csvFiles');
+      const btnRi       = document.getElementById('btnRi');
       const btnSaveResult = document.getElementById('btnSaveResult');
-      const btnConnect = document.getElementById('btnConnect');
-      const btnStop = document.getElementById('btnStop');
-      const btnRi = document.getElementById('btnRi');
-      const scoreDiv = document.getElementById('score');
+      const loadingDiv  = document.getElementById('loading');
+      const progressBar = document.getElementById('progressBar');
+      const progressText= document.getElementById('progressText');
+      const scoreDiv    = document.getElementById('score');
       const loopPlotImg = document.getElementById('loopPlot');
-      const loadingDiv = document.getElementById('loading');
-      const accOutput = document.getElementById('accOutput');
-      const gyroOutput = document.getElementById('gyroOutput');
-      const btnCsvMode = document.getElementById('btnCsvMode');
+      const accOutput   = document.getElementById('accOutput');
+      const gyroOutput  = document.getElementById('gyroOutput');
 
+      // センシングデータ保存用
+      let device, controlChar, dataChar, buffer = '';
+      const acc  = [], gyro = [];
 
-      let lastResult = null;
-      let device, dataChar, controlChar;
-      let buffer = '';
-      const acc = [], gyro = [];
-
-      const accCtx = document.getElementById('accChart').getContext('2d');
+      // Chart.js 初期化
+      const accCtx  = document.getElementById('accChart').getContext('2d');
       const gyroCtx = document.getElementById('gyroChart').getContext('2d');
-
-      const accData = { labels: [], datasets: [
-        { label: 'ax', data: [], borderColor: 'blue', fill: false, pointRadius: 0 },
-        { label: 'ay', data: [], borderColor: 'skyblue', fill: false, pointRadius: 0 },
-        { label: 'az', data: [], borderColor: 'navy', fill: false, pointRadius: 0 }
+      const accData  = { labels: [], datasets: [
+        { label: 'ax', data: [], borderColor: 'blue',   fill:false, pointRadius:0 },
+        { label: 'ay', data: [], borderColor: 'skyblue',fill:false, pointRadius:0 },
+        { label: 'az', data: [], borderColor: 'navy',   fill:false, pointRadius:0 }
       ]};
       const gyroData = { labels: [], datasets: [
-        { label: 'gx', data: [], borderColor: 'red', fill: false, pointRadius: 0 },
-        { label: 'gy', data: [], borderColor: 'orange', fill: false, pointRadius: 0 },
-        { label: 'gz', data: [], borderColor: 'darkred', fill: false, pointRadius: 0 }
+        { label: 'gx', data: [], borderColor: 'red',    fill:false, pointRadius:0 },
+        { label: 'gy', data: [], borderColor: 'orange', fill:false, pointRadius:0 },
+        { label: 'gz', data: [], borderColor: 'darkred',fill:false, pointRadius:0 }
       ]};
-
-      const accChart = new Chart(accCtx, { type: 'line', data: accData, options: { animation: false, scales: { x: { display: false } } } });
-      const gyroChart = new Chart(gyroCtx, { type: 'line', data: gyroData, options: { animation: false, scales: { x: { display: false } } } });
+      const accChart  = new Chart(accCtx,  { type:'line', data:accData,  options:{animation:false,scales:{x:{display:false}}}});
+      const gyroChart = new Chart(gyroCtx, { type:'line', data:gyroData, options:{animation:false,scales:{x:{display:false}}}});
 
       const SERVICE_UUID = '88888888-4abd-ba0d-b7c6-ff0a00200021';
       const CONTROL_UUID = '88888888-4abd-ba0d-b7c6-ff0a00200022';
-      const DATA_UUID = '88888888-4abd-ba0d-b7c6-ff0a00200023';
-      const API_BASE = 'https://yoyo-backend.kajilab.dev/analyze';
+      const DATA_UUID    = '88888888-4abd-ba0d-b7c6-ff0a00200023';
 
-      // 保存処理（1回だけ定義）
-      async function saveResult() {
-        if (!lastResult) {
-          alert('保存できる結果がありません');
-          return;
-        }
-        const name = document.getElementById('resultName').value.trim() || '無題';
-        const accCsv = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
-        const gyroCsv = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
-        const payload = { ...lastResult, name, acc_csv: accCsv, gyro_csv: gyroCsv };
-        const res = await fetch('https://yoyo-backend.kajilab.dev/save_result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const result = await res.json();
-        alert(result.status === 'saved' ? `「${name}」として保存しました` : '保存に失敗しました');
-      }
-      btnSaveResult.onclick = saveResult;
-
-      // CSVモード解析
-      btnCsvMode.onclick = () => csvInput.click();
-      csvInput.onchange = async () => {
-        if (csvInput.files.length < 2) {
-          alert("加速度CSVと角速度CSVの2つを選んでください");
-          return;
-        }
-        const accText = await csvInput.files[0].text();
-        const gyroText = await csvInput.files[1].text();
-        const accDataJson = csvToJson(accText, true);
-        const gyroDataJson = csvToJson(gyroText, false);
-
-        // ここで前回の結果やUIをリセットして非表示にする
-        resetUIBeforeMeasure();
-
-        btnConnect.style.display = 'none';
-        btnCsvMode.style.display = 'none';
-        btnStop.style.display = 'none';
-        btnRi.style.display = 'none';
-        loadingDiv.style.display = 'block';
-        try {
-          const res = await fetch(API_BASE, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ acc: accDataJson, gyro: gyroDataJson })
-          });
-          const json = await res.json();
-          renderResult(json);
-        } catch (err) {
-          alert("解析失敗: " + err.message);
-        } finally {
-          loadingDiv.style.display = 'none';
-
-          // 解析終了後にボタンを再表示
-          btnConnect.style.display = 'inline-block';
-          btnCsvMode.style.display = 'inline-block';
-          btnStop.style.display = 'inline-block';
-          btnRi.style.display = 'inline-block';
-        }
-      };
-
-      function csvToJson(csvText, isAcc = true) {
-        const lines = csvText.trim().split('\n');
+      // 汎用：CSV→JSON
+      function csvToJson(text, isAcc=true){
+        const lines = text.trim().split('\n');
         lines.shift();
-        return lines.map(line => {
-          const cols = line.split(',');
+        return lines.map(l=>{
+          const c=l.split(',');
           return isAcc
-            ? { t: +cols[0], ax: +cols[1], ay: +cols[2], az: +cols[3] }
-            : { t: +cols[0], gx: +cols[1], gy: +cols[2], gz: +cols[3] };
+            ? {t:+c[0], ax:+c[1], ay:+c[2], az:+c[3]}
+            : {t:+c[0], gx:+c[1], gy:+c[2], gz:+c[3]};
         });
       }
 
-      // センシング開始
-      btnConnect.onclick = async () => {
-        resetUIBeforeMeasure();
-        try {
-          if (!device || !device.gatt.connected) {
-            device = await navigator.bluetooth.requestDevice({
-              filters: [{ name: 'ArduinoIMU' }],
-              optionalServices: [SERVICE_UUID]
-            });
-          }
-          const server = await device.gatt.connect();
-          const service = await server.getPrimaryService(SERVICE_UUID);
-          controlChar = await service.getCharacteristic(CONTROL_UUID);
-          dataChar = await service.getCharacteristic(DATA_UUID);
-          await controlChar.writeValue(new Uint8Array([1]));
-          await dataChar.startNotifications();
-          dataChar.addEventListener('characteristicvaluechanged', handleNotify);
-          document.getElementById('accTitle').style.display = 'block';
-          document.getElementById('gyroTitle').style.display = 'block';
-          document.getElementById('accChart').style.display = 'block';
-          document.getElementById('gyroChart').style.display = 'block';
-          btnConnect.disabled = true;
-          btnStop.disabled = false;
-
-           // CSV解析と履歴ボタンを非表示
-          btnCsvMode.style.display = 'none';
-          btnRi.style.display = 'none';
-
-        } catch (err) {
-          alert('接続失敗: ' + err.message);
-        }
-      };
-
-      // センシング終了 → 解析
-      btnStop.onclick = async () => {
-        try {
-           // 解析中は他のボタンを隠す
-          btnConnect.style.display = 'none';
-          btnCsvMode.style.display = 'none';
-          btnStop.style.display = 'none';
-          btnRi.style.display = 'none';
-          loadingDiv.style.display = 'block';
-          hideMeasureUI();
-          await controlChar.writeValue(new Uint8Array([0]));
-          await dataChar.stopNotifications();
-          btnStop.disabled = true;
-          accOutput.textContent = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
-          gyroOutput.textContent = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
-          const res = await fetch(API_BASE, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ acc, gyro })
-          });
-          const json = await res.json();
-          lastResult = json;
-          renderResult(json);
-        } catch (err) {
-          alert('解析失敗: ' + err.message);
-        } finally {
-          loadingDiv.style.display = 'none';
-           // 解析中は他のボタンを隠す
-          btnConnect.style.display = 'none';
-          btnCsvMode.style.display = 'none';
-          btnStop.style.display = 'none';
-          btnRi.style.display = 'none';
-          btnConnect.style.display = 'inline-block';
-          btnStop.style.display = 'inline-block';
-          btnRi.style.display = 'inline-block';
-          btnConnect.disabled = false;
-          btnConnect.textContent = 'もう一度センシング';
-          document.getElementById('proExample').style.display = 'block';
-          document.getElementById('saveSection').style.display = 'block';
-          btnSaveResult.style.display = 'inline-block';
-          // センシング終了後、CSV解析と履歴ボタンを再表示
-          btnCsvMode.style.display = 'inline-block';
-          btnRi.style.display = 'inline-block';
-
-
-        }
-      };
-
-      function handleNotify(event) {
-        buffer += new TextDecoder().decode(event.target.value);
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        for (const line of lines) {
-          const p = line.trim().split(',').map(Number);
-          if (p.length === 7) {
-            const [t, ax, ay, az, gx, gy, gz] = p;
-            acc.push({ t, ax, ay, az });
-            gyro.push({ t, gx, gy, gz });
-            accData.labels.push('');
-            gyroData.labels.push('');
-            accData.datasets[0].data.push(ax);
-            accData.datasets[1].data.push(ay);
-            accData.datasets[2].data.push(az);
-            gyroData.datasets[0].data.push(gx);
-            gyroData.datasets[1].data.push(gy);
-            gyroData.datasets[2].data.push(gz);
-            if (accData.labels.length > 100) {
-              accData.labels.shift();
-              accData.datasets.forEach(ds => ds.data.shift());
-            }
-            if (gyroData.labels.length > 100) {
-              gyroData.labels.shift();
-              gyroData.datasets.forEach(ds => ds.data.shift());
-            }
-            accChart.update();
-            gyroChart.update();
-          }
-        }
-      }
-
-      function resetUIBeforeMeasure() {
-        document.getElementById('loopPlot').style.display = 'none';
-        scoreDiv.textContent = '';
-        document.getElementById('proDistance').textContent = '';
-        document.getElementById('loopSummary').textContent = '';
-        document.getElementById('loopDetails').style.display = 'none';
-        document.getElementById('proExample').style.display = 'none';
+      // UIリセット
+      function resetUIBeforeMeasure(){
         document.getElementById('Title').style.display = 'none';
+        document.getElementById('RadarTitle').style.display = 'none';
+        document.getElementById('radarChart').style.display = 'none';
+        document.getElementById('loopPlot').style.display = 'none';
+        document.getElementById('selfHeatmap').style.display = 'none';
+        document.getElementById('proHeatmap').style.display = 'none';
+        document.getElementById('proExample').style.display = 'none';
+        document.getElementById('saveSection').style.display = 'none';
         document.getElementById('csvTitle').style.display = 'none';
         document.getElementById('btnSaveCsv').style.display = 'none';
         document.getElementById('accLabel').style.display = 'none';
@@ -420,137 +243,228 @@
         document.getElementById('Ken').style.display = 'none';
         document.getElementById('HeatmapTitle').style.display = 'none';
         document.getElementById('Rui').style.display = 'none';
-        document.getElementById('saveSection').style.display = 'none';
-        document.getElementById('radarChart').style.display = 'none';
-        document.getElementById('RadarTitle').style.display = 'none';
-        acc.length = 0;
-        gyro.length = 0;
-        accData.labels.length = 0;
-        accData.datasets.forEach(ds => ds.data.length = 0);
-        gyroData.labels.length = 0;
-        gyroData.datasets.forEach(ds => ds.data.length = 0);
-        accChart.update();
-        gyroChart.update();
+        acc.length = 0; gyro.length = 0;
+        accData.labels.length = 0; accData.datasets.forEach(d=>d.data.length=0);
+        gyroData.labels.length = 0; gyroData.datasets.forEach(d=>d.data.length=0);
+        accChart.update(); gyroChart.update();
       }
-
-      function hideMeasureUI() {
+      function hideMeasureUI(){
         document.getElementById('accChart').style.display = 'none';
         document.getElementById('gyroChart').style.display = 'none';
         document.getElementById('accTitle').style.display = 'none';
         document.getElementById('gyroTitle').style.display = 'none';
-        document.getElementById('saveSection').style.display = 'none';
       }
 
-      // 結果表示
-      function renderResult(json) {
-        lastResult = json;
-        document.getElementById('Title').style.display = 'block';
-        document.getElementById('csvTitle').style.display = 'block';
-        document.getElementById('btnSaveCsv').style.display = 'inline-block';
-        document.getElementById('accLabel').style.display = 'block';
-        document.getElementById('gyroLabel').style.display = 'block';
-        document.getElementById('hrPro').style.display = 'block';
-        document.getElementById('hrCsv').style.display = 'block';
-        document.getElementById('hrTitle').style.display = 'block';
-        document.getElementById('Ken').style.display = 'block';
-        document.getElementById('HeatmapTitle').style.display = 'block';
-        document.getElementById('Rui').style.display = 'flex';
-        document.getElementById('accOutput').style.display = 'block';
-        document.getElementById('gyroOutput').style.display = 'block';
-        btnSaveResult.style.display = 'inline-block';
-        document.getElementById('proExample').style.display = 'block';
+      // 解析用ラッパー
+      async function runAnalysis(payload){
+        // タスク開始
+        const startRes = await fetch('/start_analysis',{method:'POST'});
+        const { task_id } = await startRes.json();
+        loadingDiv.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressText.textContent = '解析開始…';
 
-        // Radar chart
-        if (json.radar_chart && typeof json.radar_chart === 'string') {
-          const radarImg = document.getElementById('radarChart');
-          radarImg.src = `data:image/png;base64,${json.radar_chart}`;
-          radarImg.style.display = 'block';
-          const radarTitle = document.getElementById('RadarTitle');
-          radarTitle.textContent = `総合評価: ${json.total_score.toFixed(1)} 点`;
-          radarTitle.style.display = 'block';
-        }
+        // ポーリング
+        const poll = setInterval(async ()=>{
+          const res = await fetch(`/progress/${task_id}`);
+          if(!res.ok) return;
+          const info = await res.json();
+          progressBar.style.width  = `${info.progress}%`;
+          progressText.textContent = info.message;
+          if(info.progress>=100) clearInterval(poll);
+        },300);
 
-        // Loop plot
-        if (json.loop_plot) {
-          loopPlotImg.src = `data:image/png;base64,${json.loop_plot}`;
-          loopPlotImg.style.display = 'block';
+        // 本解析
+        const analyzeRes = await fetch(`/analyze?task_id=${task_id}`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(payload)
+        });
+        const json = await analyzeRes.json();
+
+        // 完了
+        clearInterval(poll);
+        progressBar.style.width = '100%';
+        progressText.textContent = '解析完了！';
+        setTimeout(()=>{ loadingDiv.style.display='none'; },500);
+
+        return json;
+      }
+
+      // CSV 解析
+      btnCsvMode.onclick = ()=> csvInput.click();
+      csvInput.onchange = async ()=>{
+        if(csvInput.files.length<2){
+          alert("加速度CSVと角速度CSVの2つを選んでください");
+          return;
         }
+        const accJson  = csvToJson(await csvInput.files[0].text(),true);
+        const gyroJson = csvToJson(await csvInput.files[1].text(),false);
+        resetUIBeforeMeasure();
+        try{
+          const result = await runAnalysis({ acc:accJson, gyro:gyroJson });
+          lastResult = result;
+          renderResult(result);
+        }catch(err){
+          alert('解析失敗: '+err.message);
+        }
+      };
+
+      // センシング開始
+      btnConnect.onclick = async ()=>{
+        resetUIBeforeMeasure();
+        try{
+          if(!device||!device.gatt.connected){
+            device = await navigator.bluetooth.requestDevice({
+              filters:[{name:'ArduinoIMU'}],
+              optionalServices:[SERVICE_UUID]
+            });
+          }
+          const server = await device.gatt.connect();
+          const svc    = await server.getPrimaryService(SERVICE_UUID);
+          controlChar  = await svc.getCharacteristic(CONTROL_UUID);
+          dataChar     = await svc.getCharacteristic(DATA_UUID);
+          await controlChar.writeValue(new Uint8Array([1]));
+          await dataChar.startNotifications();
+          dataChar.addEventListener('characteristicvaluechanged',handleNotify);
+          document.getElementById('accTitle').style.display='block';
+          document.getElementById('gyroTitle').style.display='block';
+          document.getElementById('accChart').style.display='block';
+          document.getElementById('gyroChart').style.display='block';
+          btnConnect.disabled=false;
+          btnStop.disabled=false;
+          btnCsvMode.style.display='none';
+          btnRi.style.display='none';
+        }catch(err){
+          alert('接続失敗: '+err.message);
+        }
+      };
+
+      // センシング終了→解析
+      btnStop.onclick = async ()=>{
+        try{
+          btnConnect.style.display='none';
+          btnCsvMode.style.display='none';
+          btnStop.style.display='none';
+          btnRi.style.display='none';
+          loadingDiv.style.display='block';
+          hideMeasureUI();
+          await controlChar.writeValue(new Uint8Array([0]));
+          await dataChar.stopNotifications();
+          const result = await runAnalysis({ acc, gyro });
+          lastResult = result;
+          renderResult(result);
+        }catch(err){
+          alert('解析失敗: '+err.message);
+        }
+      };
+
+      // データ受信ハンドラ
+      function handleNotify(event){
+        buffer += new TextDecoder().decode(event.target.value);
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for(const line of lines){
+          const p = line.trim().split(',').map(Number);
+          if(p.length===7){
+            const [t,ax,ay,az,gx,gy,gz] = p;
+            acc.push({t,ax,ay,az});
+            gyro.push({t,gx,gy,gz});
+            accData.labels.push('');
+            gyroData.labels.push('');
+            accData.datasets[0].data.push(ax);
+            accData.datasets[1].data.push(ay);
+            accData.datasets[2].data.push(az);
+            gyroData.datasets[0].data.push(gx);
+            gyroData.datasets[1].data.push(gy);
+            gyroData.datasets[2].data.push(gz);
+            if(accData.labels.length>100){
+              accData.labels.shift();
+              accData.datasets.forEach(d=>d.data.shift());
+            }
+            if(gyroData.labels.length>100){
+              gyroData.labels.shift();
+              gyroData.datasets.forEach(d=>d.data.shift());
+            }
+            accChart.update(); gyroChart.update();
+          }
+        }
+      }
+
+      // 結果描画
+      function renderResult(json){
+        document.getElementById('Title').style.display='block';
+        document.getElementById('RadarTitle').style.display='block';
+        document.getElementById('radarChart').style.display='block';
+        document.getElementById('loopPlot').style.display='block';
+        document.getElementById('selfHeatmap').style.display='block';
+        document.getElementById('proHeatmap').style.display='block';
+        document.getElementById('proExample').style.display='block';
+        document.getElementById('saveSection').style.display='block';
+
+        // Radar
+        const radarImg = document.getElementById('radarChart');
+        radarImg.src = `data:image/png;base64,${json.radar_chart}`;
+        document.getElementById('RadarTitle').textContent = `総合評価: ${json.total_score.toFixed(1)} 点`;
+
+        // Loop Plot
+        loopPlotImg.src = `data:image/png;base64,${json.loop_plot}`;
 
         // Heatmaps
-        if (json.self_heatmap) {
-          document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
-          document.getElementById('selfHeatmap').style.display = 'block';
-        }
-        if (json.pro_heatmap) {
-          document.getElementById('proHeatmap').src = `data:image/png;base64,${json.pro_heatmap}`;
-          document.getElementById('proHeatmap').style.display = 'block';
-        }
+        document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
+        document.getElementById('proHeatmap').src  = `data:image/png;base64,${json.pro_heatmap}`;
 
         // Stats
         scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${
-          json.stable_loop !== null ? `安定開始ループ: ${json.stable_loop}周目` : '安定開始ループ: なし'
+          json.stable_loop!==null?`安定開始ループ: ${json.stable_loop}周目`:'安定開始ループ: なし'
         }`;
-        const avgElem = document.getElementById('proDistance');
-        avgElem.textContent = json.pro_distance_mean
+        document.getElementById('proDistance').textContent = json.pro_distance_mean
           ? `プロとの平均距離: ${json.pro_distance_mean.toFixed(1)}`
           : 'プロとの平均距離: なし';
-        avgElem.style.display = 'block';
-        const meanStr = json.loop_mean_duration !== null
-          ? `平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒`
-          : `平均ループ時間: なし`;
-        const stdStr = json.loop_std_duration !== null
-          ? `　ループ時間の標準偏差: ${json.loop_std_duration.toFixed(3)} 秒`
-          : `　ループ時間の標準偏差: なし`;
-        document.getElementById('loopSummary').textContent = `${meanStr}\n${stdStr}`;
+        document.getElementById('loopSummary').textContent =
+          `${json.loop_mean_duration!==null?`平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒`:'平均ループ時間: なし'}
+           ${json.loop_std_duration!==null?` ループ時間の標準偏差: ${json.loop_std_duration.toFixed(3)} 秒`:' ループ時間の標準偏差: なし'}`;
         const loopDetails = document.getElementById('loopDetails');
+        if(json.loop_duration_list?.length){
+          loopDetails.textContent = json.loop_duration_list.join('\n');
+          loopDetails.style.display='block';
+        } else loopDetails.style.display='none';
 
-        if (json.loop_duration_list?.length) {
-          const durations = json.loop_duration_list.join('\n');
-          loopDetails.textContent = durations 
-          loopDetails.style.display = 'block';
-        }else {
-          loopDetails.textContent = '';
-          loopDetails.style.display = 'none';
+        if(json.snap_median!==null && json.snap_std!==null){
+          document.getElementById('loopSummary').innerHTML +=
+            `<p>手首を返す強さ（ループごとの中央値）：${json.snap_median.toFixed(2)} m/s²</p>`+
+            `<p>手首を返す強さ（ループごとのばらつき）：${json.snap_std.toFixed(2)} m/s²</p>`;
         }
-
-       if (json.snap_median !== null && json.snap_std !== null) {
-          const loopSummary = document.getElementById('loopSummary');
-          loopSummary.innerHTML += `
-            <p>手首を返す強さ（ループごとの中央値）：${json.snap_median.toFixed(2)} m/s²</p>
-            <p>手首を返す強さ（ループごとのばらつき）：${json.snap_std.toFixed(2)} m/s²</p>
-          `;
-        }
-
-
-
-
-
-        // CSVモードでも保存ボタンを出す
-        document.getElementById('saveSection').style.display = 'block';
-        btnSaveResult.style.display = 'inline-block';
       }
 
-      // CSV保存ボタン
-      document.getElementById('btnSaveCsv').onclick = () => {
-        const now = new Date();
-        const pad = n => n.toString().padStart(2, '0');
-        const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        const accCsv = 'time,x,y,z\n' + acc.map(d => `${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
-        const gyroCsv = 'time,x,y,z\n' + gyro.map(d => `${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
-        const saveFile = (content, filename) => {
-          const blob = new Blob([content], { type: 'text/csv' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          a.click();
-          URL.revokeObjectURL(url);
+      // 保存
+      btnSaveResult.onclick = async ()=>{
+        if(!lastResult){ alert('保存できる結果がありません'); return; }
+        const name = document.getElementById('resultName').value.trim()||'無題';
+        const accCsv  = 'time,x,y,z\n'+acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
+        const gyroCsv = 'time,x,y,z\n'+gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
+        const res = await fetch('/save_result',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({...lastResult,name,acc_csv:accCsv,gyro_csv:gyroCsv})
+        });
+        const r = await res.json();
+        alert(r.status==='saved'?`「${name}」として保存しました`:'保存に失敗しました');
+      };
+
+      // CSVダウンロード
+      document.getElementById('btnSaveCsv').onclick = ()=>{
+        const now=new Date(),pad=n=>n.toString().padStart(2,'0');
+        const ts=`${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        const accCsv  = 'time,x,y,z\n'+acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
+        const gyroCsv = 'time,x,y,z\n'+gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
+        const saveFile=(c,f)=>{
+          const b=new Blob([c],{type:'text/csv'}),u=URL.createObjectURL(b);
+          const a=document.createElement('a'); a.href=u; a.download=f; a.click(); URL.revokeObjectURL(u);
         };
-        saveFile(accCsv, `${ts}_acc.csv`);
-        saveFile(gyroCsv, `${ts}_gyro.csv`);
+        saveFile(accCsv,`${ts}_acc.csv`);
+        saveFile(gyroCsv,`${ts}_gyro.csv`);
       };
     </script>
-
   </div>
 </body>
 </html>

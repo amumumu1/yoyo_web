@@ -511,10 +511,14 @@
           loopDetails.style.display = 'none';
         }
 
-        if (json.snap_median !== null && json.snap_std !== null) {
+       if (json.snap_median !== null && json.snap_std !== null) {
           const loopSummary = document.getElementById('loopSummary');
-          loopSummary.innerHTML += `<br>スナップ中央値：${json.snap_median.toFixed(2)} m/s²　スナップの標準偏差：${json.snap_std.toFixed(2)} m/s²`;
+          loopSummary.innerHTML += `
+            <p>手首を返す強さ（ループごとの中央値）：${json.snap_median.toFixed(2)} m/s²</p>
+            <p>手首を返す強さ（ループごとのばらつき）：${json.snap_std.toFixed(2)} m/s²</p>
+          `;
         }
+
 
 
 

@@ -137,8 +137,8 @@
         <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + '周目' : 'なし'}</p>
         <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : '-'} 秒</p>
         <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : '-'} 秒</p>
-        <p>スナップ中央値: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : '-'} 秒</p>
-        <p>スナップ標準偏差: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : '-'} 秒</p>
+        <p>手首を返す強さ（ループごとの中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : '-'} 秒</p>
+        <p>手首を返す強さ（ループごとのばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : '-'} 秒</p>
         <pre id="loopDetails-${id}" style="font-size: 30px; white-space: pre-wrap;"></pre> 
         <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
         <div class="heatmap-row">

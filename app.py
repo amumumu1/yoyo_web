@@ -21,6 +21,10 @@ from flask import Flask, request, jsonify
 from celery.result import AsyncResult
 from tasks import analyze_task  # tasks.pyのCeleryタスク
 from flask_cors import CORS
+# app.py の先頭の方
+from tasks import celery  # ✅ Celeryインスタンスを tasks.py からインポート
+
+
 
 
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
@@ -52,7 +56,7 @@ def start_analysis():
 # --- 進捗確認 ---
 @app.route('/progress/<task_id>', methods=['GET'])
 def check_progress(task_id):
-    result = AsyncResult(task_id)
+    result = AsyncResult(task_id, app=celery)
 
     if result.state == 'PENDING':
         return jsonify({'progress': 0, 'state': 'PENDING'})

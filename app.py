@@ -283,7 +283,7 @@ def analyze():
     dt = (acc_df['t'].iloc[1] - t0) / 1000.0
 
     # 5: クォータニオン計算
-    progress_store[task_id] = {'progress':25, 'message':'姿勢計算中…'}
+    progress_store[task_id] = {'progress':25, 'message':'クォータニオン変換…'}
     mad = Madgwick(frequency=1.0/dt, gain=0.33)
     q = [1,0,0,0]; quats = []
     for i in range(len(gyro_df)):
@@ -294,13 +294,13 @@ def analyze():
     quat_df = pd.DataFrame(quats, columns=['time','w','x','y','z'])
 
     # 6: フィルタ＆ピーク検出
-    progress_store[task_id] = {'progress':30, 'message':'ピーク検出中…'}
+    progress_store[task_id] = {'progress':30, 'message':'極値検出…'}
     y = savgol_filter(gyro_df['gy'], window_length=11, polyorder=3)
     peaks, _   = find_peaks(y, height=y.mean()+y.std())
     valleys, _ = find_peaks(-y, height=y.std()-y.mean())
 
     # 7: ループ検出
-    progress_store[task_id] = {'progress':40, 'message':'ループ検出中…'}
+    progress_store[task_id] = {'progress':40, 'message':'ループごとにセグメント…'}
     t_sec = (gyro_df['t'] - t0) / 1000.0
     loops = []
     i = 0
@@ -317,7 +317,7 @@ def analyze():
         i += 1
 
     # 8: 自己比較行列計算
-    progress_store[task_id] = {'progress':50, 'message':'自己比較行列計算…'}
+    progress_store[task_id] = {'progress':50, 'message':'自身の類似度を計算…'}
     n = len(loops)
     dtw_mat = np.zeros((n,n))
     segments = []
@@ -333,7 +333,7 @@ def analyze():
 
     # 9: プロ比較距離計算
         # 9: プロ比較距離計算
-    progress_store[task_id] = {'progress':60, 'message':'プロ比較距離計算…'}
+    progress_store[task_id] = {'progress':60, 'message':'プロの類似度を計算…'}
     distances = []
     try:
         # プロ側のループから代表ループを選定
@@ -364,18 +364,18 @@ def analyze():
 
 
     # 10: Self ヒートマップ
-    progress_store[task_id] = {'progress':65, 'message':'自身ヒートマップ作成…'}
+    progress_store[task_id] = {'progress':65, 'message':'自身のヒートマップ作成…'}
     self_hm = encode_heatmap(dtw_mat, 'Self Loop Similarity')
 
     # 11: Pro ヒートマップ
-    progress_store[task_id] = {'progress':70, 'message':'プロヒートマップ作成…'}
+    progress_store[task_id] = {'progress':70, 'message':'プロのヒートマップ作成…'}
     pro_mat = np.full_like(dtw_mat, np.nan)
     for i,d in enumerate(distances):
         pro_mat[i,i] = d
     pro_hm = encode_heatmap(pro_mat, 'Pro vs Each Loop')
 
     # 12: ループ検出グラフ
-    progress_store[task_id] = {'progress':75, 'message':'ループ検出グラフ作成…'}
+    progress_store[task_id] = {'progress':75, 'message':'セグメンテーショングラフ作成…'}
     fig2, ax2 = plt.subplots(figsize=(12,6))
     ax2.plot(t_sec, y, color='orange')
     for idx,(v1,p,v2) in enumerate(loops):
@@ -391,7 +391,7 @@ def analyze():
     loop_plot_b64 = base64.b64encode(buf2.getvalue()).decode('ascii')
 
     # 13: プロ比較バーグラフ
-    progress_store[task_id] = {'progress':80, 'message':'バーグラフ作成…'}
+    progress_store[task_id] = {'progress':80, 'message':'プロ比較グラフ作成…'}
     fig3, ax3 = plt.subplots(figsize=(8,4))
     idxs = list(range(1, n+1))
     ax3.bar(idxs, distances, edgecolor='black')
@@ -416,7 +416,7 @@ def analyze():
 
     
     # 15: ループ時間＆最大加速度リスト
-    progress_store[task_id] = {'progress':94, 'message':'ループ時間・最大加速度計算…'}
+    progress_store[task_id] = {'progress':94, 'message':'ループ時間計算…'}
 
     loop_durations     = []
     loop_duration_list = []
@@ -444,7 +444,7 @@ def analyze():
 
 
     # 16: スナップ統計
-    progress_store[task_id] = {'progress':96, 'message':'スナップ統計計算…'}
+    progress_store[task_id] = {'progress':96, 'message':'ノルム計算…'}
     snap_vals = []
     for v1,_,v2 in loops:
         seg = acc_df[(acc_df['t']/1000>=t_sec.iloc[v1])&(acc_df['t']/1000<=t_sec.iloc[v2])]
@@ -455,7 +455,7 @@ def analyze():
     snap_std    = float(np.std(snap_vals))    if snap_vals else None
 
     # 17: レーダーチャート再作成
-    progress_store[task_id] = {'progress':98, 'message':'レーダーチャート作成中…'}
+    progress_store[task_id] = {'progress':98, 'message':'レーダーチャート作成…'}
     loop_mean_duration = float(np.mean(loop_durations)) if loop_durations else None
     loop_std_duration  = float(np.std(loop_durations))  if loop_durations else None
     radar_b64, total_score = generate_radar_chart(

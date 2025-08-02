@@ -22,8 +22,13 @@
 
     /* プログレスバー用 */
     #loading {
-      display: none;
-      position: fixed;
+      /* 親要素を固定幅に */
+      display: none;      /* ここで初期非表示に固定 */
+      width: 1500px;       
+      max-width: 90%;
+      box-sizing: border-box;
+      text-align: left;
+      position: fixed;    /* 既存のルールもそのまま */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
@@ -32,23 +37,28 @@
       border-radius: 10px;
       z-index: 9999;
     }
-    #loading #progressText {
-      font-size: 30px;
-      margin-bottom: 10px;
-    }
+
     #loading .progress-container {
-      width: 80%;
+      /* 親要素いっぱいに広がる */
+      width: 100%;
       background: #ddd;
       border-radius: 5px;
       height: 20px;
       margin: auto;
       overflow: hidden;
     }
+
     #loading .progress-bar {
       width: 0%;
       height: 100%;
       background: #3498db;
       transition: width 0.3s;
+    }
+
+    #loading #progressText {
+      font-size: 30px;
+      margin-bottom: 10px;
+      text-align: center;
     }
 
     #loopPlot, #comparePlot {
@@ -246,6 +256,13 @@
         document.getElementById('Ken').style.display = 'none';
         document.getElementById('HeatmapTitle').style.display = 'none';
         document.getElementById('Rui').style.display = 'none';
+        document.getElementById('score').textContent           = '';
+        document.getElementById('proDistance').textContent     = '';
+        document.getElementById('loopSummary').textContent     = '';
+        document.getElementById('loopSummary').innerHTML       = '';
+        const loopDetails = document.getElementById('loopDetails');
+        loopDetails.textContent                               = '';
+        loopDetails.style.display                             = 'none';
         acc.length = 0; gyro.length = 0;
         accData.labels.length = 0; accData.datasets.forEach(d=>d.data.length=0);
         gyroData.labels.length = 0; gyroData.datasets.forEach(d=>d.data.length=0);
@@ -289,7 +306,9 @@
         clearInterval(poll);
         progressBar.style.width  = '100%';
         progressText.textContent  = '解析完了！';
-        setTimeout(()=>{ loadingDiv.style.display='none'; },500);
+        // 少し待ってからローディング非表示
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        loadingDiv.style.display = 'none';
 
         return json;
       }
@@ -334,10 +353,13 @@
           document.getElementById('gyroTitle').style.display='block';
           document.getElementById('accChart').style.display='block';
           document.getElementById('gyroChart').style.display='block';
-          btnConnect.disabled=false;
-          btnStop.disabled=false;
-          btnCsvMode.style.display='none';
-          btnRi.style.display='none';
+          
+           // ボタン表示切り替え
+          btnConnect.style.display   = 'none';               // ← 完全に隠す
+          btnStop.style.display      = 'inline-block';       // ← センシング終了ボタンを出す
+          btnStop.disabled           = false;
+          btnCsvMode.style.display   = 'none';
+          btnRi.style.display        = 'none';
         } catch(err) {
           alert('接続失敗: '+err.message);
         }
@@ -459,6 +481,14 @@
           'time,x,y,z\n' + acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         document.getElementById('gyroOutput').textContent =
           'time,x,y,z\n' + gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n')
+
+         // --- 最後にもう一度センシングボタンを復活 ---
+        btnConnect.style.display   = 'inline-block';
+        btnConnect.disabled        = false;
+        btnConnect.textContent     = 'もう一度センシング';
+        btnCsvMode.style.display   = 'inline-block';
+        btnRi.style.display        = 'inline-block';
+        btnStop.style.display      = 'none';
       }
 
       // 保存

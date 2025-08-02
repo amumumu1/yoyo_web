@@ -17,6 +17,7 @@ import sqlite3
 import os
 from flask import Flask, request, jsonify, send_file, Response
 from datetime import datetime, timedelta
+import urllib.parse
 
 # フォント設定
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'

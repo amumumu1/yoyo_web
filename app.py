@@ -542,23 +542,43 @@ def index():
 
 @app.route("/results/<int:result_id>/csv", methods=["GET"])
 def download_result_csv(result_id):
-    conn=sqlite3.connect(DB_PATH); cur=conn.cursor()
-    cur.execute("SELECT acc_csv,gyro_csv,timestamp,name FROM results WHERE id=?",(result_id,))
-    row=cur.fetchone(); conn.close()
-    if not row: return jsonify({"error":"Result not found"}),404
-    acc_csv,gyro_csv,timestamp,name=row
-    jst_dt=datetime.strptime(timestamp,"%Y-%m-%d %H:%M:%S")
-    import io,zipfile
-    buf=io.BytesIO()
-    with zipfile.ZipFile(buf,"w",zipfile.ZIP_DEFLATED) as zf:
-        for label,content in [("acc",acc_csv or ""),("gyro",gyro_csv or "")]:
-            zi=zipfile.ZipInfo(f"{name or 'result'}_{label}.csv")
-            zi.date_time=(jst_dt.year,jst_dt.month,jst_dt.day,jst_dt.hour,jst_dt.minute,jst_dt.second)
-            zf.writestr(zi,content)
-    buf.seek(0)
-    quoted = name or "result"
-    return Response(buf, mimetype="application/zip",
-                    headers={"Content-Disposition":f"attachment; filename*=UTF-8''{quoted}_csv.zip"})
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT acc_csv, gyro_csv, timestamp, name FROM results WHERE id = ?", (result_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Result not found"}), 404
+
+    acc_csv, gyro_csv, timestamp, name = row
+    safe_name = name or "result"
+
+    jst_dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+
+
+    # ZIPを作成
+    import io, zipfile
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for label, content in [("acc", acc_csv or ''), ("gyro", gyro_csv or '')]:
+            zi = zipfile.ZipInfo(f"{name or 'result'}_{label}.csv")
+            # ZIPに書き込むファイルの更新日時をJSTで設定
+            zi.date_time = (jst_dt.year, jst_dt.month, jst_dt.day,
+                            jst_dt.hour, jst_dt.minute, jst_dt.second)
+            zf.writestr(zi, content)
+    buffer.seek(0)
+
+    # HTTPヘッダ用にURLエンコード（UTF-8対応）
+    quoted_name = urllib.parse.quote(f"{safe_name}_csv.zip")
+
+    return Response(
+        buffer,
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quoted_name}"
+        }
+    )
 
 @app.route("/results/<int:result_id>", methods=["DELETE"])
 def delete_result(result_id):

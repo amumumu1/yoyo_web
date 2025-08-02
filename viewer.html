@@ -148,13 +148,11 @@
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
       const statsEl = document.getElementById(`loopDetails-${id}`);
-      try {
-        const loopLines = JSON.parse(detail.loop_duration_list || '[]'); // JSONの配列として解釈
-        statsEl.textContent = loopLines.join('\n'); // 改行して表示
-      } catch (e) {
-        console.error("JSON parse error:", e);
-        statsEl.textContent = 'ループ情報の読み込みに失敗しました';
-      }
+      // すでに配列なので、そのまま入れ替えて表示
+      const loopLines = Array.isArray(detail.loop_duration_list)
+                       ? detail.loop_duration_list
+                       : [];
+      statsEl.textContent = loopLines.join('\n');
 
 
 
@@ -170,8 +168,9 @@
       button.textContent = '詳細を見る';
     }
     container.innerHTML += `
+      <button onclick="toggleDetail(${id})">閉じる</button>
       <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">
-        この結果のCSVをダウンロード
+        CSVをダウンロード
       </button>
       <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">
         この結果を削除

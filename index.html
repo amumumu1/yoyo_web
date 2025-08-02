@@ -24,7 +24,7 @@
     #loading {
       /* 親要素を固定幅に */
       display: none;      /* ここで初期非表示に固定 */
-      width: 1500px;       
+      width: 1000px;       
       max-width: 90%;
       box-sizing: border-box;
       text-align: left;
@@ -35,7 +35,7 @@
       background: white;
       padding: 20px 40px;
       border-radius: 10px;
-      z-index: 9999;
+      z-index: 9999;  
     }
 
     #loading .progress-container {
@@ -43,7 +43,7 @@
       width: 100%;
       background: #ddd;
       border-radius: 5px;
-      height: 20px;
+      height: 30px;
       margin: auto;
       overflow: hidden;
     }
@@ -56,8 +56,8 @@
     }
 
     #loading #progressText {
-      font-size: 30px;
-      margin-bottom: 10px;
+      font-size: 50px;
+      margin-top: 15px;
       text-align: center;
     }
 
@@ -112,10 +112,10 @@
 
     <!-- プログレスバー -->
     <div id="loading">
-      <div id="progressText">解析準備中…</div>
       <div class="progress-container">
         <div id="progressBar" class="progress-bar"></div>
       </div>
+      <div id="progressText">解析準備中…</div>
     </div>
 
     <!-- リアルタイムグラフ -->
@@ -307,7 +307,7 @@
         progressBar.style.width  = '100%';
         progressText.textContent  = '解析完了！';
         // 少し待ってからローディング非表示
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         loadingDiv.style.display = 'none';
 
         return json;
@@ -338,7 +338,8 @@
         try {
           if(!device||!device.gatt.connected){
             device = await navigator.bluetooth.requestDevice({
-              filters:[{name:'ArduinoIMU'}],
+              acceptAllDevices: true,
+              //filters:[{name:'指輪型センシングデバイス'}],
               optionalServices:[SERVICE_UUID]
             });
           }

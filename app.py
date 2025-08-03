@@ -186,7 +186,7 @@ def segment_loops(gyro, quats):
         segments.append(quats[mask].reset_index(drop=True))
     return segments
 
-def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
+def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, loop_count):
     # 各指標を0〜5にスケーリング
     if score is None:         s_score=0
     elif score>=100:          s_score=5
@@ -203,10 +203,21 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance):
     elif loop_std>=0.2:       s_std=0
     else:                     s_std=5*(0.2-loop_std)/(0.2-0.05)
 
-    if stable_loop is None:   s_stable=0
-    elif stable_loop<=2:      s_stable=5
-    elif stable_loop>=7:      s_stable=0
-    else:                     s_stable=5*(7-stable_loop)/(7-2)
+    if stable_loop is None or loop_count is None:
+        s_stable = 0
+    else:
+        # 総ループ数に応じてスケーリング
+        scale = loop_count / 10.0  # 10周を基準
+        max_full_score_loop = int(round(2 * scale))   # 5点の閾値
+        min_full_zero_loop = int(round(7 * scale))    # 0点の閾値
+
+        if stable_loop <= max_full_score_loop:
+            s_stable = 5
+        elif stable_loop >= min_full_zero_loop:
+            s_stable = 0
+        else:
+            s_stable = 5 * (min_full_zero_loop - stable_loop) / (min_full_zero_loop - max_full_score_loop)
+
 
     if pro_distance is None:  s_pro=0
     elif pro_distance<=20:    s_pro=5
@@ -464,7 +475,8 @@ def analyze():
         loop_mean=loop_mean_duration,
         loop_std=loop_std_duration,
         stable_loop=stable_loop,
-        pro_distance=float(np.mean(distances)) if distances else None
+        pro_distance=float(np.mean(distances)) if distances else None,
+        loop_count=n
     )
 
     # 完了

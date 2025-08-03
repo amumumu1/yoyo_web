@@ -247,24 +247,56 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, 
     return base64.b64encode(buf.getvalue()).decode('ascii'), float(avg_score)
 
 # 安定開始ループ検出用
-def detect_stable_loop_by_tail(dtw_matrix):
+# def detect_stable_loop_by_tail(dtw_matrix):
+#     N = dtw_matrix.shape[0]
+#     if N < 2:
+#         return None
+#     vals = dtw_matrix[np.triu_indices(N, k=1)]
+#     if vals.size == 0:
+#         return None
+#     d_min, d_max = vals.min(), vals.max()
+#     # 0に近いほど閾値が厳しくなる　0.5が今まで通り　1に近いほど閾値が甘くなる
+#     alpha = 0.3
+#     threshold = d_min + alpha * (d_max - d_min)
+
+#     tail_len = N // 2
+#     ref_idx = list(range(N - tail_len, N))
+#     for i in range(N - tail_len):
+#         if dtw_matrix[i, ref_idx].mean() <= threshold:
+#             return i + 1
+#     return None
+
+def detect_stable_loop_by_tail(dtw_matrix, threshold_ratio=0.2):
+    """
+    代表ループ基準で安定開始ループ数を検出
+    dtw_matrix: N×N の DTW距離行列
+    threshold_ratio: 代表ループとの距離がこの割合以下なら安定とみなす（例: 0.2で最大距離の20%以下）
+    戻り値: 安定化を開始したループ番号（1始まり）または None
+    """
     N = dtw_matrix.shape[0]
     if N < 2:
         return None
-    vals = dtw_matrix[np.triu_indices(N, k=1)]
-    if vals.size == 0:
-        return None
-    d_min, d_max = vals.min(), vals.max()
-    # 0に近いほど閾値が厳しくなる　0.5が今まで通り　1に近いほど閾値が甘くなる
-    alpha = 0.28
-    threshold = d_min + alpha * (d_max - d_min)
 
-    tail_len = N // 2
-    ref_idx = list(range(N - tail_len, N))
-    for i in range(N - tail_len):
-        if dtw_matrix[i, ref_idx].mean() <= threshold:
-            return i + 1
-    return None
+    # 代表ループ = 行ごとの距離合計が最小のループ
+    row_sums = dtw_matrix.sum(axis=1)
+    rep_idx = int(np.argmin(row_sums))
+
+    # 代表ループとの距離配列
+    rep_distances = dtw_matrix[rep_idx, :]
+
+    # 閾値（最大距離の一定割合）
+    max_dist = rep_distances.max()
+    threshold = max_dist * threshold_ratio
+
+    # 安定ループ群（代表ループとの距離が閾値以下）
+    stable_loops = [i for i, d in enumerate(rep_distances) if d <= threshold]
+
+    if not stable_loops:
+        return None
+
+    # 最初の安定ループ番号（1始まり）
+    return min(stable_loops) + 1
+
 
 # ── 解析エンドポイント ─────────────────────────────────
 @app.route('/analyze', methods=['POST'])
@@ -427,7 +459,9 @@ def analyze():
 
     # 14: 安定開始ループ検出
     progress_store[task_id] = {'progress':80, 'message':'安定開始ループ検出…'}
-    stable_loop = detect_stable_loop_by_tail(dtw_mat)
+    # stable_loop = detect_stable_loop_by_tail(dtw_mat)
+    stable_loop = detect_stable_loop_by_tail(dtw_mat, threshold_ratio=0.2)
+
 
     
     # 15: ループ時間＆最大加速度リスト

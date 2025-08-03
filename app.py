@@ -266,7 +266,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, 
 #             return i + 1
 #     return None
 
-def detect_stable_loop_by_tail(dtw_matrix, threshold_ratio=0.4):
+def detect_stable_loop_by_tail(dtw_matrix, threshold_ratio=0.5):
     """
     代表ループ基準で安定開始ループ数を検出
     dtw_matrix: N×N の DTW距離行列
@@ -460,7 +460,7 @@ def analyze():
     # 14: 安定開始ループ検出
     progress_store[task_id] = {'progress':80, 'message':'安定開始ループ検出…'}
     # stable_loop = detect_stable_loop_by_tail(dtw_mat)
-    stable_loop = detect_stable_loop_by_tail(dtw_mat, threshold_ratio=0.4)
+    stable_loop = detect_stable_loop_by_tail(dtw_mat, threshold_ratio=0.5)
 
 
     

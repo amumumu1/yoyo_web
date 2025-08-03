@@ -107,6 +107,8 @@
     <button id="btnConnect">接続 &amp; センシング開始</button>
     <input type="file" id="csvFiles" accept=".csv" multiple style="display:none;">
     <button id="btnCsvMode">CSVから解析</button>
+    <button id="btnCancel"  style="display:none;">中止</button>
+    <button id="btnRestart" style="display:none;">やり直す</button>
     <button id="btnStop" disabled>センシング終了 &amp; 解析</button>
     <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
 
@@ -197,10 +199,14 @@
       const loopPlotImg  = document.getElementById('loopPlot');
       const accOutput    = document.getElementById('accOutput');
       const gyroOutput   = document.getElementById('gyroOutput');
+      const btnCancel   = document.getElementById('btnCancel');
+      const btnRestart  = document.getElementById('btnRestart');
+
 
       // センシングデータ保存用
       let device, controlChar, dataChar, buffer = '';
       const acc  = [], gyro = [];
+      let isCsvMode = false;   
 
       // Chart.js 初期化
       const accCtx  = document.getElementById('accChart').getContext('2d');
@@ -320,6 +326,16 @@
           alert("加速度CSVと角速度CSVの2つを選んでください");
           return;
         }
+
+        isCsvMode = true; 
+
+        // ▼ ここを追加：CSV解析中はボタン非表示
+        btnConnect.style.display  = 'none';
+        btnCsvMode.style.display  = 'none';
+        btnRi.style.display       = 'none';
+        btnStop.style.display    = 'none';
+        
+
         const accJson  = csvToJson(await csvInput.files[0].text(),true);
         const gyroJson = csvToJson(await csvInput.files[1].text(),false);
         resetUIBeforeMeasure();
@@ -334,6 +350,7 @@
 
       // センシング開始
       btnConnect.onclick = async ()=>{
+        isCsvMode = false;
         resetUIBeforeMeasure();
         try {
           if(!device||!device.gatt.connected){
@@ -361,10 +378,75 @@
           btnStop.disabled           = false;
           btnCsvMode.style.display   = 'none';
           btnRi.style.display        = 'none';
+          btnCancel.style.display   = 'inline-block';
+          btnRestart.style.display  = 'inline-block';
+
         } catch(err) {
           alert('接続失敗: '+err.message);
         }
       };
+
+      btnCancel.onclick = async () => {
+        try {
+          // センサー停止
+          try { await controlChar?.writeValue(new Uint8Array([0])); } catch(e){}
+          try { 
+            await dataChar?.stopNotifications(); 
+            dataChar?.removeEventListener('characteristicvaluechanged', handleNotify);
+          } catch(e){}
+
+          // UIクリア
+          hideMeasureUI();
+          resetUIBeforeMeasure();
+
+          // ボタン復帰（初期状態へ）
+          btnConnect.style.display   = 'inline-block';
+          btnConnect.disabled        = false;
+          btnConnect.textContent     = '接続 & センシング開始';
+          btnCsvMode.style.display   = 'inline-block';
+          btnRi.style.display        = 'inline-block';
+          btnStop.style.display      = 'none';
+          btnCancel.style.display    = 'none';
+          btnRestart.style.display   = 'none';
+        } catch (err) {
+          alert('中止に失敗: ' + err.message);
+        }
+      };
+
+      async function safeStopMeasure() {
+        try { await controlChar?.writeValue(new Uint8Array([0])); } catch(e){}
+        try { 
+          await dataChar?.stopNotifications(); 
+          dataChar?.removeEventListener('characteristicvaluechanged', handleNotify);
+        } catch(e){}
+        hideMeasureUI();
+      }
+
+      btnRestart.onclick = async () => {
+      // いまの計測を確実に停止
+      await safeStopMeasure();
+
+      // 取得済みデータ・前回結果などを完全リセット
+      resetUIBeforeMeasure();
+
+
+      // ボタン表示を初期状態に戻す（表示まわりはお好みで）
+      btnConnect.style.display = 'inline-block';
+      btnConnect.disabled      = false;
+      btnConnect.textContent   = '接続 & センシング開始';
+      btnCsvMode.style.display = 'inline-block';
+      btnRi.style.display      = 'inline-block';
+      btnStop.style.display    = 'none';
+      btnCancel.style.display  = 'none';
+      btnRestart.style.display = 'none';
+
+      // 直ちに「接続 & センシング開始」を実行（ユーザーのクリック内なので許可される）
+      btnConnect.click();
+    };
+
+
+
+
 
       // センシング終了→解析
       btnStop.onclick = async ()=>{
@@ -373,6 +455,8 @@
           btnCsvMode.style.display='none';
           btnStop.style.display='none';
           btnRi.style.display='none';
+          btnCancel.style.display  = 'none';
+          btnRestart.style.display = 'none';
           hideMeasureUI();
           await controlChar.writeValue(new Uint8Array([0]));
           await dataChar.stopNotifications();
@@ -383,6 +467,7 @@
           alert('解析失敗: '+err.message);
         }
       };
+
 
       // データ受信ハンドラ
       function handleNotify(event) {
@@ -490,6 +575,11 @@
         btnCsvMode.style.display   = 'inline-block';
         btnRi.style.display        = 'inline-block';
         btnStop.style.display      = 'none';
+
+        // ★ここだけ変更：CSVなら文言は元のまま、実機なら「もう一度センシング」
+        btnConnect.textContent = isCsvMode
+          ? '接続 & センシング開始'
+          : 'もう一度センシング';
       }
 
       // 保存

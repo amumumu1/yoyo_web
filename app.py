@@ -256,7 +256,7 @@ def detect_stable_loop_by_tail(dtw_matrix):
         return None
     d_min, d_max = vals.min(), vals.max()
     # 0に近いほど閾値が厳しくなる　0.5が今まで通り　1に近いほど閾値が甘くなる
-    alpha = 0.3  
+    alpha = 0.1  
     threshold = d_min + alpha * (d_max - d_min)
 
     tail_len = N // 2

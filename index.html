@@ -185,9 +185,9 @@
       overflow-wrap: break-word !important;
       line-break: loose;
 
-      background: rgba(0,0,0,.9);
-      color: #fff;
-      font-size: 14px;
+      background: #ACC7DF;
+      color: black;
+      font-size: 30px;
       line-height: 1.6;
       padding: 10px 12px;
       border-radius: 8px;
@@ -223,9 +223,9 @@
     #Rui .hm-wrap .hm-tip{
       position: absolute;            /* ← ここで重ねる */
       top: 8px;
-      right: 8px;
+      left: 8px;
       width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(0,0,0,.55); color: #fff; font-weight: bold;
+      background: #ACC7DF; color: black; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       z-index: 2;
     }
@@ -245,7 +245,7 @@
       overflow-wrap: break-word;
       line-break: loose;
 
-      background: rgba(0,0,0,.9); color: #fff;
+      background: #ACC7DF; color: black;
       font-size: 14px; line-height: 1.6;
       padding: 10px 12px; border-radius: 8px;
       opacity: 0; pointer-events: none; transition: opacity .15s;
@@ -257,7 +257,7 @@
     #Rui .hm-wrap .hm-tip .tooltip::after{
       content: ""; position: absolute; top: 100%;
       left: 50%; transform: translateX(-50%);
-      border: 6px solid transparent; border-top-color: rgba(0,0,0,.9);
+      border: 6px solid transparent; border-top-color: #ACC7DF;
     }
 
 
@@ -351,9 +351,10 @@
           <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
           <div class="hm-tip" tabindex="0" aria-label="自己比較の説明">i
             <div class="tooltip">
-              自己比較ヒートマップ：各ループ同士のDTW距離を行列で可視化。<br>
-              対角に近いほど同一ループで距離は0（白・薄色）、離れた要素ほど別ループ同士の距離。<br>
-              全体的に色が薄く均一 → ループの形が揃っており再現性が高いことを示します。
+              ループ類似度（自己比較）：<br>
+              ヒートマップで自身の i 周目と j 周目のループの類似度を比較<br>
+              青色の部分は類似度が高い<br>
+              赤色の部分は類似度が低い
             </div>
           </div>
         </div>
@@ -364,9 +365,10 @@
           <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
           <div class="hm-tip" tabindex="0" aria-label="プロ比較の説明">i
             <div class="tooltip">
-              プロ比較ヒートマップ：各自分ループとプロ代表ループの距離を対角成分に配置。<br>
-              対角の色が薄い（距離が小さい）ほどプロの動きに近い。<br>
-              連続して薄い対角が続く → 安定してプロに近いループが出せている状態です。
+              ループ類似度（プロ比較）：<br>
+              自身の各ループとプロの基準データを比較してヒートマップで表示<br>
+              対角成分の青色が濃いほど各ループの動きがプロと一致している<br>
+              対角成分の赤色が濃いほど各ループの動きがプロと異なっている
             </div>
           </div>
         </div>

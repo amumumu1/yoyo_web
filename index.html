@@ -70,6 +70,8 @@
     }
     h2 { font-size: 40px; }
     h3 { font-size: 30px; }
+    h4 { font-size: 30px; }
+
 
     .heatmap-grid {
       display: flex;
@@ -100,6 +102,166 @@
       min-height: 3em;
       text-align: center;
     }
+    /* ── レーダーチャート用ツールチップ ── */
+    .radar-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .radar-tip {
+      position: absolute;
+      width: 220px;   /* 横幅を広げる（例: 2倍） */
+      height: 60px; 
+      /* ↓ デバッグ用可視化 ↓ */
+      /* background: rgba(0, 128, 255, 0.2); 半透明ブルー */
+      /* outline: 1px dashed rgba(0, 128, 255, 0.8); 枠線 */
+    }
+   .radar-tip .hotspot {
+      width: 100%;         /* 横幅を拡大（10% → 16%） */
+      height: 48px;       /* 高さは固定値で維持 */
+      border-radius: 50%; /* 丸みを維持するなら50% */
+      pointer-events: auto;
+    }
+    .radar-tip .tooltip {
+      position: absolute;
+      top: -12px; /* 位置は各tipで上書き可 */
+      left: 50%;
+      transform: translate(-50%, -100%);
+      background: #ACC7DF;
+      color: black;
+      font-size: 30px;
+      line-height: 1.4;
+      padding: 8px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease;
+      z-index: 1;
+      max-width: 70vw;
+    }
+    .radar-tip:hover .tooltip {
+      opacity: 1;
+    }
+    
+
+    /* レーダーの重なり順を最前面に */
+    .radar-wrap { position: relative; z-index: 10; overflow: visible; }
+    .radar-tip { position: absolute; transform: translate(-50%, -50%); z-index: 15; }
+    .radar-tip .hotspot { 
+      width: 12%;
+      /* /* もし Chrome/Safari で hover しにくい場合は、下の min-height を有効化 */
+      min-height: 60px;  
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      pointer-events: auto;
+    }
+    
+
+    /* ヒートマップ一帯は横書きで固定（強めの特異性 + !important） */
+    #Rui .hm-wrap > .hm-tip,
+    #Rui .hm-wrap > .hm-tip .tooltip,
+    #Rui .hm-wrap > .hm-tip .tooltip * {
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+      direction: ltr !important;
+    }
+
+    /* ツールチップの実サイズを親(28px)に依存させない */
+    #Rui .hm-wrap > .hm-tip .tooltip{
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+
+      display: block !important;          /* shrink-to-fit回避 */
+      width: clamp(360px, 60vw, 800px) !important;
+      min-width: 320px !important;
+      max-height: 70vh;
+      overflow: auto;
+
+      /* 日本語の自然な折返し */
+      white-space: normal !important;
+      word-break: normal !important;
+      overflow-wrap: break-word !important;
+      line-break: loose;
+
+      background: rgba(0,0,0,.9);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 10px 12px;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease;
+      text-align: left;
+      z-index: 3;
+    }
+    #Rui .hm-wrap > .hm-tip:hover .tooltip,
+    #Rui .hm-wrap > .hm-tip:focus .tooltip { opacity: 1; }
+
+    #Rui .hm-wrap > .hm-tip .tooltip::after{
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: rgba(0,0,0,.9);
+    }
+
+    /* 画像＋ⓘ の包みを絶対配置の基準にする */
+    #Rui .hm-wrap{
+      position: relative;            /* ←これが必須 */
+      display: inline-block;
+      max-width: 100%;
+      text-align: initial;           /* 親の center の影響を受けない保険 */
+    }
+    #Rui .hm-wrap img{ display:block; height:auto; }
+
+    /* ⓘ ボタンを画像の右上に重ねる */
+    #Rui .hm-wrap .hm-tip{
+      position: absolute;            /* ← ここで重ねる */
+      top: 8px;
+      right: 8px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(0,0,0,.55); color: #fff; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+    }
+
+    /* ツールチップは i のサイズに依存させず固定幅で */
+    #Rui .hm-wrap .hm-tip .tooltip{
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+
+      width: clamp(360px, 60vw, 800px);  /* しっかり横幅を確保 */
+      max-height: 70vh; overflow: auto;
+
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      line-break: loose;
+
+      background: rgba(0,0,0,.9); color: #fff;
+      font-size: 14px; line-height: 1.6;
+      padding: 10px 12px; border-radius: 8px;
+      opacity: 0; pointer-events: none; transition: opacity .15s;
+      text-align: left; z-index: 3;
+    }
+    #Rui .hm-wrap .hm-tip:hover .tooltip,
+    #Rui .hm-wrap .hm-tip:focus .tooltip{ opacity: 1; }
+
+    #Rui .hm-wrap .hm-tip .tooltip::after{
+      content: ""; position: absolute; top: 100%;
+      left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: rgba(0,0,0,.9);
+    }
+
+
+
   </style>
 </head>
 <body>
@@ -136,7 +298,44 @@
 
     <h2 id="Title" style="display: none;">解析結果</h2>
     <h3 id="RadarTitle" style="display: none;">総合評価（レーダーチャート）</h3>
-    <img id="radarChart" style="display: none; width: 600px; max-width: 100%; margin-bottom: 30px;" />
+    <!-- <img id="radarChart" style="display: none; width: 600px; max-width: 100%; margin-bottom: 30px;" /> -->
+    <!-- レーダーチャート（画像＋ホットスポット） -->
+    <div id="radarWrap" class="radar-wrap" style="display:none; width: 600px; max-width: 100%;">
+      <img id="radarChart" style="width: 100%; height: auto; display:block; margin-bottom: 30px;" />
+      
+      <!-- 位置はパーセンテージで調整。画像の周囲に5点置いています -->
+      <!-- 自身の類似度（上：少し下げる） -->
+      <div class="radar-tip" style="left: 49%; top: 2%;">
+        <div class="hotspot" title="自身の類似度"></div>
+        <div class="tooltip">自身の類似度：<br>自身の各ループがどれだけ同じ動きを繰り返しているかを示す<br>類似度が高いほどループが安定している<br>類似度が高いほど高評価</div>
+      </div>
+
+      <!-- 平均ループ時間（右上：やや内側） -->
+      <div class="radar-tip" style="left: 88%; top: 36%;">
+        <div class="hotspot" title="平均ループ時間"></div>
+        <div class="tooltip">平均ループ時間：<br>1周のループにかかる平均時間<br>プロの平均ループ時間は約0.4秒<br>平均ループ時間が短いほど高評価</div>
+      </div>
+
+      <!-- ループ時間のばらつき（右下：少し上へ） -->
+      <div class="radar-tip" style="left: 73%; top: 91%;">
+        <div class="hotspot" title="ループ時間のばらつき"></div>
+        <div class="tooltip">ループ時間のばらつき：<br>各ループ時間の標準偏差を表しリズムの安定性を示す<br>ばらつきが小さいほどループのテンポが一定で安定している<br>ばらつきが小さいほど高評価</div>
+      </div>
+
+      <!-- 安定開始ループ（左下：対称位置） -->
+      <div class="radar-tip" style="left: 23%; top: 91%;">
+        <div class="hotspot" title="安定開始ループ"></div>
+        <div class="tooltip">安定開始ループ：<br>ループが安定し始めるまでにかかったループ数<br>数値が小さいほど素早く安定している<br>数値が小さいほど高評価</div>
+      </div>
+
+      <!-- プロ類似度（左上：やや内側） -->
+      <div class="radar-tip" style="left: 9%; top: 36%;">
+        <div class="hotspot" title="プロ類似度"></div>
+        <div class="tooltip">プロ類似度：<br>プロのループと比較してどれだけ似ているかを示す<br>類似度が高いほどプロの動きに近い<br>類似度が高いほど高評価</div>
+      </div>
+
+    </div>
+
 
     <div id="score"></div><br>
     <div id="proDistance"></div><br>
@@ -148,11 +347,29 @@
     <div id="Rui" style="display: none;" class="heatmap-grid">
       <div>
         <h4>自己比較</h4>
-        <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
+        <div class="hm-wrap">
+          <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
+          <div class="hm-tip" tabindex="0" aria-label="自己比較の説明">i
+            <div class="tooltip">
+              自己比較ヒートマップ：各ループ同士のDTW距離を行列で可視化。<br>
+              対角に近いほど同一ループで距離は0（白・薄色）、離れた要素ほど別ループ同士の距離。<br>
+              全体的に色が薄く均一 → ループの形が揃っており再現性が高いことを示します。
+            </div>
+          </div>
+        </div>
       </div>
       <div>
         <h4>対角成分：プロ比較</h4>
-        <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
+        <div class="hm-wrap">
+          <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
+          <div class="hm-tip" tabindex="0" aria-label="プロ比較の説明">i
+            <div class="tooltip">
+              プロ比較ヒートマップ：各自分ループとプロ代表ループの距離を対角成分に配置。<br>
+              対角の色が薄い（距離が小さい）ほどプロの動きに近い。<br>
+              連続して薄い対角が続く → 安定してプロに近いループが出せている状態です。
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -242,6 +459,7 @@
 
       // UIリセット
       function resetUIBeforeMeasure() {
+        document.getElementById('radarWrap').style.display = 'none';
         document.getElementById('Title').style.display = 'none';
         document.getElementById('RadarTitle').style.display = 'none';
         document.getElementById('radarChart').style.display = 'none';
@@ -505,6 +723,7 @@
         document.getElementById('Title').style.display='block';
         document.getElementById('RadarTitle').style.display='block';
         document.getElementById('radarChart').style.display='block';
+        document.getElementById('radarWrap').style.display = 'inline-block'; // ← 追加
         document.getElementById('loopPlot').style.display='block';
         document.getElementById('selfHeatmap').style.display='block';
         document.getElementById('proHeatmap').style.display='block';

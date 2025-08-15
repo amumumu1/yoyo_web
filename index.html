@@ -128,7 +128,7 @@
       transform: translate(-50%, -100%);
       background: #ACC7DF;
       color: black;
-      font-size: 30px;
+      font-size: 25px;
       line-height: 1.4;
       padding: 8px 10px;
       border-radius: 8px;
@@ -170,12 +170,12 @@
     #Rui .hm-wrap > .hm-tip .tooltip{
       position: absolute;
       bottom: calc(100% + 10px);
-      left: 50%;
-      transform: translateX(-50%);
+      left: 0%;
+      /* transform: translateX(-50%); */
 
       display: block !important;          /* shrink-to-fit回避 */
       width: clamp(360px, 60vw, 800px) !important;
-      min-width: 320px !important;
+      min-width: 500px !important;
       max-height: 70vh;
       overflow: auto;
 
@@ -188,13 +188,12 @@
       background: #ACC7DF;
       color: black;
       font-size: 30px;
-      line-height: 1.6;
       padding: 10px 12px;
       border-radius: 8px;
       opacity: 0;
       pointer-events: none;
       transition: opacity .15s ease;
-      text-align: left;
+      text-align: center;
       z-index: 3;
     }
     #Rui .hm-wrap > .hm-tip:hover .tooltip,
@@ -204,10 +203,10 @@
       content: "";
       position: absolute;
       top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 0%;
+      /* transform: translateX(-50%); */
       border: 6px solid transparent;
-      border-top-color: rgba(0,0,0,.9);
+      border-top-color: gray;
     }
 
     /* 画像＋ⓘ の包みを絶対配置の基準にする */
@@ -225,7 +224,7 @@
       top: 8px;
       left: 8px;
       width: 28px; height: 28px; border-radius: 50%;
-      background: #ACC7DF; color: black; font-weight: bold;
+      background: gray; color: white; font-weight: bold;
       display: flex; align-items: center; justify-content: center;
       z-index: 2;
     }
@@ -234,8 +233,8 @@
     #Rui .hm-wrap .hm-tip .tooltip{
       position: absolute;
       bottom: calc(100% + 10px);
-      left: 50%;
-      transform: translateX(-50%);
+      left: 0%;
+      /* transform: translateX(-50%); */
 
       width: clamp(360px, 60vw, 800px);  /* しっかり横幅を確保 */
       max-height: 70vh; overflow: auto;
@@ -246,18 +245,20 @@
       line-break: loose;
 
       background: #ACC7DF; color: black;
-      font-size: 14px; line-height: 1.6;
+      font-size: 20px; 
       padding: 10px 12px; border-radius: 8px;
       opacity: 0; pointer-events: none; transition: opacity .15s;
-      text-align: left; z-index: 3;
+      text-align: center; z-index: 3;
+      font-weight: normal; /* 太字解除 */
     }
     #Rui .hm-wrap .hm-tip:hover .tooltip,
     #Rui .hm-wrap .hm-tip:focus .tooltip{ opacity: 1; }
 
     #Rui .hm-wrap .hm-tip .tooltip::after{
       content: ""; position: absolute; top: 100%;
-      left: 50%; transform: translateX(-50%);
-      border: 6px solid transparent; border-top-color: #ACC7DF;
+      left: 0%; 
+      /* transform: translateX(-50%); */
+      border: 6px solid transparent; border-top-color: gray;
     }
 
 
@@ -353,8 +354,8 @@
             <div class="tooltip">
               ループ類似度（自己比較）：<br>
               ヒートマップで自身の i 周目と j 周目のループの類似度を比較<br>
-              青色の部分は類似度が高い<br>
-              赤色の部分は類似度が低い
+              青色が濃いほど類似度が高い<br>
+              赤色が濃いほど類似度が低い
             </div>
           </div>
         </div>
@@ -366,9 +367,9 @@
           <div class="hm-tip" tabindex="0" aria-label="プロ比較の説明">i
             <div class="tooltip">
               ループ類似度（プロ比較）：<br>
-              自身の各ループとプロの基準データを比較してヒートマップで表示<br>
-              対角成分の青色が濃いほど各ループの動きがプロと一致している<br>
-              対角成分の赤色が濃いほど各ループの動きがプロと異なっている
+              ヒートマップで自身の各ループとプロのループの類似度を比較<br>
+              対角成分の青色が濃いほどプロの動きと一致している<br>
+              対角成分の赤色が濃いほどプロの動きと異なっている
             </div>
           </div>
         </div>

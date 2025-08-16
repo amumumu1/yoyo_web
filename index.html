@@ -260,6 +260,75 @@
       /* transform: translateX(-50%); */
       border: 6px solid transparent; border-top-color: gray;
     }
+    /* ── インライン数値に付けるツールチップ ── */
+    .inline-tip {
+      position: relative;
+      cursor: help;
+      border-bottom: 2px dotted rgba(0,0,0,.35); /* 下線でヒント感 */
+    }
+
+    /* ツールチップ本体（子要素） */
+    .inline-tip .bubble {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: clamp(320px, 50vw, 720px);
+      max-height: 60vh;
+      overflow: auto;
+
+      background: #ACC7DF;
+      color: #000;
+      font-size: 18px;
+      line-height: 1.6;
+      padding: 10px 12px;
+      border-radius: 8px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.15);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease;
+      z-index: 30;
+
+      /* 念のため：縦書き汚染を遮断 */
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+      font-weight: normal; /* 太字継承を遮断 */
+      text-align: left;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    /* 吹き出し三角 */
+    .inline-tip .bubble::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #ACC7DF;
+    }
+
+    .inline-tip:hover .bubble,
+    .inline-tip:focus-within .bubble {
+      opacity: 1;
+    }
+
+        /* ラベル側でも必ず横書き＆太字継承を遮断 */
+    .inline-tip,
+    .inline-tip * {
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+      font-weight: inherit;
+    }
+
+    .inline-tip {
+      position: relative;
+      display: inline-block;      /* 相対基準 & hoverしやすい */
+      cursor: help;
+      border-bottom: 2px dotted rgba(0,0,0,.35); /* ラベルにも下線 */
+    }
 
 
 
@@ -750,26 +819,101 @@
         document.getElementById('Rui').style.display         = 'flex';
 
         // Stats
-        scoreDiv.textContent = `類似度スコア: ${json.score.toFixed(1)}　総ループ数: ${json.loop_count}　${
-          json.stable_loop!==null?`安定開始ループ: ${json.stable_loop}周目`:'安定開始ループ: なし'
-        }`;
-        document.getElementById('proDistance').textContent = json.pro_distance_mean
-          ? `プロとの平均距離: ${json.pro_distance_mean.toFixed(1)}`
-          : 'プロとの平均距離: なし';
-        document.getElementById('loopSummary').textContent =
-          `${json.loop_mean_duration!==null?`平均ループ時間: ${json.loop_mean_duration.toFixed(3)} 秒`:'平均ループ時間: なし'}
-           ${json.loop_std_duration!==null?` ループ時間の標準偏差: ${json.loop_std_duration.toFixed(3)} 秒`:' ループ時間の標準偏差: なし'}`;
+        scoreDiv.innerHTML = `
+          <span class="inline-tip">
+            類似度スコア: <strong>${json.score.toFixed(1)} 点</strong>
+            <span class="bubble">
+              あなたの各ループ同士の形の類似度から算出したスコアです。<br>
+              値が高いほど「毎回同じ形で振れている（再現性が高い）」ことを示します。
+            </span>
+          </span>
+          <span class="inline-tip">
+            総ループ数: <strong>${json.loop_count} 周</strong>
+            <span class="bubble">
+              検出されたループの総数です。<br>
+              測定時間やテンポにより増減しますが、評価そのものには直接影響しません。
+            </span>
+          </span>
+          <span class="inline-tip">
+            安定開始ループ: <strong>${json.stable_loop!==null ? `${json.stable_loop} 周目` : 'なし'}</strong>
+            <span class="bubble">
+              ループが安定（形・テンポが落ち着く）し始めたタイミングです。<br>
+              早いほどウォームアップが短く、安定度が高い傾向を示します。
+            </span>
+          </span>
+        `;
+
+        
+        document.getElementById('proDistance').innerHTML = json.pro_distance_mean
+          ? `
+            <span class="inline-tip">
+              プロとの平均距離: <strong>${json.pro_distance_mean.toFixed(1)}</strong>
+              <span class="bubble">
+                あなたの各ループとプロの基準ループとの距離（差異）の平均です。<br>
+                小さいほどプロの動きに近いことを示します（距離の定義はDTW系の指標）。
+              </span>
+            </span>
+          `
+          : `
+            <span class="inline-tip">
+              プロとの平均距離: なし
+              <span class="bubble">
+                今回はプロ比較データがないため、この指標は算出していません。
+              </span>
+            </span>
+          `;
+
+        const meanTxt = (json.loop_mean_duration!==null)
+          ? `${json.loop_mean_duration.toFixed(3)} 秒`
+          : 'なし';
+        const stdTxt  = (json.loop_std_duration!==null)
+          ? `${json.loop_std_duration.toFixed(3)} 秒`
+          : 'なし';
+
+        document.getElementById('loopSummary').innerHTML = `
+          <span class="inline-tip">
+            平均ループ時間: <strong>${meanTxt}</strong>
+            <span class="bubble">
+              1周あたりに要した平均時間です。<br>
+              プロの目安は約0.4秒。短いほど高速ですが、乱れると評価は下がりやすくなります。
+            </span>
+          </span>
+          <span class="inline-tip">
+            ループ時間の標準偏差: <strong>${stdTxt}</strong>
+            <span class="bubble">
+              テンポの一定さ（時間のばらつき）を表します。<br>
+              小さいほど毎回のリズムが揃っており安定しています。
+            </span>
+          </span>
+        `;
+
+        if (json.snap_median!==null && json.snap_std!==null) {
+          document.getElementById('loopSummary').innerHTML += `
+            <br><br>
+            <span class="inline-tip">
+              手首を返す強さ（ループごとの中央値）: <strong>${json.snap_median.toFixed(2)} m/s²</strong>
+              <span class="bubble">
+                ループ中のスナップ（手首の返し）の強さの代表値です。<br>
+                強すぎるとブレやすく、弱すぎると速度が出にくい傾向があります。
+              </span>
+            </span>
+            <br><br>
+            <span class="inline-tip">
+              手首を返す強さ（ループごとのばらつき）: <strong>${json.snap_std.toFixed(2)} m/s²</strong>
+              <span class="bubble">
+                スナップ強度の安定性を示します。<br>
+                小さいほど返しの強さが毎回安定しています。
+              </span>
+            </span>
+          `;
+        }
+
         const loopDetails = document.getElementById('loopDetails');
         if(json.loop_duration_list?.length){
           loopDetails.textContent = json.loop_duration_list.join('\n');
           loopDetails.style.display='block';
         } else loopDetails.style.display='none';
 
-        if(json.snap_median!==null && json.snap_std!==null){
-          document.getElementById('loopSummary').innerHTML +=
-            `<p>手首を返す強さ（ループごとの中央値）：${json.snap_median.toFixed(2)} m/s²</p>`+
-            `<p>手首を返す強さ（ループごとのばらつき）：${json.snap_std.toFixed(2)} m/s²</p>`;
-        }
 
         // --- ここから追加 ---
         // CSVセクション（区切り線）

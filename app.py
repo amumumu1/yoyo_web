@@ -507,7 +507,7 @@ def analyze():
     progress_store[task_id] = {'progress':95, 'message':'レーダーチャート作成…'}
     loop_mean_duration = float(np.mean(loop_durations)) if loop_durations else None
     loop_std_duration  = float(np.std(loop_durations))  if loop_durations else None
-    radar_b64, total_score, s_pro = generate_radar_chart(
+    radar_b64, total_score, s_pro_5 = generate_radar_chart(
         score=score,
         loop_mean=loop_mean_duration,
         loop_std=loop_std_duration,
@@ -534,9 +534,8 @@ def analyze():
         'loop_max_acc_list':  loop_max_acc_list,
         'snap_median':        snap_median,
         'snap_std':           snap_std,
-        'pro_distance_mean':  float(np.mean(distances)) if distances else None,
-        'pro_score_5':        s_pro,              # 0〜5（レーダーと同じスケール）
-        'pro_score_100':      s_pro * 20.0    # 0〜100 に換算した見やすい点数
+        'pro_score_100':      float(s_pro_5*20)
+
     }
     return jsonify(result)
 

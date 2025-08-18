@@ -500,11 +500,6 @@
       const gyroOutput   = document.getElementById('gyroOutput');
       const btnCancel   = document.getElementById('btnCancel');
       const btnRestart  = document.getElementById('btnRestart');
-      const proDistStr  = (json.pro_distance_mean != null) ? json.pro_distance_mean.toFixed(1) : 'なし';
-      const proScore5   = (json.pro_score_5     != null) ? json.pro_score_5.toFixed(2)      : 'なし';
-      const proScore100 = (json.pro_score_100   != null) ? `${json.pro_score_100.toFixed(1)} 点` : 'なし';
-
-      
 
 
       // センシングデータ保存用
@@ -856,6 +851,8 @@
         const snapStdTxt = (json.snap_std !== null && json.snap_std !== undefined)
           ? `${json.snap_std.toFixed(2)} m/s²`
           : '—';
+        const proScore100  = (json.pro_score_100   != null) ? `${json.pro_score_100.toFixed(1)} 点` : 'なし';
+
 
         // ホバー説明はラベル・数値まとめて inline-tip 内に維持
         const scoreDiv = document.getElementById('score');
@@ -869,7 +866,7 @@
               </span>
             </span>
             <span class="inline-tip">
-              <br>安定開始： <strong>${proScore100}</strong>
+              <br>安定開始： <strong>${stableStr}</strong>
               <span class="bubble">
                 ループが安定（形・テンポが落ち着く）し始めたタイミングです。<br>
                 早いほどウォームアップが短く、安定度が高い傾向を示します。
@@ -886,7 +883,7 @@
               </span>
             </span>
             <span class="inline-tip">
-              プロと距離： <strong>${proDistStr}</strong>
+              プロと距離： <strong>${proScore100}</strong>
               <span class="bubble">
                 各ループとプロ基準ループとの距離（差異）の平均です。<br>
                 小さいほどプロの動きに近いことを示します（DTW系の指標）。

@@ -71,6 +71,7 @@
     h2 { font-size: 40px; }
     h3 { font-size: 30px; }
     h4 { font-size: 30px; }
+    h5 { font-size: 50px; }
 
 
     .heatmap-grid {
@@ -276,7 +277,7 @@
       /* ★ここを可変に */
       display: inline-block;
       width: fit-content;               /* 中身の幅にフィット */
-      max-width: min(70vw, 40rem);      /* 画面や可読性の上限だけ残す */
+      max-width: 1000%;      /* 画面や可読性の上限だけ残す */
       /* 1行に収めたいなら ↓ を normal → nowrap に */
       white-space: nowrap;
 
@@ -285,7 +286,7 @@
 
       background: #ACC7DF;
       color: #000;
-      font-size: 18px;
+      font-size: 25px;
       line-height: 1.6;
       padding: 10px 12px;
       border-radius: 8px;
@@ -299,7 +300,7 @@
       writing-mode: horizontal-tb !important;
       text-orientation: mixed !important;
       font-weight: normal; /* 太字継承を遮断 */
-      text-align: left;
+      text-align: center;
       white-space: nowrap;
       word-break: normal;
       overflow-wrap: break-word;
@@ -339,6 +340,22 @@
     .metric-line { margin: 8px 0 4px; }
     .metric-line .inline-tip { margin-right: 1.2em; }
 
+    .num-red {
+      color: red;
+      font-weight: bold; /* 必要なら削除可 */
+    }
+
+    .video-wrap{
+      width: min(100%, 960px);
+      aspect-ratio: 16 / 9;
+      margin: 0 auto 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(0,0,0,.12);
+    }
+    .video-wrap iframe{ width:100%; height:100%; border:0; display:block; }
+
+
 
 
 
@@ -346,6 +363,9 @@
 </head>
 <body>
   <div class="container">
+
+    <h5 id="appTitle">インサイド・ループ技能評価システム<br></h5>
+    
     <button id="btnConnect">接続 &amp; センシング開始</button>
     <input type="file" id="csvFiles" accept=".csv" multiple style="display:none;">
     <button id="btnCsvMode">CSVから解析</button>
@@ -353,6 +373,20 @@
     <button id="btnStop" disabled>センシング終了</button>
     <button id="btnCancel"  style="display:none;">中止</button>
     <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
+
+    <h2 id="demoHeading"><br>デモ動画</h2>
+
+
+    <div id="introVideo" class="video-wrap" aria-label="参考動画">
+      <iframe
+        src="https://www.youtube.com/embed/x0VCf-ClRmM?si=aH6Zstq-lA3qtXoO"
+        title="YouTube video player"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen
+        loading="lazy">
+      </iframe>
+    </div>
 
     <!-- プログレスバー -->
     <div id="loading">
@@ -500,6 +534,16 @@
       const gyroOutput   = document.getElementById('gyroOutput');
       const btnCancel   = document.getElementById('btnCancel');
       const btnRestart  = document.getElementById('btnRestart');
+      const demoHeading  = document.getElementById('demoHeading');
+      const appTitle  = document.getElementById('appTitle');
+
+      // 便利関数
+      function showIntroVideo(show=true){
+        const v = document.getElementById('introVideo');
+        if (v) v.style.display = show ? 'block' : 'none';
+        if (demoHeading) demoHeading.style.display = show ? 'block' : 'none';
+        if (appTitle) appTitle.style.display = show ? 'block' : 'none';
+      }
 
 
       // センシングデータ保存用
@@ -622,6 +666,7 @@
       // CSV 解析
       btnCsvMode.onclick  = ()=> csvInput.click();
       csvInput.onchange    = async ()=>{
+        showIntroVideo(false);
         if(csvInput.files.length<2){
           alert("加速度CSVと角速度CSVの2つを選んでください");
           return;
@@ -634,6 +679,8 @@
         btnCsvMode.style.display  = 'none';
         btnRi.style.display       = 'none';
         btnStop.style.display    = 'none';
+        showIntroVideo(false);
+
         
 
         const accJson  = csvToJson(await csvInput.files[0].text(),true);
@@ -650,6 +697,7 @@
 
       // センシング開始
       btnConnect.onclick = async ()=>{
+        showIntroVideo(false);
         isCsvMode = false;
         resetUIBeforeMeasure();
         try {
@@ -680,7 +728,7 @@
           btnRi.style.display        = 'none';
           btnCancel.style.display   = 'inline-block';
           btnRestart.style.display  = 'inline-block';
-
+          showIntroVideo(false);
         } catch(err) {
           alert('接続失敗: '+err.message);
         }
@@ -700,6 +748,7 @@
           resetUIBeforeMeasure();
 
           // ボタン復帰（初期状態へ）
+          showIntroVideo(true);
           btnConnect.style.display   = 'inline-block';
           btnConnect.disabled        = false;
           btnConnect.textContent     = '接続 & センシング開始';
@@ -735,10 +784,11 @@
       btnConnect.disabled      = false;
       btnConnect.textContent   = '接続 & センシング開始';
       btnCsvMode.style.display = 'inline-block';
-      btnRi.style.display      = 'inline-block';
+      btnRi.style.display      = 'inline-block'
       btnStop.style.display    = 'none';
       btnCancel.style.display  = 'none';
       btnRestart.style.display = 'none';
+      showIntroVideo(true);
 
       // 直ちに「接続 & センシング開始」を実行（ユーザーのクリック内なので許可される）
       btnConnect.click();
@@ -757,6 +807,7 @@
           btnRi.style.display='none';
           btnCancel.style.display  = 'none';
           btnRestart.style.display = 'none';
+          showIntroVideo(false);
           hideMeasureUI();
           await controlChar.writeValue(new Uint8Array([0]));
           await dataChar.stopNotifications();
@@ -817,8 +868,8 @@
         // レーダー画像
         const radarImg = document.getElementById('radarChart');
         radarImg.src = `data:image/png;base64,${json.radar_chart}`;
-        document.getElementById('RadarTitle').textContent =
-          `総合評価: ${json.total_score.toFixed(1)} 点`;
+        document.getElementById('RadarTitle').innerHTML =
+          `<span class="num-red">総合評価: ${json.total_score.toFixed(1)} 点</span>`;
 
         // ループ検出図
         const loopPlotImg = document.getElementById('loopPlot');
@@ -859,61 +910,48 @@
         scoreDiv.innerHTML = `
           <div class="metric-line">
             <span class="inline-tip">
-              総ループ数： <strong>${totalLoops} 周</strong>
+              総ループ数： <strong><span class="num-red">${totalLoops} 周</span></strong>
               <span class="bubble">
-                検出されたループの総数です。<br>
-                測定時間やテンポにより増減しますが、評価そのものには直接影響しません。
+                計測中に実施したインサイド・ループの合計回数
               </span>
             </span>
             <span class="inline-tip">
-              <br>安定開始： <strong>${stableStr}</strong>
+              安定開始： <strong><span class="num-red">${stableStr}</span></strong>
               <span class="bubble">
-                ループが安定（形・テンポが落ち着く）し始めたタイミングです。<br>
-                早いほどウォームアップが短く、安定度が高い傾向を示します。
-              </span>
-            </span>
-          </div>
-
-          <div class="metric-line">
-            <span class="inline-tip">
-              類似度スコア： <strong>${scoreStr}</strong>
-              <span class="bubble">
-                各ループ同士の形の類似度から算出した指標です。<br>
-                高いほど「毎回同じ形で振れている（再現性が高い）」ことを示します。
-              </span>
-            </span>
-            <span class="inline-tip">
-              プロと距離： <strong>${proScore100}</strong>
-              <span class="bubble">
-                各ループとプロ基準ループとの距離（差異）の平均です。<br>
-                小さいほどプロの動きに近いことを示します（DTW系の指標）。
+                ループが安定し始めるまでにかかったループ数
               </span>
             </span>
           </div>
 
           <div class="metric-line">
             <span class="inline-tip">
-              平均ループ時間: <strong>${meanTxt}</strong>
+              類似度スコア： <strong><span class="num-red">${scoreStr}</span></strong>
               <span class="bubble">
-                1周あたりに要した平均時間です。<br>
-                プロの目安は約0.4秒。短いほど高速ですが、乱れると評価は下がりやすくなります。
+                自身の各ループがどれだけ同じ動きを繰り返しているかを示す<br>類似度が高いほどループが安定していて高得点
               </span>
             </span>
             <span class="inline-tip">
-              ループ時間の標準偏差: <strong>${stdTxt}</strong>
+              プロ類似度スコア： <strong><span class="num-red">${proScore100}</span></strong>
               <span class="bubble">
-                テンポの一定さ（時間のばらつき）を表します。<br>
-                小さいほど毎回のリズムが揃っており安定しています。
+                プロのループと比較してどれだけ似ているかを示す<br>類似度が高いほどプロの動きに近く高得点
               </span>
             </span>
           </div>
 
           <div class="metric-line">
             <span class="inline-tip">
-              手首を返す強さ: <strong>${snapMedTxt}</strong>（中央値） / <strong>${snapStdTxt}</strong>（ばらつき）
+              ループ時間： <strong><span class="num-red">${meanTxt}</span></strong>（平均） / <strong><span class="num-red">${stdTxt}</span></strong>（ばらつき）
               <span class="bubble">
-                ループ中のスナップ（手首の返し）の強さの代表値と安定性です。<br>
-                強すぎるとブレやすく、弱すぎると速度が出にくい傾向があります。
+                ループにかかる平均時間とばらつき（標準偏差）
+              </span>
+            </span>
+          </div>
+
+          <div class="metric-line">
+            <span class="inline-tip">
+              手首を返す強さ： <strong><span class="num-red">${snapMedTxt}</span></strong>（中央値） / <strong><span class="num-red">${snapStdTxt}</span></strong>（ばらつき）
+              <span class="bubble">
+                各ループのスナップ（手首の返し）の強さの最大値の中央値とばらつき（標準偏差）
               </span>
             </span>
           </div>

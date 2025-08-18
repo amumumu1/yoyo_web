@@ -273,7 +273,13 @@
       bottom: calc(100% + 8px);
       left: 50%;
       transform: translateX(-50%);
-      width: clamp(320px, 50vw, 720px);
+      /* ★ここを可変に */
+      display: inline-block;
+      width: fit-content;               /* 中身の幅にフィット */
+      max-width: min(70vw, 40rem);      /* 画面や可読性の上限だけ残す */
+      /* 1行に収めたいなら ↓ を normal → nowrap に */
+      white-space: nowrap;
+
       max-height: 60vh;
       overflow: auto;
 
@@ -294,7 +300,7 @@
       text-orientation: mixed !important;
       font-weight: normal; /* 太字継承を遮断 */
       text-align: left;
-      white-space: normal;
+      white-space: nowrap;
       word-break: normal;
       overflow-wrap: break-word;
     }
@@ -329,6 +335,10 @@
       cursor: help;
       border-bottom: 2px dotted rgba(0,0,0,.35); /* ラベルにも下線 */
     }
+
+    .metric-line { margin: 8px 0 4px; }
+    .metric-line .inline-tip { margin-right: 1.2em; }
+
 
 
 
@@ -490,6 +500,11 @@
       const gyroOutput   = document.getElementById('gyroOutput');
       const btnCancel   = document.getElementById('btnCancel');
       const btnRestart  = document.getElementById('btnRestart');
+      const proDistStr  = (json.pro_distance_mean != null) ? json.pro_distance_mean.toFixed(1) : 'なし';
+      const proScore5   = (json.pro_score_5     != null) ? json.pro_score_5.toFixed(2)      : 'なし';
+      const proScore100 = (json.pro_score_100   != null) ? `${json.pro_score_100.toFixed(1)} 点` : 'なし';
+
+      
 
 
       // センシングデータ保存用
@@ -792,161 +807,163 @@
 
       // 結果描画
       function renderResult(json){
+        // 見出しや画像など表示
         document.getElementById('Title').style.display='block';
         document.getElementById('RadarTitle').style.display='block';
         document.getElementById('radarChart').style.display='block';
-        document.getElementById('radarWrap').style.display = 'inline-block'; // ← 追加
+        document.getElementById('radarWrap').style.display = 'inline-block';
         document.getElementById('loopPlot').style.display='block';
         document.getElementById('selfHeatmap').style.display='block';
         document.getElementById('proHeatmap').style.display='block';
         document.getElementById('proExample').style.display='block';
         document.getElementById('saveSection').style.display='block';
-        document.getElementById('btnSaveResult').style.display   = 'inline-block';  
+        document.getElementById('btnSaveResult').style.display = 'inline-block';
 
-        // Radar
+        // レーダー画像
         const radarImg = document.getElementById('radarChart');
         radarImg.src = `data:image/png;base64,${json.radar_chart}`;
-        document.getElementById('RadarTitle').textContent = `総合評価: ${json.total_score.toFixed(1)} 点`;
+        document.getElementById('RadarTitle').textContent =
+          `総合評価: ${json.total_score.toFixed(1)} 点`;
 
-        // Loop Plot
+        // ループ検出図
+        const loopPlotImg = document.getElementById('loopPlot');
         loopPlotImg.src = `data:image/png;base64,${json.loop_plot}`;
 
-        // Heatmaps
+        // ヒートマップ
         document.getElementById('selfHeatmap').src = `data:image/png;base64,${json.self_heatmap}`;
         document.getElementById('proHeatmap').src  = `data:image/png;base64,${json.pro_heatmap}`;
-
         document.getElementById('HeatmapTitle').style.display = 'block';
-        document.getElementById('Rui').style.display         = 'flex';
+        document.getElementById('Rui').style.display = 'flex';
 
-        // Stats
-        scoreDiv.innerHTML = `
-          <span class="inline-tip">
-            類似度スコア: <strong>${json.score.toFixed(1)} 点</strong>
-            <span class="bubble">
-              あなたの各ループ同士の形の類似度から算出したスコアです。<br>
-              値が高いほど「毎回同じ形で振れている（再現性が高い）」ことを示します。
-            </span>
-          </span>
-          <span class="inline-tip">
-            総ループ数: <strong>${json.loop_count} 周</strong>
-            <span class="bubble">
-              検出されたループの総数です。<br>
-              測定時間やテンポにより増減しますが、評価そのものには直接影響しません。
-            </span>
-          </span>
-          <span class="inline-tip">
-            安定開始ループ: <strong>${json.stable_loop!==null ? `${json.stable_loop} 周目` : 'なし'}</strong>
-            <span class="bubble">
-              ループが安定（形・テンポが落ち着く）し始めたタイミングです。<br>
-              早いほどウォームアップが短く、安定度が高い傾向を示します。
-            </span>
-          </span>
-        `;
+        // ── ここから「数値の並び順」を scoreDiv に集約して描画 ──
+        const totalLoops = json.loop_count;
+        const stableStr  = (json.stable_loop !== null) ? `${json.stable_loop} 周目` : 'なし';
+        const scoreStr   = `${json.score.toFixed(1)} 点`;
+        const proDistStr = (json.pro_distance_mean !== null && json.pro_distance_mean !== undefined)
+          ? json.pro_distance_mean.toFixed(1)
+          : 'なし';
 
-        
-        document.getElementById('proDistance').innerHTML = json.pro_distance_mean
-          ? `
-            <span class="inline-tip">
-              プロとの平均距離: <strong>${json.pro_distance_mean.toFixed(1)}</strong>
-              <span class="bubble">
-                あなたの各ループとプロの基準ループとの距離（差異）の平均です。<br>
-                小さいほどプロの動きに近いことを示します（距離の定義はDTW系の指標）。
-              </span>
-            </span>
-          `
-          : `
-            <span class="inline-tip">
-              プロとの平均距離: なし
-              <span class="bubble">
-                今回はプロ比較データがないため、この指標は算出していません。
-              </span>
-            </span>
-          `;
-
-        const meanTxt = (json.loop_mean_duration!==null)
+        const meanTxt = (json.loop_mean_duration !== null)
           ? `${json.loop_mean_duration.toFixed(3)} 秒`
           : 'なし';
-        const stdTxt  = (json.loop_std_duration!==null)
+        const stdTxt  = (json.loop_std_duration !== null)
           ? `${json.loop_std_duration.toFixed(3)} 秒`
           : 'なし';
 
-        document.getElementById('loopSummary').innerHTML = `
-          <span class="inline-tip">
-            平均ループ時間: <strong>${meanTxt}</strong>
-            <span class="bubble">
-              1周あたりに要した平均時間です。<br>
-              プロの目安は約0.4秒。短いほど高速ですが、乱れると評価は下がりやすくなります。
-            </span>
-          </span>
-          <span class="inline-tip">
-            ループ時間の標準偏差: <strong>${stdTxt}</strong>
-            <span class="bubble">
-              テンポの一定さ（時間のばらつき）を表します。<br>
-              小さいほど毎回のリズムが揃っており安定しています。
-            </span>
-          </span>
-        `;
+        const snapMedTxt = (json.snap_median !== null && json.snap_median !== undefined)
+          ? `${json.snap_median.toFixed(2)} m/s²`
+          : '—';
+        const snapStdTxt = (json.snap_std !== null && json.snap_std !== undefined)
+          ? `${json.snap_std.toFixed(2)} m/s²`
+          : '—';
 
-        if (json.snap_median!==null && json.snap_std!==null) {
-          document.getElementById('loopSummary').innerHTML += `
-            <br><br>
+        // ホバー説明はラベル・数値まとめて inline-tip 内に維持
+        const scoreDiv = document.getElementById('score');
+        scoreDiv.innerHTML = `
+          <div class="metric-line">
             <span class="inline-tip">
-              手首を返す強さ（ループごとの中央値）: <strong>${json.snap_median.toFixed(2)} m/s²</strong>
+              総ループ数： <strong>${totalLoops} 周</strong>
               <span class="bubble">
-                ループ中のスナップ（手首の返し）の強さの代表値です。<br>
+                検出されたループの総数です。<br>
+                測定時間やテンポにより増減しますが、評価そのものには直接影響しません。
+              </span>
+            </span>
+            <span class="inline-tip">
+              <br>安定開始： <strong>${proScore100}</strong>
+              <span class="bubble">
+                ループが安定（形・テンポが落ち着く）し始めたタイミングです。<br>
+                早いほどウォームアップが短く、安定度が高い傾向を示します。
+              </span>
+            </span>
+          </div>
+
+          <div class="metric-line">
+            <span class="inline-tip">
+              類似度スコア： <strong>${scoreStr}</strong>
+              <span class="bubble">
+                各ループ同士の形の類似度から算出した指標です。<br>
+                高いほど「毎回同じ形で振れている（再現性が高い）」ことを示します。
+              </span>
+            </span>
+            <span class="inline-tip">
+              プロと距離： <strong>${proDistStr}</strong>
+              <span class="bubble">
+                各ループとプロ基準ループとの距離（差異）の平均です。<br>
+                小さいほどプロの動きに近いことを示します（DTW系の指標）。
+              </span>
+            </span>
+          </div>
+
+          <div class="metric-line">
+            <span class="inline-tip">
+              平均ループ時間: <strong>${meanTxt}</strong>
+              <span class="bubble">
+                1周あたりに要した平均時間です。<br>
+                プロの目安は約0.4秒。短いほど高速ですが、乱れると評価は下がりやすくなります。
+              </span>
+            </span>
+            <span class="inline-tip">
+              ループ時間の標準偏差: <strong>${stdTxt}</strong>
+              <span class="bubble">
+                テンポの一定さ（時間のばらつき）を表します。<br>
+                小さいほど毎回のリズムが揃っており安定しています。
+              </span>
+            </span>
+          </div>
+
+          <div class="metric-line">
+            <span class="inline-tip">
+              手首を返す強さ: <strong>${snapMedTxt}</strong>（中央値） / <strong>${snapStdTxt}</strong>（ばらつき）
+              <span class="bubble">
+                ループ中のスナップ（手首の返し）の強さの代表値と安定性です。<br>
                 強すぎるとブレやすく、弱すぎると速度が出にくい傾向があります。
               </span>
             </span>
-            <br><br>
-            <span class="inline-tip">
-              手首を返す強さ（ループごとのばらつき）: <strong>${json.snap_std.toFixed(2)} m/s²</strong>
-              <span class="bubble">
-                スナップ強度の安定性を示します。<br>
-                小さいほど返しの強さが毎回安定しています。
-              </span>
-            </span>
-          `;
-        }
+          </div>
+        `;
 
+        // 旧表示の領域は重複回避のため非表示
+        document.getElementById('proDistance').style.display = 'none';
+        document.getElementById('loopSummary').style.display  = 'none';
+
+        // ループ時間の生リスト（任意表示）
         const loopDetails = document.getElementById('loopDetails');
-        if(json.loop_duration_list?.length){
+        if (json.loop_duration_list?.length){
           loopDetails.textContent = json.loop_duration_list.join('\n');
           loopDetails.style.display='block';
-        } else loopDetails.style.display='none';
+        } else {
+          loopDetails.style.display='none';
+        }
 
-
-        // --- ここから追加 ---
-        // CSVセクション（区切り線）
+        // CSV セクション表示
         document.getElementById('hrCsv').style.display   = 'block';
-        // CSVタイトル
         document.getElementById('csvTitle').style.display = 'block';
-        // CSV保存ボタン
         document.getElementById('btnSaveCsv').style.display = 'inline-block';
-        // 生データラベル＆中身
         document.getElementById('accLabel').style.display  = 'block';
         document.getElementById('gyroLabel').style.display = 'block';
         document.getElementById('accOutput').style.display  = 'block';
         document.getElementById('gyroOutput').style.display = 'block';
 
-        // CSVの中身を埋める（センシングモード／CSVモード 両方の場合）
-        document.getElementById('accOutput').textContent  =
+        // acc / gyro の CSV 中身（既存の acc, gyro 配列を使用）
+        document.getElementById('accOutput').textContent =
           'time,x,y,z\n' + acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         document.getElementById('gyroOutput').textContent =
-          'time,x,y,z\n' + gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n')
+          'time,x,y,z\n' + gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
 
-         // --- 最後にもう一度センシングボタンを復活 ---
+        // ボタン復帰
+        const btnConnect = document.getElementById('btnConnect');
+        const btnCsvMode = document.getElementById('btnCsvMode');
+        const btnRi      = document.getElementById('btnRi');
+        const btnStop    = document.getElementById('btnStop');
+
         btnConnect.style.display   = 'inline-block';
         btnConnect.disabled        = false;
-        btnConnect.textContent     = 'もう一度センシング';
+        btnConnect.textContent     = isCsvMode ? '接続 & センシング開始' : 'もう一度センシング';
         btnCsvMode.style.display   = 'inline-block';
         btnRi.style.display        = 'inline-block';
         btnStop.style.display      = 'none';
-
-        // ★ここだけ変更：CSVなら文言は元のまま、実機なら「もう一度センシング」
-        btnConnect.textContent = isCsvMode
-          ? '接続 & センシング開始'
-          : 'もう一度センシング';
       }
+
 
       // 保存
       btnSaveResult.onclick = async ()=>{

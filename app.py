@@ -298,7 +298,7 @@ def segment_loops(gyro, quats):
         segments.append(quats[mask].reset_index(drop=True))
     return segments
 
-def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, loop_count):
+def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, loop_count, labels=None):
     # 各指標を0〜5にスケーリング
     if score is None:         s_score=0
     elif score>=100:          s_score=5

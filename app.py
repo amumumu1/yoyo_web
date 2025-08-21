@@ -24,6 +24,7 @@ import traceback
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 font_prop = font_manager.FontProperties(fname=font_path)
 plt.rcParams['font.family'] = font_prop.get_name()
+plt.rcParams['axes.unicode_minus'] = False
 
 app = Flask(__name__)
 
@@ -237,17 +238,28 @@ def get_progress(task_id):
 def encode_heatmap(mat: np.ndarray, title: str) -> str:
     fig, ax = plt.subplots(figsize=(6, 6))
     cax = ax.matshow(mat, cmap='coolwarm')
-    plt.colorbar(cax)
-    ax.set_title(title)
-    ticks = list(range(mat.shape[0]))
+    cb = plt.colorbar(cax)
+
+    # ▼ 日本語フォントを明示
+    ax.set_title(title, fontproperties=font_prop, fontsize=16)
+
+    ticks  = list(range(mat.shape[0]))
     labels = [str(i+1) for i in ticks]
-    ax.set_xticks(ticks); ax.set_xticklabels(labels)
-    ax.set_yticks(ticks); ax.set_yticklabels(labels)
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_xticklabels(labels, fontproperties=font_prop)
+    ax.set_yticklabels(labels, fontproperties=font_prop)
+
+    # カラーバーの目盛にもフォントを適用
+    for t in cb.ax.get_yticklabels():
+        t.set_fontproperties(font_prop)
+
     plt.tight_layout()
     buf = BytesIO()
     fig.savefig(buf, format='png')
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('ascii')
+
 
 def load_and_compute_quaternions(acc_csv, gyro_csv, gain=0.33):
     acc  = pd.read_csv(acc_csv)

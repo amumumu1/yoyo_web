@@ -364,6 +364,15 @@
 <body>
   <div class="container">
 
+    <div style="text-align:right; margin-bottom: 8px">
+      <label for="langSelect" style="font-size:14px; margin-right:6px;">Language:</label>
+      <select id="langSelect">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+
+
     <h5 id="appTitle">インサイド・ループ技能評価システム<br></h5>
     
     <button id="btnConnect">接続 &amp; センシング開始</button>
@@ -416,39 +425,33 @@
     <!-- レーダーチャート（画像＋ホットスポット） -->
     <div id="radarWrap" class="radar-wrap" style="display:none; width: 600px; max-width: 100%;">
       <img id="radarChart" style="width: 100%; height: auto; display:block; margin-bottom: 30px;" />
-      
-      <!-- 位置はパーセンテージで調整。画像の周囲に5点置いています -->
-      <!-- 自身の類似度（上：少し下げる） -->
+
       <div class="radar-tip" style="left: 49%; top: 2%;">
         <div class="hotspot" title="自身の類似度"></div>
-        <div class="tooltip">自身の類似度：<br>自身の各ループがどれだけ同じ動きを繰り返しているかを示す<br>類似度が高いほどループが安定している<br>類似度が高いほど高評価</div>
+        <div class="tooltip" id="tipSelfSim"></div>
       </div>
 
-      <!-- 平均ループ時間（右上：やや内側） -->
       <div class="radar-tip" style="left: 88%; top: 36%;">
         <div class="hotspot" title="平均ループ時間"></div>
-        <div class="tooltip">平均ループ時間：<br>1周のループにかかる平均時間<br>プロの平均ループ時間は約0.4秒<br>平均ループ時間が短いほど高評価</div>
+        <div class="tooltip" id="tipMeanLoopTime"></div>
       </div>
 
-      <!-- ループ時間のばらつき（右下：少し上へ） -->
       <div class="radar-tip" style="left: 73%; top: 91%;">
         <div class="hotspot" title="ループ時間のばらつき"></div>
-        <div class="tooltip">ループ時間のばらつき：<br>各ループ時間の標準偏差を表しリズムの安定性を示す<br>ばらつきが小さいほどループのテンポが一定で安定している<br>ばらつきが小さいほど高評価</div>
+        <div class="tooltip" id="tipLoopVar"></div>
       </div>
 
-      <!-- 安定開始ループ（左下：対称位置） -->
       <div class="radar-tip" style="left: 23%; top: 91%;">
         <div class="hotspot" title="安定開始ループ"></div>
-        <div class="tooltip">安定開始ループ：<br>ループが安定し始めるまでにかかったループ数<br>数値が小さいほど素早く安定している<br>数値が小さいほど高評価</div>
+        <div class="tooltip" id="tipStableStart"></div>
       </div>
 
-      <!-- プロ類似度（左上：やや内側） -->
       <div class="radar-tip" style="left: 9%; top: 36%;">
         <div class="hotspot" title="プロ類似度"></div>
-        <div class="tooltip">プロ類似度：<br>プロのループと比較してどれだけ似ているかを示す<br>類似度が高いほどプロの動きに近い<br>類似度が高いほど高評価</div>
+        <div class="tooltip" id="tipProSim"></div>
       </div>
-
     </div>
+
 
 
     <div id="score"></div><br>
@@ -459,51 +462,40 @@
     <img id="loopPlot" style="display: none; width: 1200px; height: auto;" />
     <h3 id="HeatmapTitle" style="display: none;">ループ類似度</h3>
     <div id="Rui" style="display: none;" class="heatmap-grid">
-      <div>
-        <h4>自己比較</h4>
-        <div class="hm-wrap">
-          <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
-          <div class="hm-tip" tabindex="0" aria-label="自己比較の説明">i
-            <div class="tooltip">
-              ループ類似度（自己比較）：<br>
-              ヒートマップで自身の i 周目と j 周目のループの類似度を比較<br>
-              青色が濃いほど類似度が高い<br>
-              赤色が濃いほど類似度が低い
-            </div>
-          </div>
+      <!-- 自己比較 -->
+      <div class="hm-wrap">
+        <img id="selfHeatmap" alt="自分 vs 自分ヒートマップ" style="max-width: 100%;" />
+        <div class="hm-tip" tabindex="0" aria-label="自己比較の説明">i
+          <div class="tooltip" id="tipSelfHeatmap"></div>
         </div>
       </div>
-      <div>
-        <h4>対角成分：プロ比較</h4>
-        <div class="hm-wrap">
-          <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
-          <div class="hm-tip" tabindex="0" aria-label="プロ比較の説明">i
-            <div class="tooltip">
-              ループ類似度（プロ比較）：<br>
-              ヒートマップで自身の各ループとプロのループの類似度を比較<br>
-              対角成分の青色が濃いほどプロの動きと一致している<br>
-              対角成分の赤色が濃いほどプロの動きと異なっている
-            </div>
-          </div>
+
+      <!-- プロ比較 -->
+      <div class="hm-wrap">
+        <img id="proHeatmap" alt="プロ距離ヒートマップ" style="max-width: 100%;" />
+        <div class="hm-tip" tabindex="0" aria-label="プロ比較の説明">i
+          <div class="tooltip" id="tipProHeatmap"></div>
         </div>
       </div>
+
+    
     </div>
 
-    <hr id="hrPro" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <div id="proExample" style="display: none;">
-      <h2>参考データ（プロ）</h2>
-      <h3>平均ループ時間: 0.429 秒</h3>
-      <h3>ループ時間の標準偏差: 0.072 秒</h3>
-      <h3>プロのループ検出</h3>
+      <h2 id="proTitle"></h2>
+      <h3 id="proMean"></h3>
+      <h3 id="proStd"></h3>
+      <h3 id="proSegTitle"></h3>
       <img src="/pro_segu.png" alt="プロのループ検出図" style="width: 100%; max-width: 1200px;" />
-      <h3>プロのヒートマップ</h3>
+      <h3 id="proHmTitle"></h3>
       <img src="/pro_heatmap.png" alt="プロのヒートマップ" style="width: 100%; max-width: 800px;" />
-      <h3>プロの実演映像</h3>
+      <h3 id="proVideoTitle"></h3>
       <video controls style="max-width: 60%;">
         <source src="/pro.mp4" type="video/mp4" />
         お使いのブラウザは動画に対応していません。
       </video>
     </div>
+
 
     <hr id="hrCsv" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <h2 id="csvTitle" style="display: none;">取得データ (CSV形式)</h2>
@@ -536,6 +528,252 @@
       const btnRestart  = document.getElementById('btnRestart');
       const demoHeading  = document.getElementById('demoHeading');
       const appTitle  = document.getElementById('appTitle');
+
+      // ===== i18n =====
+      let lang = localStorage.getItem('lang') || 'ja';
+      let lastResult = null;
+      const PRO_MEAN_S = 0.429;
+      const PRO_STD_S  = 0.072;
+
+      const i18n = {
+        ja: {
+          appTitle: 'インサイド・ループ技能評価システム',
+          demoHeading: 'デモ動画',
+          btnConnectStart: '接続 & センシング開始',
+          btnConnectAgain: 'もう一度センシング',
+          btnCsvMode: 'CSVから解析',
+          btnRestart: 'やり直す',
+          btnStop: 'センシング終了',
+          btnCancel: '中止',
+          btnRi: '履歴を見る',
+          csvTitle: '取得データ (CSV形式)',
+          accTitle: '加速度',
+          gyroTitle: '角速度',
+          titleResult: '解析結果',
+          heatmapTitle: 'ループ類似度',
+          overallScore: '総合評価',
+          points: '点',
+
+          // Radar tooltips
+          tipSelfSim: '自身の類似度：<br>各ループの繰り返しの一致度。高いほど安定。<br>類似度が高いほど高評価',
+          tipMeanLoopTime: '平均ループ時間：<br>1周にかかる平均時間。目安は約0.4秒。<br>短いほど高評価',
+          tipLoopVar: 'ループ時間のばらつき：<br>各ループ時間の標準偏差。小さいほどリズムが一定。<br>小さいほど高評価',
+          tipStableStart: '安定開始ループ：<br>安定し始めるまでに要した周回数。<br>小さいほど高評価',
+          tipProSim: 'プロ類似度：<br>プロの動きとの一致度。高いほど近い。<br>高いほど高評価',
+
+          // Heatmap tooltips
+          tipSelfHeatmap: 'ループ類似度（自己比較）：<br>i周目とj周目の類似度。<br>青=高い / 赤=低い',
+          tipProHeatmap: 'ループ類似度（プロ比較）：<br>各ループとプロの類似度。<br>対角が青いほど一致',
+
+          // Metric labels
+          m_totalLoops: '総ループ数',
+          m_totalLoops_help: '計測中に実施したインサイド・ループの合計回数',
+          m_stableStart: '安定開始',
+          m_stableStart_help: 'ループが安定し始めるまでにかかったループ数',
+          m_selfScore: '類似度スコア',
+          m_selfScore_help: '自身の各ループの繰り返し一致度（安定性）',
+          m_proScore: 'プロ類似度スコア',
+          m_proScore_help: 'プロのループとの一致度',
+          m_loopTime: 'ループ時間',
+          m_loopTime_help: 'ループ時間の平均とばらつき（標準偏差）',
+          m_avg: '平均',
+          m_var: 'ばらつき',
+          m_snap: '手首を返す強さ',
+          m_snap_help: '各ループのスナップ最大値の中央値とばらつき',
+          unit_sec: '秒',
+          unit_ms2: 'm/s²',
+
+          // 追加分（ja）
+          analysisPreparing: '解析準備中…',
+          selectTwoCsv: '加速度CSVと角速度CSVの2つを選んでください',
+          btnSaveCsvLabel: 'CSVを保存',
+          placeholderTitle: 'タイトルを入力',
+          untitled: '無題',
+          btnSaveResult: '結果を保存する',
+          proTitle: '参考データ（プロ）',
+          proMean: '平均ループ時間',
+          proStd: 'ループ時間の標準偏差',
+          proSegTitle: 'プロのループ検出',
+          proHmTitle: 'プロのヒートマップ',
+          proVideoTitle: 'プロの実演映像',
+
+          // Misc / alerts
+          analysisStarting: '解析開始…',
+          analysisDone: '解析完了！',
+          connectFailed: '接続失敗',
+          analysisFailed: '解析失敗',
+          cancelFailed: '中止に失敗',
+          noResultToSave: '保存できる結果がありません',
+          savedOk: (name)=> `「${name}」として保存しました`,
+          savedNg: '保存に失敗しました'
+        },
+        en: {
+          appTitle: 'Inside Loop Skill Evaluation',
+          demoHeading: 'Demo Video',
+          btnConnectStart: 'Connect & Start Sensing',
+          btnConnectAgain: 'Sense Again',
+          btnCsvMode: 'Analyze from CSV',
+          btnRestart: 'Restart',
+          btnStop: 'Stop Sensing',
+          btnCancel: 'Cancel',
+          btnRi: 'View History',
+          csvTitle: 'Captured Data (CSV)',
+          accTitle: 'Acceleration',
+          gyroTitle: 'Angular Velocity',
+          titleResult: 'Analysis Results',
+          heatmapTitle: 'Loop Similarity',
+          overallScore: 'Overall Score',
+          points: 'pt',
+
+          analysisPreparing: 'Preparing…',
+          selectTwoCsv: 'Please select two CSV files: acceleration and gyroscope.',
+          btnSaveCsvLabel: 'Save CSV',
+          placeholderTitle: 'Enter a title',
+          untitled: 'Untitled',
+          btnSaveResult: 'Save Result',
+          proTitle: 'Reference Data (Pro)',
+          proMean: 'Mean Loop Time',
+          proStd: 'Loop Time Std. Dev.',
+          proSegTitle: 'Pro: Loop Detection',
+          proHmTitle: 'Pro: Heatmap',
+          proVideoTitle: 'Pro: Demo Video',
+
+          // Radar tooltips
+          tipSelfSim: 'Self Similarity:<br>How consistently each loop repeats the same motion.<br>Higher = more stable.',
+          tipMeanLoopTime: 'Mean Loop Time:<br>Average time per loop (pros ≈ 0.4s).<br>Shorter = better.',
+          tipLoopVar: 'Loop Time Variation:<br>Std. dev. of loop times (rhythm stability).<br>Smaller = better.',
+          tipStableStart: 'Stable Start Loop:<br>Loops needed until stabilized.<br>Smaller = better.',
+          tipProSim: 'Pro Similarity:<br>Similarity to the pro’s motion.<br>Higher = better.',
+
+          // Heatmap tooltips
+          tipSelfHeatmap: 'Loop Similarity (Self vs Self):<br>Similarity between loop i and j.<br>Blue=high / Red=low.',
+          tipProHeatmap: 'Loop Similarity (vs Pro):<br>Similarity between your loops and the pro.<br>Bluer diagonal = closer.',
+
+          // Metric labels
+          m_totalLoops: 'Total Loops',
+          m_totalLoops_help: 'Total number of inside loops during measurement.',
+          m_stableStart: 'Stable Start',
+          m_stableStart_help: 'Number of loops until becoming stable.',
+          m_selfScore: 'Self Similarity Score',
+          m_selfScore_help: 'How consistently your loops repeat (stability).',
+          m_proScore: 'Pro Similarity Score',
+          m_proScore_help: 'Similarity to the pro’s loops.',
+          m_loopTime: 'Loop Time',
+          m_loopTime_help: 'Mean loop time and variation (std. dev.).',
+          m_avg: 'avg',
+          m_var: 'stdev',
+          m_snap: 'Snap Strength',
+          m_snap_help: 'Median of per-loop max snap and its variation.',
+          unit_sec: 's',
+          unit_ms2: 'm/s²',
+
+          // Misc / alerts
+          analysisStarting: 'Starting analysis…',
+          analysisDone: 'Analysis complete!',
+          connectFailed: 'Connection failed',
+          analysisFailed: 'Analysis failed',
+          cancelFailed: 'Cancel failed',
+          noResultToSave: 'No result to save',
+          savedOk: (name)=> `Saved as “${name}”`,
+          savedNg: 'Save failed'
+        }
+      };
+
+      const t = (k)=> {
+        const v = i18n[lang][k];
+        return typeof v === 'string' ? v : (v ?? i18n.ja[k] ?? k);
+      };
+      const tf = (k, ...args)=> {
+        const v = i18n[lang][k];
+        return typeof v === 'function' ? v(...args) : t(k);
+      };
+
+      function setText(id, text){ const el = document.getElementById(id); if(el) el.textContent = text; }
+      function setHTML(id, html){ const el = document.getElementById(id); if(el) el.innerHTML = html; }
+
+      function applyI18nStatic(){
+        // 見出し・ボタン
+        setText('appTitle', t('appTitle'));
+        setText('demoHeading', t('demoHeading'));
+        setText('btnConnect', t('btnConnectStart'));
+        setText('btnCsvMode', t('btnCsvMode'));
+        setText('btnRestart', t('btnRestart'));
+        setText('btnStop', t('btnStop'));
+        setText('btnCancel', t('btnCancel'));
+        setText('btnRi', t('btnRi'));
+        setText('csvTitle', t('csvTitle'));
+        setText('accTitle', t('accTitle'));
+        setText('gyroTitle', t('gyroTitle'));
+        setText('Title', t('titleResult'));
+        setText('HeatmapTitle', t('heatmapTitle'));
+        // 保存ボタンのラベル
+        setText('btnSaveResult', t('btnSaveResult'));
+
+        // プロ参考データ
+        setText('proTitle', t('proTitle'));
+        setText('proSegTitle', t('proSegTitle'));
+        setText('proHmTitle', t('proHmTitle'));
+        setText('proVideoTitle', t('proVideoTitle'));
+        setText('proMean', `${t('proMean')}: ${PRO_MEAN_S} ${t('unit_sec')}`);
+        setText('proStd',  `${t('proStd')}: ${PRO_STD_S} ${t('unit_sec')}`);
+
+
+        // ツールチップ
+        setHTML('tipSelfSim', t('tipSelfSim'));
+        setHTML('tipMeanLoopTime', t('tipMeanLoopTime'));
+        setHTML('tipLoopVar', t('tipLoopVar'));
+        setHTML('tipStableStart', t('tipStableStart'));
+        setHTML('tipProSim', t('tipProSim'));
+        setHTML('tipSelfHeatmap', t('tipSelfHeatmap'));
+        setHTML('tipProHeatmap', t('tipProHeatmap'));
+
+        setText('btnSaveCsv', t('btnSaveCsvLabel'));
+        setText('csvTitle', t('csvTitle'));
+        setText('accLabel', t('accTitle'));
+        setText('gyroLabel', t('gyroTitle'));
+
+        // 進捗初期文言
+        setText('progressText', t('analysisPreparing'));
+
+        // タイトル入力プレースホルダ
+        const rn = document.getElementById('resultName');
+        if (rn) rn.placeholder = t('placeholderTitle');
+
+
+        // html[lang] を更新（スクリーンリーダー向け）
+        document.documentElement.lang = lang;
+      }
+
+      // 言語セレクタ初期化
+      const langSel = document.getElementById('langSelect');
+      if (langSel){
+        langSel.value = lang;
+        langSel.addEventListener('change', (e)=>{
+          lang = e.target.value || 'ja';
+          localStorage.setItem('lang', lang);
+          applyI18nStatic();
+           // 解析結果があるなら動的部分も再描画
+          if (lastResult) {
+            // レーダー見出し（点数の単位など）
+            document.getElementById('RadarTitle').innerHTML =
+              `<span class="num-red">${t('overallScore')}: ${lastResult.total_score.toFixed(1)} ${t('points')}</span>`;
+            // 指標エリア
+            const scoreDiv = document.getElementById('score');
+            scoreDiv.innerHTML = buildMetricsHTML(lastResult);
+          }
+        });
+      }
+      // 初期適用
+      applyI18nStatic();
+
+      // 動的UI用ヘルパ（状態でボタンラベルを切替）
+      function setConnectButtonInitial(){
+        setText('btnConnect', t('btnConnectStart'));
+      }
+      function setConnectButtonAgain(){
+        setText('btnConnect', t('btnConnectAgain'));
+      }
+
 
       // 便利関数
       function showIntroVideo(show=true){
@@ -600,7 +838,7 @@
         document.getElementById('gyroLabel').style.display = 'none';
         document.getElementById('accOutput').style.display = 'none';
         document.getElementById('gyroOutput').style.display = 'none';
-        document.getElementById('hrPro').style.display = 'none';
+        // document.getElementById('hrPro').style.display = 'none';
         document.getElementById('hrCsv').style.display = 'none';
         document.getElementById('hrTitle').style.display = 'none';
         document.getElementById('Ken').style.display = 'none';
@@ -627,12 +865,13 @@
 
       // 解析用ラッパー
       async function runAnalysis(payload) {
+        showIntroVideo(false);  // 念のため毎回隠す
         // タスク開始
-        const startRes = await fetch(`${API_ROOT}/start_analysis`,{ method:'POST' });
+        const startRes = await fetch(`${API_ROOT}/start_analysis?lang=${lang}`, { method:'POST' });
         const { task_id } = await startRes.json();
         loadingDiv.style.display = 'block';
         progressBar.style.width = '0%';
-        progressText.textContent = '解析開始…';
+        progressText.textContent = t('analysisStarting');
 
         // ポーリング
         const poll = setInterval(async ()=>{
@@ -645,17 +884,18 @@
         },300);
 
         // 本解析
-        const analyzeRes = await fetch(`${API_ROOT}/analyze?task_id=${task_id}`,{
+        const analyzeRes = await fetch(`${API_ROOT}/analyze?task_id=${task_id}&lang=${lang}`, {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(payload)
+          body:JSON.stringify({ ...payload, lang })
         });
         const json = await analyzeRes.json();
+
 
         // 完了
         clearInterval(poll);
         progressBar.style.width  = '100%';
-        progressText.textContent  = '解析完了！';
+        progressText.textContent = t('analysisDone');
         // 少し待ってからローディング非表示
         await new Promise(resolve => setTimeout(resolve, 1000));
         loadingDiv.style.display = 'none';
@@ -668,7 +908,7 @@
       csvInput.onchange    = async ()=>{
         showIntroVideo(false);
         if(csvInput.files.length<2){
-          alert("加速度CSVと角速度CSVの2つを選んでください");
+          alert(t('selectTwoCsv'));
           return;
         }
 
@@ -691,7 +931,8 @@
           lastResult = result;
           renderResult(result);
         } catch(err) {
-          alert('解析失敗: '+err.message);
+          // 解析失敗
+          alert(t('analysisFailed') + ': ' + err.message);
         }
       };
 
@@ -730,7 +971,8 @@
           btnRestart.style.display  = 'inline-block';
           showIntroVideo(false);
         } catch(err) {
-          alert('接続失敗: '+err.message);
+          // 接続失敗
+          alert(t('connectFailed') + ': ' + err.message);
         }
       };
 
@@ -751,14 +993,16 @@
           showIntroVideo(true);
           btnConnect.style.display   = 'inline-block';
           btnConnect.disabled        = false;
-          btnConnect.textContent     = '接続 & センシング開始';
+          // 初期状態へ戻すとき
+          setConnectButtonInitial();
           btnCsvMode.style.display   = 'inline-block';
           btnRi.style.display        = 'inline-block';
           btnStop.style.display      = 'none';
           btnCancel.style.display    = 'none';
           btnRestart.style.display   = 'none';
         } catch (err) {
-          alert('中止に失敗: ' + err.message);
+          // 中止失敗
+          alert(t('cancelFailed') + ': ' + err.message);
         }
       };
 
@@ -782,7 +1026,7 @@
       // ボタン表示を初期状態に戻す（表示まわりはお好みで）
       btnConnect.style.display = 'inline-block';
       btnConnect.disabled      = false;
-      btnConnect.textContent   = '接続 & センシング開始';
+      setConnectButtonAgain();
       btnCsvMode.style.display = 'inline-block';
       btnRi.style.display      = 'inline-block'
       btnStop.style.display    = 'none';
@@ -815,7 +1059,7 @@
           lastResult = result;
           renderResult(result);
         } catch(err) {
-          alert('解析失敗: '+err.message);
+          alert(t('analysisFailed') + ': ' + err.message);
         }
       };
 
@@ -869,7 +1113,8 @@
         const radarImg = document.getElementById('radarChart');
         radarImg.src = `data:image/png;base64,${json.radar_chart}`;
         document.getElementById('RadarTitle').innerHTML =
-          `<span class="num-red">総合評価: ${json.total_score.toFixed(1)} 点</span>`;
+          `<span class="num-red">${t('overallScore')}: ${json.total_score.toFixed(1)} ${t('points')}</span>`;
+
 
         // ループ検出図
         const loopPlotImg = document.getElementById('loopPlot');
@@ -907,55 +1152,13 @@
 
         // ホバー説明はラベル・数値まとめて inline-tip 内に維持
         const scoreDiv = document.getElementById('score');
-        scoreDiv.innerHTML = `
-          <div class="metric-line">
-            <span class="inline-tip">
-              総ループ数： <strong><span class="num-red">${totalLoops} 周</span></strong>
-              <span class="bubble">
-                計測中に実施したインサイド・ループの合計回数
-              </span>
-            </span>
-            <span class="inline-tip">
-              安定開始： <strong><span class="num-red">${stableStr}</span></strong>
-              <span class="bubble">
-                ループが安定し始めるまでにかかったループ数
-              </span>
-            </span>
-          </div>
+        // 元：scoreDiv.innerHTML = `...巨大テンプレ...`;
+        scoreDiv.innerHTML = buildMetricsHTML(json);
 
-          <div class="metric-line">
-            <span class="inline-tip">
-              類似度スコア： <strong><span class="num-red">${scoreStr}</span></strong>
-              <span class="bubble">
-                自身の各ループがどれだけ同じ動きを繰り返しているかを示す<br>類似度が高いほどループが安定していて高得点
-              </span>
-            </span>
-            <span class="inline-tip">
-              プロ類似度スコア： <strong><span class="num-red">${proScore100}</span></strong>
-              <span class="bubble">
-                プロのループと比較してどれだけ似ているかを示す<br>類似度が高いほどプロの動きに近く高得点
-              </span>
-            </span>
-          </div>
 
-          <div class="metric-line">
-            <span class="inline-tip">
-              ループ時間： <strong><span class="num-red">${meanTxt}</span></strong>（平均） / <strong><span class="num-red">${stdTxt}</span></strong>（ばらつき）
-              <span class="bubble">
-                ループにかかる平均時間とばらつき（標準偏差）
-              </span>
-            </span>
-          </div>
+        
 
-          <div class="metric-line">
-            <span class="inline-tip">
-              手首を返す強さ： <strong><span class="num-red">${snapMedTxt}</span></strong>（中央値） / <strong><span class="num-red">${snapStdTxt}</span></strong>（ばらつき）
-              <span class="bubble">
-                各ループのスナップ（手首の返し）の強さの最大値の中央値とばらつき（標準偏差）
-              </span>
-            </span>
-          </div>
-        `;
+        
 
         // 旧表示の領域は重複回避のため非表示
         document.getElementById('proDistance').style.display = 'none';
@@ -993,17 +1196,58 @@
 
         btnConnect.style.display   = 'inline-block';
         btnConnect.disabled        = false;
-        btnConnect.textContent     = isCsvMode ? '接続 & センシング開始' : 'もう一度センシング';
+        setConnectButtonAgain();
         btnCsvMode.style.display   = 'inline-block';
         btnRi.style.display        = 'inline-block';
         btnStop.style.display      = 'none';
       }
 
+      function buildMetricsHTML(json){
+          const totalLoops = json.loop_count;
+          const stableStr  = (json.stable_loop !== null) ? `${json.stable_loop}` : (lang==='ja'?'なし':'—');
+          const scoreStr   = `${json.score.toFixed(1)}`;
+          const meanTxt = (json.loop_mean_duration != null)
+            ? `${json.loop_mean_duration.toFixed(3)} ${t('unit_sec')}` : (lang==='ja'?'なし':'—');
+          const stdTxt  = (json.loop_std_duration != null)
+            ? `${json.loop_std_duration.toFixed(3)} ${t('unit_sec')}` : (lang==='ja'?'なし':'—');
+          const snapMedTxt = (json.snap_median != null)
+            ? `${json.snap_median.toFixed(2)} ${t('unit_ms2')}` : (lang==='ja'?'—':'—');
+          const snapStdTxt = (json.snap_std != null)
+            ? `${json.snap_std.toFixed(2)} ${t('unit_ms2')}` : (lang==='ja'?'—':'—');
+          const proScore100 = (json.pro_score_100 != null) ? `${json.pro_score_100.toFixed(1)}` : (lang==='ja'?'なし':'—');
+
+          const wrap = (label, val, help) => `
+            <span class="inline-tip">
+              ${label}： <strong><span class="num-red">${val}</span></strong>
+              <span class="bubble">${help}</span>
+            </span>`;
+
+          return `
+            <div class="metric-line">
+              ${wrap(t('m_totalLoops'), `${totalLoops} ${lang==='ja'?'周':''}`, t('m_totalLoops_help'))}
+              ${wrap(t('m_stableStart'), lang==='ja'? `${stableStr} 周目` : (stableStr==='—'?'—': `#${stableStr}`), t('m_stableStart_help'))}
+            </div>
+
+            <div class="metric-line">
+              ${wrap(t('m_selfScore'), `${scoreStr} ${t('points')}`, t('m_selfScore_help'))}
+              ${wrap(t('m_proScore'), (proScore100==='—'||proScore100==='なし') ? (lang==='ja'?'なし':'—') : `${proScore100} ${t('points')}`, t('m_proScore_help'))}
+            </div>
+
+            <div class="metric-line">
+              ${wrap(t('m_loopTime'), `<strong><span class="num-red">${meanTxt}</span></strong>（${t('m_avg')}） / <strong><span class="num-red">${stdTxt}</span></strong>（${t('m_var')}）`, t('m_loopTime_help'))}
+            </div>
+
+            <div class="metric-line">
+              ${wrap(t('m_snap'), `<strong><span class="num-red">${snapMedTxt}</span></strong>（${lang==='ja'?'中央値':'median'}） / <strong><span class="num-red">${snapStdTxt}</span></strong>（${t('m_var')}）`, t('m_snap_help'))}
+            </div>
+          `;
+        }
+
 
       // 保存
       btnSaveResult.onclick = async ()=>{
-        if(!lastResult){ alert('保存できる結果がありません'); return; }
-        const name = document.getElementById('resultName').value.trim()||'無題';
+        if(!lastResult){ alert(t('noResultToSave')); return; }
+        const name = document.getElementById('resultName').value.trim() || t('untitled');
         const accCsv  = 'time,x,y,z\n'+acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         const gyroCsv = 'time,x,y,z\n'+gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
         const res = await fetch(`${API_ROOT}/save_result`,{
@@ -1011,7 +1255,7 @@
           body:JSON.stringify({...lastResult,name,acc_csv:accCsv,gyro_csv:gyroCsv})
         });
         const r = await res.json();
-        alert(r.status==='saved'?`「${name}」として保存しました`:'保存に失敗しました');
+        alert(r.status==='saved' ? tf('savedOk', name) : t('savedNg'));
       };
 
       // CSVダウンロード

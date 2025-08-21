@@ -335,7 +335,10 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, 
     elif pro_distance>=120:   s_pro=0
     else:                     s_pro=5*(120-pro_distance)/(120-20)
 
-    labels = ['自身の類似度','平均ループ時間','ループ時間のばらつき','安定開始ループ','プロ類似度']
+    # ここを変更：外から来た labels を使う。無ければ日本語デフォルト
+    if labels is None:
+        labels = ['自身の類似度','平均ループ時間','ループ時間のばらつき','安定開始ループ','プロ類似度']
+
     values = [s_score, s_mean, s_std, s_stable, s_pro]
     avg_score = np.mean(values) * 20
     values += values[:1]

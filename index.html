@@ -942,13 +942,16 @@
         isCsvMode = false;
         resetUIBeforeMeasure();
         try {
-          if(!device||!device.gatt.connected){
+          if (!device || !device.gatt.connected) {
             device = await navigator.bluetooth.requestDevice({
-              acceptAllDevices: true,
-              //filters:[{name:'指輪型センシングデバイス'}],
-              optionalServices:[SERVICE_UUID]
+              filters: [
+                { name: 'ゆびせん1号' },
+                { name: 'ゆびせん2号' }
+              ],
+              optionalServices: [SERVICE_UUID]
             });
           }
+
           const server = await device.gatt.connect();
           const svc    = await server.getPrimaryService(SERVICE_UUID);
           controlChar  = await svc.getCharacteristic(CONTROL_UUID);

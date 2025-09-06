@@ -621,12 +621,15 @@ def analyze():
         set_progress(task_id, 95, "radar")
         loop_mean_duration = float(np.mean(loop_durations)) if loop_durations else None
         loop_std_duration  = float(np.std(loop_durations))  if loop_durations else None
+        pro_dist_mean = float(np.mean(distances[1:])) if len(distances) > 1 else None
+
+
         radar_b64, total_score, s_pro_5 = generate_radar_chart(
             score=score,
             loop_mean=loop_mean_duration,
             loop_std=loop_std_duration,
             stable_loop=stable_loop,
-            pro_distance=float(np.mean(distances)) if distances else None,
+            pro_distance=pro_dist_mean,
             loop_count=n,
             labels=I18N[lang]["radar_labels"]
         )
@@ -649,7 +652,8 @@ def analyze():
             'loop_max_acc_list': loop_max_acc_list,
             'snap_median': snap_median,
             'snap_std': snap_std,
-            'pro_score_100': float(s_pro_5*20)
+            'pro_score_100': float(s_pro_5*20),
+            'pro_distance_mean': pro_dist_mean
         }
         return jsonify(result)
     except Exception:

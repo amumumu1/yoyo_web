@@ -761,5 +761,24 @@ def delete_result(result_id):
     conn.commit(); conn.close()
     return jsonify({"status":"deleted","id":result_id})
 
+
+@app.route("/results/<int:result_id>", methods=["PUT", "PATCH"])
+def update_result(result_id):
+    data = request.get_json()
+    new_name = data.get("name")
+    if not new_name:
+        return jsonify({"error": "name is required"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("UPDATE results SET name = ? WHERE id = ?", (new_name, result_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "updated", "id": result_id, "name": new_name})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, threaded=True)
+
+

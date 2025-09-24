@@ -73,7 +73,6 @@
   <h1>履歴一覧</h1>
   <a href="index.html" class="button">戻る</a>
   <div id="history"></div>
-
   <script>
   async function fetchHistory() {
     const res = await fetch('https://yoyo-backend.kajilab.dev/results');
@@ -91,13 +90,39 @@
       div.className = 'result';
       div.innerHTML = `
         <p>${item.timestamp}</p>
-        <p>${item.name ?? '無題'}</p>
+        <p id="name-${item.id}">${item.name ?? '無題'}</p>
         <p>総合評価: ${item.total_score != null ? item.total_score.toFixed(1) + '点' : 'なし'}</p>
         <button id="toggle-btn-${item.id}" onclick="toggleDetail(${item.id})">詳細を見る</button>
+        <button onclick="renameResult(${item.id})">名前を変更</button>
         <div id="detail-${item.id}" style="display:none;"></div>
       `;
       container.appendChild(div);
     }
+  }
+
+  // ← fetchHistoryの外に出す！
+  async function renameResult(id) {
+    const currentName = document.getElementById(`name-${id}`).innerText;
+    const newName = prompt("新しい名前を入力してください:", currentName);
+    if (newName === null || newName.trim() === "") return;
+
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name: newName })
+    });
+
+    if (res.ok) {
+      document.getElementById(`name-${id}`).innerText = newName;
+      alert("名前を変更しました");
+    } else {
+      const errText = await res.text();
+      console.error("名前変更エラー:", res.status, errText);
+      alert("名前の変更に失敗しました: " + res.status);
+    }
+
   }
 
   async function deleteResult(id) {
@@ -115,7 +140,6 @@
     }
   }
 
-
   async function toggleDetail(id) {
     const container = document.getElementById(`detail-${id}`);
     const button = document.getElementById(`toggle-btn-${id}`);
@@ -124,13 +148,11 @@
       const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
       const detail = await res.json();
       container.innerHTML = `
-
         <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + '点' : 'なし'}</p>
-       ${detail.radar_chart ? 
+        ${detail.radar_chart ? 
           `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">`
           : ''
         }
-
         <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
         <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : 'なし'}</p>
         <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
@@ -148,17 +170,10 @@
         ${detail.compare_plot ? `<img src="data:image/png;base64,${detail.compare_plot}" alt="プロ比較">` : ''}
       `;
       const statsEl = document.getElementById(`loopDetails-${id}`);
-      // すでに配列なので、そのまま入れ替えて表示
       const loopLines = Array.isArray(detail.loop_duration_list)
-                       ? detail.loop_duration_list
-                       : [];
+                      ? detail.loop_duration_list
+                      : [];
       statsEl.textContent = loopLines.join('\n');
-
-
-
-
-
-     
 
       container.style.display = 'block';
       button.textContent = '閉じる';
@@ -178,8 +193,8 @@
     `;
   }
 
-
   fetchHistory();
-  </script>
+</script>
+
 </body>
 </html>

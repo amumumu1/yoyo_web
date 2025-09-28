@@ -580,7 +580,7 @@ def analyze():
 
         # 14: 安定開始ループ検出
         set_progress(task_id, 80, "stable")
-        stable_loop = detect_stable_loop_by_tail(dtw_mat, threshold_ratio=0.445)
+        stable_loop = detect_stable_loop_by_tail(dtw_mat, threshold_ratio=0.3)
 
         # 15: ループ時間＆最大加速度
         set_progress(task_id, 85, "loop_time")

@@ -485,6 +485,8 @@
       <h2 id="proTitle"></h2>
       <h3 id="proMean"></h3>
       <h3 id="proStd"></h3>
+      <h3 id="proSnap"></h3>
+      <h3 id="proSnapStd"></h3>
       <h3 id="proSegTitle"></h3>
       <img src="/pro_segu.png" alt="プロのループ検出図" style="width: 100%; max-width: 1200px;" />
       <h3 id="proHmTitle"></h3>
@@ -593,6 +595,8 @@
           proTitle: '参考データ（プロ）',
           proMean: '平均ループ時間',
           proStd: 'ループ時間の標準偏差',
+          proSnap: '手首を返す強さ',
+          proSnapStd: '手首を返す強さの標準偏差',
           proSegTitle: 'プロのループ検出',
           proHmTitle: 'プロのヒートマップ',
           proVideoTitle: 'プロの実演映像',
@@ -634,6 +638,8 @@
           proTitle: 'Reference Data (Pro)',
           proMean: 'Mean Loop Time',
           proStd: 'Loop Time Std. Dev.',
+          proSnap: 'Snap Strength',
+          proSnapStd: 'Snap Std. Dev.',
           proSegTitle: 'Pro: Loop Detection',
           proHmTitle: 'Pro: Heatmap',
           proVideoTitle: 'Pro: Demo Video',
@@ -716,6 +722,9 @@
         setText('proVideoTitle', t('proVideoTitle'));
         setText('proMean', `${t('proMean')}: ${PRO_MEAN_S} ${t('unit_sec')}`);
         setText('proStd',  `${t('proStd')}: ${PRO_STD_S} ${t('unit_sec')}`);
+        setText('proSnap', `${t('proSnap')}: 91.45 ${t('unit_ms2')}`);
+        setText('proSnapStd', `${t('proSnapStd')}: 25.80 ${t('unit_ms2')}`);
+
 
 
         // ツールチップ

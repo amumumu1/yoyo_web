@@ -676,7 +676,7 @@ def get_results():
     conn=sqlite3.connect(DB_PATH); cur=conn.cursor()
     cur.execute("""
         SELECT id,timestamp,name,score,total_score,pro_distance_mean,loop_count,stable_loop
-        FROM results ORDER BY id DESC LIMIT 20
+        FROM results ORDER BY id DESC LIMIT 100
     """)
     rows=cur.fetchall(); conn.close()
     return jsonify([

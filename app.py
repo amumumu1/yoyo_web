@@ -802,6 +802,25 @@ def save_survey(result_id):
 
     return jsonify({"status": "saved", "id": result_id, "survey_type": survey_type})
 
+@app.route("/survey_summary", methods=["GET"])
+def survey_summary():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT pre_survey, post_survey FROM results")
+    rows = cur.fetchall()
+    conn.close()
+
+    pre_all, post_all = [], []
+    for pre, post in rows:
+        if pre: pre_all.append(json.loads(pre))
+        if post: post_all.append(json.loads(post))
+
+    return jsonify({
+        "pre": pre_all,
+        "post": post_all
+    })
+
+
 
 
 if __name__ == "__main__":

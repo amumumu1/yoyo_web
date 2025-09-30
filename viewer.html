@@ -171,26 +171,71 @@
       `;
 
       if (detail.pre_survey) {
-        container.innerHTML += `<h3>事前アンケート結果</h3>
-                                <pre>${JSON.stringify(detail.pre_survey, null, 2)}</pre>`;
+        container.innerHTML += renderSurveyTable("事前アンケート結果", detail.pre_survey);
       }
       if (detail.post_survey) {
-        container.innerHTML += `<h3>事後アンケート結果</h3>
-                                <pre>${JSON.stringify(detail.post_survey, null, 2)}</pre>`;
+        container.innerHTML += renderSurveyTable("事後アンケート結果", detail.post_survey);
       }
+
+
+      
 
       container.innerHTML += `
         <h3>事前アンケート</h3>
         <div id="pre-form-${id}">
-          <!-- 年齢、ヨーヨー歴などのラジオ・チェックフォーム -->
+          <label>年齢: <input type="text" id="age-${id}" /></label><br>
+
+          <p>ヨーヨー歴:</p>
+          <label><input type="radio" name="history-${id}" value="1年未満">1年未満</label>
+          <label><input type="radio" name="history-${id}" value="1〜3年">1〜3年</label>
+          <label><input type="radio" name="history-${id}" value="3年以上">3年以上</label>
+
+          <p>練習頻度:</p>
+          <label><input type="radio" name="freq-${id}" value="毎日">毎日</label>
+          <label><input type="radio" name="freq-${id}" value="週数回">週数回</label>
+          <label><input type="radio" name="freq-${id}" value="月数回">月数回</label>
+
+          <p>ヨーヨー検定:</p>
+          <label><input type="radio" name="exam-${id}" value="受験経験あり">受験経験あり</label>
+          <label><input type="radio" name="exam-${id}" value="受験経験なし">受験経験なし</label>
+
+          <p>普段の練習方法:</p>
+          <textarea id="practice-${id}"></textarea>
+
+          <p>練習で困っていること:</p>
+          <label><input type="checkbox" name="trouble-${id}" value="技が安定しない">技が安定しない</label>
+          <label><input type="checkbox" name="trouble-${id}" value="モチベーションが続かない">モチベーションが続かない</label>
+          <label><input type="checkbox" name="trouble-${id}" value="教えてくれる人がいない">教えてくれる人がいない</label>
+          <label><input type="checkbox" name="trouble-${id}" value="できているかわからない">できているかわからない</label>
+
           <button onclick="saveSurvey(${id}, 'pre')">事前アンケートを保存</button>
         </div>
 
+
         <h3>事後アンケート</h3>
         <div id="post-form-${id}">
-          <!-- デバイスの使いやすさ、システムの参考度など -->
+          <p>デバイスは使いやすかったですか？</p>
+          <label><input type="radio" name="device_easy-${id}" value="はい">はい</label>
+          <label><input type="radio" name="device_easy-${id}" value="いいえ">いいえ</label>
+
+          <p>システムはわかりやすかったですか？</p>
+          <label><input type="radio" name="system_easy-${id}" value="はい">はい</label>
+          <label><input type="radio" name="system_easy-${id}" value="いいえ">いいえ</label>
+
+          <p>自分の練習に参考になりましたか？</p>
+          <label><input type="radio" name="useful-${id}" value="とても参考になった">とても参考になった</label>
+          <label><input type="radio" name="useful-${id}" value="少し参考になった">少し参考になった</label>
+          <label><input type="radio" name="useful-${id}" value="あまり参考にならなかった">あまり参考にならなかった</label>
+
+          <p>フィードバックについて:</p>
+          <textarea id="feedback-${id}"></textarea>
+
+          <p>今後やってみたいトリック:</p>
+          <input type="text" id="trick-${id}" />
+
           <button onclick="saveSurvey(${id}, 'post')">事後アンケートを保存</button>
         </div>
+
       `;
 
       const statsEl = document.getElementById(`loopDetails-${id}`);
@@ -255,6 +300,38 @@
       alert("保存に失敗しました: " + res.status);
     }
   }
+
+  function renderSurveyTable(title, survey) {
+  if (!survey) return "";
+  // 日本語ラベルに変換する辞書
+  const labels = {
+    age: "年齢",
+    history: "ヨーヨー歴",
+    freq: "練習頻度",
+    exam: "ヨーヨー検定",
+    practice_style: "普段の練習方法",
+    trouble: "練習で困っていること",
+    device_easy: "デバイスの使いやすさ",
+    system_easy: "システムのわかりやすさ",
+    useful: "練習の参考度",
+    feedback: "フィードバックについて",
+    future_trick: "今後やってみたいトリック"
+  };
+  let rows = "";
+  for (const [q, a] of Object.entries(survey)) {
+    let answerText = Array.isArray(a) ? a.join(", ") : a;
+    if (!answerText) answerText = "（未回答）";
+    rows += `<tr><th style="text-align:left; padding:5px;">${labels[q] ?? q}</th>
+                 <td style="padding:5px;">${answerText}</td></tr>`;
+  }
+  return `
+    <h3>${title}</h3>
+    <table border="1" style="margin:10px auto; border-collapse:collapse; font-size:20px;">
+      ${rows}
+    </table>
+  `;
+}
+
 
 
   fetchHistory();

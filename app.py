@@ -170,7 +170,9 @@ def init_db():
         snap_median REAL,
         snap_std REAL,
         loop_duration_list TEXT,
-        loop_max_acc_list TEXT
+        loop_max_acc_list TEXT,
+        pre_survey TEXT,   
+        post_survey TEXT   
     )
     """)
     conn.commit()
@@ -693,7 +695,7 @@ def get_result_detail(result_id):
         SELECT timestamp,name,score,total_score,radar_chart,pro_distance_mean,
                loop_count,stable_loop,loop_mean_duration,loop_std_duration,
                loop_plot,self_heatmap,pro_heatmap,compare_plot,
-               loop_duration_list,loop_max_acc_list,snap_median,snap_std
+               loop_duration_list,loop_max_acc_list,snap_median,snap_std,pre_survey, post_survey
         FROM results WHERE id=?
     """,(result_id,))
     row=cur.fetchone(); conn.close()
@@ -707,7 +709,9 @@ def get_result_detail(result_id):
         "pro_heatmap":row[12],"compare_plot":row[13],
         "loop_duration_list":json.loads(row[14]),
         "loop_max_acc_list":json.loads(row[15]),
-        "snap_median":row[16],"snap_std":row[17]
+        "snap_median":row[16],"snap_std":row[17],
+        "pre_survey": json.loads(row[18]) if row[18] else None,
+        "post_survey": json.loads(row[19]) if row[19] else None
     })
 
 @app.route("/")
@@ -776,6 +780,28 @@ def update_result(result_id):
     conn.close()
 
     return jsonify({"status": "updated", "id": result_id, "name": new_name})
+
+
+@app.route("/results/<int:result_id>/survey", methods=["PUT"])
+def save_survey(result_id):
+    data = request.get_json()
+    survey_type = data.get("survey_type")  # "pre" or "post"
+    answers = data.get("answers")
+
+    if survey_type not in ["pre", "post"]:
+        return jsonify({"error": "Invalid survey_type"}), 400
+
+    col = "pre_survey" if survey_type == "pre" else "post_survey"
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(f"UPDATE results SET {col} = ? WHERE id = ?", 
+                (json.dumps(answers, ensure_ascii=False), result_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "saved", "id": result_id, "survey_type": survey_type})
+
 
 
 if __name__ == "__main__":

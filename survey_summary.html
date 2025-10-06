@@ -25,8 +25,8 @@
     }
     canvas {
       margin: 30px auto;
-      width: 900px;
-      height: 450px;
+      width: 1000px;
+      height: 500px;
       display: block;
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -172,7 +172,7 @@
     .map(s => {
       const idx = mapHistoryToIndex(s.history);
       const score = parseFloat(s.total_score);
-      return idx >= 0 && !isNaN(score) ? { x: idx, y: score } : null;
+      return idx >= 0 && !isNaN(score) ? { x: idx, y: score, id: s.id } : null;
     })
     .filter(Boolean);
 
@@ -217,7 +217,7 @@
       datasets: [
         {
           label: "ヨーヨー歴とスコア",
-          data: numericData.map(p => ({ x: categories[p.x], y: p.y })),
+          data: numericData.map(p => ({ x: categories[p.x], y: p.y, id: p.id })),
           backgroundColor: "rgba(255, 99, 132, 0.7)",
           borderColor: "rgba(255, 99, 132, 1)",
           pointRadius: 7
@@ -234,6 +234,18 @@
       ]
     },
     options: {
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+            const idx = elements[0].index;
+            const dataset = historyChartInstance.data.datasets[elements[0].datasetIndex];
+            const point = dataset.data[idx];
+            const id = point.id;
+            if (id) {
+            window.open(`viewer.html?id=${id}`, "_blank");
+            }
+        }
+        },
+
       responsive: false,
       maintainAspectRatio: false,
       plugins: {
@@ -262,45 +274,31 @@
 }
 
 // === 得意不得意とスコアの散布図 ===
+// === 得意不得意とスコアの散布図（0〜5スケール対応） ===
 function drawSkillScoreChart(preSurveys) {
   if (skillChartInstance) skillChartInstance.destroy();
 
-  // --- 全角→半角＋整形 ---
-  const normalize = (str) =>
-    (str || "")
-      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-      .replace(/[〜～]/g, "～")
-      .replace(/\s+/g, "")
-      .trim();
+  
 
-  const categories = [
-    "スリープが得意",
-    "ルーピングが得意",
-    "どちらも得意",
-    "どちらも苦手",
-    "わからない"
-  ];
+  const categories = ["0", "1", "2", "3", "4", "5"]; // 軸ラベル用
 
-  const mapSkillToIndex = (skill) => {
-    const s = normalize(skill);
-    return categories.findIndex(cat => s === cat);
-  };
-
-  // --- データ点を数値軸に変換 ---
+  // --- skillを数値スケールとして扱う ---
   const numericData = preSurveys
     .map(s => {
-      const idx = mapSkillToIndex(s.skill);
+      const skillNum = parseFloat(s.skill);
       const score = parseFloat(s.total_score);
-      return idx >= 0 && !isNaN(score) ? { x: idx, y: score } : null;
+      return !isNaN(skillNum) && !isNaN(score)
+        ? { x: skillNum, y: score, id: s.id } // ← idを保持！
+        : null;
     })
     .filter(Boolean);
 
   if (!numericData.length) {
-    console.warn("⚠️ 散布図データが空です（skill未記入または形式不一致）。");
+    console.warn("⚠️ 散布図データが空です（skill未記入または数値変換エラー）。");
     return;
   }
 
-  // --- 回帰直線を計算 ---
+  // --- 回帰直線を計算（最小二乗法） ---
   const n = numericData.length;
   const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
   const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
@@ -310,7 +308,6 @@ function drawSkillScoreChart(preSurveys) {
     num += (p.x - meanX) * (p.y - meanY);
     den += (p.x - meanX) ** 2;
   });
-
   const slope = num / den;
   const intercept = meanY - slope * meanX;
 
@@ -320,13 +317,15 @@ function drawSkillScoreChart(preSurveys) {
   const denomY = Math.sqrt(numericData.reduce((a, p) => a + (p.y - meanY) ** 2, 0));
   const r = numerator / (denomX * denomY);
 
-  console.log(`✅ 得意不得意 回帰線: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}, r=${r.toFixed(3)}`);
+  console.log(`✅ skill 回帰線: y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}, r = ${r.toFixed(3)}`);
 
+  // --- 回帰線データ ---
   const linePoints = [
     { x: 0, y: slope * 0 + intercept },
-    { x: categories.length - 1, y: slope * (categories.length - 1) + intercept }
+    { x: 5, y: slope * 5 + intercept }
   ];
 
+  // --- 描画 ---
   const ctx = document.getElementById("skillScoreChart").getContext("2d");
   skillChartInstance = new Chart(ctx, {
     type: "scatter",
@@ -334,7 +333,7 @@ function drawSkillScoreChart(preSurveys) {
       datasets: [
         {
           label: "得意不得意とスコア",
-          data: numericData.map(p => ({ x: categories[p.x], y: p.y })),
+          data: numericData,
           backgroundColor: "rgba(75, 192, 192, 0.7)",
           borderColor: "rgba(75, 192, 192, 1)",
           pointRadius: 7
@@ -342,7 +341,7 @@ function drawSkillScoreChart(preSurveys) {
         {
           label: `回帰線（r=${r.toFixed(3)}）`,
           type: "line",
-          data: linePoints.map(p => ({ x: categories[p.x], y: p.y })),
+          data: linePoints,
           borderColor: "rgba(0, 0, 0, 0.8)",
           borderWidth: 2,
           fill: false,
@@ -351,6 +350,18 @@ function drawSkillScoreChart(preSurveys) {
       ]
     },
     options: {
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const dataset = skillChartInstance.data.datasets[elements[0].datasetIndex];
+          const point = dataset.data[idx];
+          const id = point.id;
+          if (id) {
+            // viewer.html にジャンプしてその履歴を開く
+            window.open(`viewer.html?id=${id}`, "_blank");
+          }
+        }
+      },
       responsive: false,
       maintainAspectRatio: false,
       plugins: {
@@ -363,19 +374,32 @@ function drawSkillScoreChart(preSurveys) {
       },
       scales: {
         x: {
-          type: "category",
-          labels: categories,
-          title: { display: true, text: "得意不得意（アンケート回答）" }
+            type: "linear",
+            min: -0.3,
+            max: 5.3,
+            ticks: {
+            stepSize: 1,
+            callback: (value) => {
+                // 整数だけ表示（0,1,2,3,4,5）
+                return Number.isInteger(value) ? value.toString() : "";
+            }
+            },
+            title: {
+            display: true,
+            text: "得意不得意（0=苦手, 5=得意）"
+            }
         },
         y: {
-          title: { display: true, text: "総合評価（点）" },
-          beginAtZero: true,
-          suggestedMax: 100
+            title: { display: true, text: "総合評価（点）" },
+            beginAtZero: true,
+            suggestedMax: 100
         }
-      }
+        }
+
     }
   });
 }
+
 
 
 

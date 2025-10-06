@@ -8,6 +8,7 @@
       font-family: Arial, sans-serif;
       padding: 20px;
       text-align: center;
+      overflow-x: hidden;
     }
     table {
       margin: 10px auto;
@@ -19,16 +20,18 @@
       padding: 6px 10px;
       text-align: left;
     }
-    h2, h3 {
-      margin-top: 30px;
+    h2 {
+      margin-top: 40px;
     }
     canvas {
-    margin: 30px auto;
-    width: 1000px;   /* ← 横幅を広くする */
-    height: 500px;   /* ← 高さも調整可能 */
-    display: block;
+      margin: 30px auto;
+      width: 900px;
+      height: 450px;
+      display: block;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
     }
-
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -36,19 +39,21 @@
   <h1>アンケート集計結果</h1>
   <a href="viewer.html" class="button">履歴一覧に戻る</a>
 
+  <h2>年齢分布</h2>
   <canvas id="ageChart"></canvas>
 
   <h2>ヨーヨー歴とスコアの関係</h2>
-  <canvas id="historyScoreChart"></canvas> <!-- 🔹 散布図用キャンバス -->
+  <canvas id="historyScoreChart"></canvas>
 
   <div id="summary"></div>
 
-  
-
   <script>
+    let historyChartInstance = null;
+
     async function loadSurveySummary() {
       const res = await fetch("https://yoyo-backend.kajilab.dev/survey_summary");
       const data = await res.json();
+      console.log("🔹 survey_summary:", data);
 
       const container = document.getElementById("summary");
       container.innerHTML = `
@@ -58,20 +63,18 @@
         ${renderSummaryTable(data.post)}
       `;
 
-      if (data.pre && data.pre.length > 0) {
-        drawAgeChart(data.pre);
-      }
+      // 年齢分布
+      if (data.pre?.length) drawAgeChart(data.pre);
 
-      // 🔹 ヨーヨー歴とスコアの散布図を描画
-      if (data.pre && data.pre.length > 0 && data.scores) {
-        drawHistoryScoreChart(data.pre);
+      // スコア付きの散布図
+      if (data.pre?.length) {
+       drawHistoryScoreChart(data.pre);
       }
     }
 
     function renderSummaryTable(surveys) {
-      if (!surveys || !surveys.length) return "<p>データなし</p>";
-
-      let counts = {};
+      if (!surveys?.length) return "<p>データなし</p>";
+      const counts = {};
       surveys.forEach(s => {
         for (const [k, v] of Object.entries(s)) {
           const val = Array.isArray(v) ? v.join(", ") : v;
@@ -79,48 +82,31 @@
           counts[k][val] = (counts[k][val] || 0) + 1;
         }
       });
-
-      let rows = "";
-      for (const [q, values] of Object.entries(counts)) {
-        const cell = Object.entries(values)
-          .map(([ans, num]) => `${ans}: ${num}`)
-          .join("<br>");
-        rows += `<tr><th>${q}</th><td>${cell}</td></tr>`;
-      }
-
-      return `<table>${rows}</table>`;
+      return `<table>${
+        Object.entries(counts)
+          .map(([q, vals]) => 
+            `<tr><th>${q}</th><td>${Object.entries(vals)
+              .map(([ans, num]) => `${ans}: ${num}`).join("<br>")}</td></tr>`)
+          .join("")
+      }</table>`;
     }
 
-    // === 年齢分布グラフ ===
+    // === 年齢分布 ===
     function drawAgeChart(preSurveys) {
-      // 🔹 全角→半角変換関数
-      const toHalfWidth = (str) => {
-        return str.replace(/[０-９]/g, (s) =>
-          String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-        );
-      };
+      const toHalfWidth = (str) => str.replace(/[０-９]/g, s => 
+        String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
+      );
 
-      // 年齢データを抽出
       const ages = preSurveys
-        .map(s => {
-          if (!s.age) return null;
-          const normalized = toHalfWidth(String(s.age)).trim();
-          return parseInt(normalized);
-        })
-        .filter(n => !isNaN(n) && n > 0 && n < 100); // 有効な年齢だけ残す
+        .map(s => parseInt(toHalfWidth(String(s.age || "")).trim()))
+        .filter(n => !isNaN(n) && n > 0 && n < 100);
 
       const bins = {
-        "10歳未満": 0,
-        "10代": 0,
-        "20代": 0,
-        "30代": 0,
-        "40代": 0,
-        "50代": 0,
-        "60代": 0,
-        "70代": 0
+        "10歳未満": 0, "10代": 0, "20代": 0, "30代": 0,
+        "40代": 0, "50代": 0, "60代": 0, "70代": 0
       };
 
-      for (const a of ages) {
+      ages.forEach(a => {
         if (a < 10) bins["10歳未満"]++;
         else if (a < 20) bins["10代"]++;
         else if (a < 30) bins["20代"]++;
@@ -128,91 +114,147 @@
         else if (a < 50) bins["40代"]++;
         else if (a < 60) bins["50代"]++;
         else if (a < 70) bins["60代"]++;
-        else if (a < 80) bins["70代"]++;
-      }
-
-      const labels = Object.keys(bins);
-      const values = Object.values(bins);
+        else bins["70代"]++;
+      });
 
       const ctx = document.getElementById("ageChart").getContext("2d");
       new Chart(ctx, {
         type: "bar",
         data: {
-          labels,
+          labels: Object.keys(bins),
           datasets: [{
             label: "年齢分布（10歳刻み）",
-            data: values,
-            backgroundColor: "rgba(54, 162, 235, 0.6)",
-            borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 1
+            data: Object.values(bins),
+            backgroundColor: "rgba(54, 162, 235, 0.6)"
           }]
         },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { stepSize: 1 }
-            }
-          }
-        }
+        options: { responsive: false, scales: { y: { beginAtZero: true } } }
       });
     }
 
-    // === ヨーヨー歴とスコアの散布図 ===
-    function drawHistoryScoreChart(preSurveys, scoreData) {
-      // 🔹 経験年数を数値化するマッピング
-      const mapHistoryToYears = (history) => {
-        if (!history) return null;
-        if (history.includes("はじめて")) return 0;
-        if (history.includes("3か月未満")) return 0.25;
-        if (history.includes("3か月～半年")) return 0.5;
-        if (history.includes("半年～1年")) return 1;
-        if (history.includes("1～2年")) return 1.5;
-        if (history.includes("3～4年")) return 3.5;
-        if (history.includes("5年以上")) return 6;
-        return null;
-      };
+    // === 散布図 ===
+    function drawHistoryScoreChart(preSurveys) {
+  if (historyChartInstance) historyChartInstance.destroy();
 
-      // 🔹 preアンケートとスコアを紐づけ
-      const points = [];
-      preSurveys.forEach((s, i) => {
-        const years = mapHistoryToYears(s.history);
-        const score = scoreData[i]?.total_score;
-        if (years != null && score != null) {
-          points.push({ x: years, y: score });
-        }
-      });
+  // --- 全角→半角＋整形 ---
+  const normalize = (str) =>
+    (str || "")
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+      .replace(/[〜～]/g, "～")
+      .replace(/(カ月|ヶ月)/g, "か月")
+      .replace(/\s+/g, "")
+      .trim();
 
-      if (points.length === 0) return;
+  const categories = [
+    "はじめて",
+    "3か月未満",
+    "3か月～半年",
+    "半年～1年",
+    "1～2年",
+    "3～4年",
+    "5年以上"
+  ];
 
-      const ctx = document.getElementById("historyScoreChart").getContext("2d");
-      new Chart(ctx, {
-        type: "scatter",
-        data: {
-          datasets: [{
-            label: "ヨーヨー歴とスコアの関係",
-            data: points,
-            backgroundColor: "rgba(255, 99, 132, 0.7)",
-            borderColor: "rgba(255, 99, 132, 1)",
-            pointRadius: 8
-          }]
+  const mapHistoryToIndex = (history) => {
+    const h = normalize(history);
+    return categories.findIndex(cat => h === cat);
+  };
+
+  // --- データ点を数値軸に変換 ---
+  const numericData = preSurveys
+    .map(s => {
+      const idx = mapHistoryToIndex(s.history);
+      const score = parseFloat(s.total_score);
+      return idx >= 0 && !isNaN(score) ? { x: idx, y: score } : null;
+    })
+    .filter(Boolean);
+
+  if (!numericData.length) {
+    console.warn("⚠️ 散布図データが空です。");
+    return;
+  }
+
+  // --- 回帰直線を計算（最小二乗法） ---
+  const n = numericData.length;
+  const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
+
+  let num = 0, den = 0;
+  numericData.forEach(p => {
+    num += (p.x - meanX) * (p.y - meanY);
+    den += (p.x - meanX) ** 2;
+  });
+
+  const slope = num / den; // 傾き
+  const intercept = meanY - slope * meanX; // 切片
+
+  // --- 相関係数 r ---
+  const numerator = numericData.reduce((a, p) => a + (p.x - meanX) * (p.y - meanY), 0);
+  const denomX = Math.sqrt(numericData.reduce((a, p) => a + (p.x - meanX) ** 2, 0));
+  const denomY = Math.sqrt(numericData.reduce((a, p) => a + (p.y - meanY) ** 2, 0));
+  const r = numerator / (denomX * denomY);
+
+  console.log(`✅ 回帰線: y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}, r=${r.toFixed(3)}`);
+
+  // --- 回帰直線データを生成 ---
+  const linePoints = [
+    { x: 0, y: slope * 0 + intercept },
+    { x: categories.length - 1, y: slope * (categories.length - 1) + intercept }
+  ];
+
+  // --- 描画 ---
+  const ctx = document.getElementById("historyScoreChart").getContext("2d");
+  historyChartInstance = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "ヨーヨー歴とスコア",
+          data: numericData.map(p => ({ x: categories[p.x], y: p.y })),
+          backgroundColor: "rgba(255, 99, 132, 0.7)",
+          borderColor: "rgba(255, 99, 132, 1)",
+          pointRadius: 7
         },
-        options: {
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              title: { display: true, text: "ヨーヨー歴（年換算）" },
-              ticks: { stepSize: 1 }
-            },
-            y: {
-              title: { display: true, text: "総合評価（点）" },
-              beginAtZero: true,
-              suggestedMax: 100
-            }
-          }
+        {
+          label: `回帰線（r=${r.toFixed(3)}）`,
+          type: "line",
+          data: linePoints.map(p => ({ x: categories[p.x], y: p.y })),
+          borderColor: "rgba(0, 0, 0, 0.8)",
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0
         }
-      });
+      ]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 20 } },
+        title: {
+          display: true,
+          text: `相関係数 r = ${r.toFixed(3)}（回帰式: y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}）`,
+          padding: { top: 10, bottom: 10 },
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          type: "category",
+          labels: categories,
+          title: { display: true, text: "ヨーヨー歴（アンケート回答）" }
+        },
+        y: {
+          title: { display: true, text: "総合評価（点）" },
+          beginAtZero: true,
+          suggestedMax: 100
+        }
+      }
     }
+  });
+}
+
+
 
     loadSurveySummary();
   </script>

@@ -806,17 +806,18 @@ def save_survey(result_id):
 def survey_summary():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, pre_survey, post_survey, total_score FROM results")
+    cur.execute("SELECT id, name, pre_survey, post_survey, total_score FROM results")
     rows = cur.fetchall()
     conn.close()
 
     pre_all, post_all, scores = [], [], []
 
-    for result_id, pre, post, score in rows:
+    for result_id, name, pre, post, score in rows:
         if pre:
             try:
                 obj = json.loads(pre)
                 obj["id"] = result_id
+                obj["name"] = name or f"ID:{result_id}"
                 obj["total_score"] = score
                 pre_all.append(obj)
             except json.JSONDecodeError:
@@ -826,6 +827,7 @@ def survey_summary():
             try:
                 obj = json.loads(post)
                 obj["id"] = result_id
+                obj["name"] = name or f"ID:{result_id}"
                 obj["total_score"] = score
                 post_all.append(obj)
             except json.JSONDecodeError:

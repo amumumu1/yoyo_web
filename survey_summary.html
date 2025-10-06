@@ -42,6 +42,49 @@
   <h2>年齢分布</h2>
   <canvas id="ageChart"></canvas>
 
+  <h2>ヨーヨー歴（アンケート回答）</h2>
+  <canvas id="historyChart"></canvas> <!-- ← 新しく追加 -->
+
+
+  
+
+  <h2>ヨーヨーをする頻度</h2>
+  <canvas id="freqChart"></canvas> 
+
+  <h2>練習方法の傾向</h2>
+  <canvas id="practiceChart"></canvas>
+
+
+  <h2>練習で困っていること</h2>
+  <canvas id="troubleChart"></canvas>
+
+  <h2>得意度分布</h2>
+  <canvas id="skillDistributionChart"></canvas>
+
+
+  <h2>デバイス装着時の違和感</h2>
+  <canvas id="discomfortChart"></canvas>
+
+  <h2>デバイスの重さ・装着性に関する印象</h2>
+  <canvas id="weightfitChart"></canvas>
+
+  <h2>評価結果のわかりやすさ</h2>
+  <canvas id="resultviewChart"></canvas>
+
+  <h2>評価結果の有用性（今後の練習の参考になったか）</h2>
+  <canvas id="usefulChart"></canvas>
+
+
+  <h2>今後も使いたいか（継続意向）</h2>
+  <canvas id="continueChart"></canvas>
+
+  <h2>今後分析してほしいトリック（複数回答含む）</h2>
+  <canvas id="futureTrickChart"></canvas>
+
+
+
+
+
   <h2>ヨーヨー歴とスコアの関係</h2>
   <canvas id="historyScoreChart"></canvas>
 
@@ -68,8 +111,18 @@
         ${renderSummaryTable(data.post)}
       `;
 
-      // 年齢分布
-      if (data.pre?.length) drawAgeChart(data.pre);
+      // 年齢・頻度・ヨーヨー歴グラフ
+    if (data.pre?.length) {
+    drawAgeChart(data.pre);
+    drawFreqChart(data.pre);
+    drawHistoryChart(data.pre);
+    drawTroubleChart(data.pre); // ← 追加！
+    drawPracticeChart(data.pre); // ← 追加！
+    drawSkillDistributionChart(data.pre); // ← これ追加！
+    }
+
+
+
 
       // スコア付きの散布図
       if (data.pre?.length) {
@@ -77,7 +130,19 @@
     drawSkillScoreChart(data.pre); // ← これ追加！
     }
 
+    if (data.post?.length) {
+    drawDiscomfortChart(data.post);
+    drawWeightfitChart(data.post);
+    drawResultviewChart(data.post);
+    drawUsefulChart(data.post);
+    drawContinueChart(data.post);
+    drawFutureTrickChart(data.post);
     }
+
+
+    }
+
+
 
     function renderSummaryTable(surveys) {
       if (!surveys?.length) return "<p>データなし</p>";
@@ -138,6 +203,674 @@
         options: { responsive: false, scales: { y: { beginAtZero: true } } }
       });
     }
+
+    // === ヨーヨー歴（アンケート回答） ===
+function drawHistoryChart(preSurveys) {
+  // データを正規化（全角→半角、表記ゆれ統一）
+  const normalize = (str) =>
+    (str || "")
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+      .replace(/[〜～]/g, "～")
+      .replace(/(カ月|ヶ月)/g, "か月")
+      .replace(/\s+/g, "")
+      .trim();
+
+  const categories = [
+    "はじめて",
+    "3か月未満",
+    "3か月～半年",
+    "半年～1年",
+    "1～2年",
+    "3～4年",
+    "5年以上"
+  ];
+
+  // 各カテゴリのカウント
+  const historyBins = Object.fromEntries(categories.map(c => [c, 0]));
+
+  preSurveys.forEach(s => {
+    const h = normalize(s.history);
+    if (historyBins.hasOwnProperty(h)) {
+      historyBins[h]++;
+    }
+  });
+
+  const labels = Object.keys(historyBins);
+  const values = Object.values(historyBins);
+
+  const ctx = document.getElementById("historyChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "ヨーヨー歴（人数）",
+        data: values,
+        backgroundColor: [
+          "rgba(255, 159, 64, 0.6)",
+          "rgba(255, 205, 86, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(153, 102, 255, 0.6)",
+          "rgba(201, 203, 207, 0.6)",
+          "rgba(255, 99, 132, 0.6)"
+        ],
+        borderColor: "rgba(0, 0, 0, 0.2)",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: "ヨーヨー歴（アンケート回答分布）",
+          font: { size: 18 }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "ヨーヨー歴" },
+          ticks: { font: { size: 14 } }
+        },
+        y: {
+          title: { display: true, text: "人数" },
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+
+    // === ヨーヨーをする頻度 ===
+function drawFreqChart(preSurveys) {
+  // freqの回答をカウント
+  const freqBins = {
+    "ほとんどしない": 0,
+    "月に数回": 0,
+    "週に1～2回": 0,
+    "週に3～4回": 0,
+    "ほぼ毎日": 0
+  };
+
+  preSurveys.forEach(s => {
+    const val = s.freq?.trim();
+    if (val && freqBins.hasOwnProperty(val)) freqBins[val]++;
+  });
+
+  const labels = Object.keys(freqBins);
+  const values = Object.values(freqBins);
+
+  const ctx = document.getElementById("freqChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "ヨーヨーをする頻度",
+        data: values,
+        backgroundColor: [
+          "rgba(255, 159, 64, 0.6)",
+          "rgba(75, 192, 192, 0.6)",
+          "rgba(54, 162, 235, 0.6)",
+          "rgba(153, 102, 255, 0.6)",
+          "rgba(255, 99, 132, 0.6)"
+        ],
+        borderColor: "rgba(0, 0, 0, 0.2)",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: "ヨーヨーをする頻度（アンケート回答）",
+          font: { size: 18 }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        x: { title: { display: true, text: "回答" } },
+        y: {
+          title: { display: true, text: "人数" },
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+// === 練習方法（複数回答） ===
+function drawPracticeChart(preSurveys) {
+  // 各選択肢の出現回数をカウント
+  const counts = {
+    "1人で": 0,
+    "友達と": 0,
+    "解説動画を見ながら": 0,
+    "練習会に参加": 0,
+    "その他": 0
+  };
+
+  preSurveys.forEach(s => {
+    if (!s.practice) return;
+    const practices = Array.isArray(s.practice)
+      ? s.practice
+      : String(s.practice).split(",").map(t => t.trim());
+    practices.forEach(p => {
+      if (counts[p] !== undefined) counts[p]++;
+    });
+  });
+
+  const labels = Object.keys(counts);
+  const values = Object.values(counts);
+
+  const ctx = document.getElementById("practiceChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "回答人数",
+        data: values,
+        backgroundColor: "rgba(75, 192, 192, 0.6)"
+      }]
+    },
+    options: {
+      indexAxis: "y", // 横棒グラフ
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: "普段どのようにヨーヨーを練習していますか？（複数回答可）",
+          font: { size: 18 }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 2 }
+        },
+        y: {
+          title: { display: true, text: "練習方法" }
+        }
+      }
+    }
+  });
+}
+
+
+
+// === 困っていること（複数回答） ===
+function drawTroubleChart(preSurveys) {
+  // 各選択肢の出現回数をカウント
+  const counts = {
+    "トリックが安定しない": 0,
+    "思うように上達しない": 0,
+    "できているかどうかわからない": 0,
+    "教えてくれる人がいない": 0,
+    "その他": 0
+  };
+
+  preSurveys.forEach(s => {
+    if (!s.trouble) return;
+    const troubles = Array.isArray(s.trouble)
+      ? s.trouble
+      : String(s.trouble).split(",").map(t => t.trim());
+    troubles.forEach(t => {
+      if (counts[t] !== undefined) counts[t]++;
+    });
+  });
+
+  const labels = Object.keys(counts);
+  const values = Object.values(counts);
+
+  const ctx = document.getElementById("troubleChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "困っている人の数",
+        data: values,
+        backgroundColor: "rgba(255, 99, 132, 0.6)"
+      }]
+    },
+    options: {
+      indexAxis: "y", // ← 横向き棒グラフ
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: "練習で困っていること（複数回答可）",
+          font: { size: 18 }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 2 }
+        },
+        y: {
+          title: { display: true, text: "困っていること" }
+        }
+      }
+    }
+  });
+}
+
+// === 得意度（0〜5） ===
+function drawSkillDistributionChart(preSurveys) {
+  const counts = [0, 0, 0, 0, 0, 0]; // 0〜5のカウント配列
+
+  preSurveys.forEach(s => {
+    const num = parseInt(s.skill);
+    if (!isNaN(num) && num >= 0 && num <= 5) counts[num]++;
+  });
+
+  const ctx = document.getElementById("skillDistributionChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["0", "1", "2", "3", "4", "5"],
+      datasets: [{
+        label: "回答人数",
+        data: counts,
+        backgroundColor: "rgba(153, 102, 255, 0.6)"
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: "ヨーヨーの得意度分布（0=不得意, 5=得意）",
+          font: { size: 18 }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "得意度（自己評価）" }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 2 }
+        }
+      }
+    }
+  });
+}
+
+// === デバイス違和感の分布 ===
+function drawDiscomfortChart(postSurveys) {
+  // 回答のカウントを初期化
+  const bins = {
+    "全くなかった": 0,
+    "少しあった": 0,
+    "かなりあった": 0
+  };
+
+  postSurveys.forEach(s => {
+    if (s.discomfort && bins.hasOwnProperty(s.discomfort)) {
+      bins[s.discomfort]++;
+    }
+  });
+
+  const ctx = document.getElementById("discomfortChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: Object.keys(bins),
+      datasets: [{
+        label: "回答人数",
+        data: Object.values(bins),
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.7)", // 全くなかった
+          "rgba(255, 205, 86, 0.7)", // 少しあった
+          "rgba(255, 99, 132, 0.7)"  // かなりあった
+        ]
+      }]
+    },
+    options: {
+      indexAxis: "y", // 横棒グラフ
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "デバイス装着時の違和感（事後アンケート）",
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 5 }
+        },
+        y: {
+          title: { display: true, text: "回答内容" }
+        }
+      }
+    }
+  });
+}
+
+
+// === 重さ・装着性に関する評価 ===
+function drawWeightfitChart(postSurveys) {
+  const bins = {
+    "気にならなかった": 0,
+    "少し気になった": 0,
+    "とても気になった": 0
+  };
+
+  postSurveys.forEach(s => {
+    if (s.weightfit && bins.hasOwnProperty(s.weightfit)) {
+      bins[s.weightfit]++;
+    }
+  });
+
+  const ctx = document.getElementById("weightfitChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: Object.keys(bins),
+      datasets: [{
+        label: "回答人数",
+        data: Object.values(bins),
+        backgroundColor: [
+          "rgba(75, 192, 192, 0.7)", // 気にならなかった
+          "rgba(255, 205, 86, 0.7)", // 少し気になった
+          "rgba(255, 99, 132, 0.7)"  // とても気になった
+        ]
+      }]
+    },
+    options: {
+      indexAxis: "y", // ← 横棒グラフ
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "デバイスの重さ・装着性に関する印象（事後アンケート）",
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 5 }
+        },
+        y: {
+          title: { display: true, text: "回答内容" }
+        }
+      }
+    }
+  });
+}
+
+// === 評価結果のわかりやすさ ===
+function drawResultviewChart(postSurveys) {
+  // すべての選択肢を明示（0件でも表示）
+  const bins = {
+    "とてもわかりやすい": 0,
+    "わかりやすい": 0,
+    "少しわかりにくい": 0,
+    "わかりにくい": 0
+  };
+
+  // 回答をカウント
+  postSurveys.forEach(s => {
+    if (s.resultview && bins.hasOwnProperty(s.resultview)) {
+      bins[s.resultview]++;
+    }
+  });
+
+  // グラフ描画
+  const ctx = document.getElementById("resultviewChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: Object.keys(bins),
+      datasets: [{
+        label: "回答人数",
+        data: Object.values(bins),
+        backgroundColor: [
+          "rgba(54, 162, 235, 0.7)",  // とてもわかりやすい
+          "rgba(75, 192, 192, 0.7)",  // わかりやすい
+          "rgba(255, 205, 86, 0.7)",  // 少しわかりにくい
+          "rgba(255, 99, 132, 0.7)"   // わかりにくい（0件でもグレーアウト風）
+        ]
+      }]
+    },
+    options: {
+      indexAxis: "y", // ← 横棒グラフ
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "評価結果のわかりやすさ（事後アンケート）",
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 5 }
+        },
+        y: {
+          title: { display: true, text: "回答内容" }
+        }
+      }
+    }
+  });
+}
+
+// === 評価結果の有用性（今後の練習の参考になったか） ===
+function drawUsefulChart(postSurveys) {
+  // すべての選択肢を明示（0件でも表示）
+  const bins = {
+    "とても思う": 0,
+    "少し思う": 0,
+    "あまり思わない": 0,
+    "全く思わない": 0
+  };
+
+  // 回答をカウント（未回答は無視）
+  postSurveys.forEach(s => {
+    if (s.useful && bins.hasOwnProperty(s.useful)) {
+      bins[s.useful]++;
+    }
+  });
+
+  // グラフ描画
+  const ctx = document.getElementById("usefulChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: Object.keys(bins),
+      datasets: [{
+        label: "回答人数",
+        data: Object.values(bins),
+        backgroundColor: [
+          "rgba(54, 162, 235, 0.7)",  // とても思う
+          "rgba(75, 192, 192, 0.7)",  // 少し思う
+          "rgba(255, 205, 86, 0.7)",  // あまり思わない
+          "rgba(255, 99, 132, 0.7)"   // 全く思わない
+        ]
+      }]
+    },
+    options: {
+      indexAxis: "y", // ← 横棒グラフ
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "評価結果の有用性（今後の練習の参考になったか）",
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 5 }
+        },
+        y: {
+          title: { display: true, text: "回答内容" }
+        }
+      }
+    }
+  });
+}
+
+
+// === 今後も使いたいか（継続意向） ===
+function drawContinueChart(postSurveys) {
+  // 全選択肢を初期化（0件でも軸に表示）
+  const bins = {
+    "ぜひ使いたい": 0,
+    "機会があれば使いたい": 0,
+    "あまり使いたいと思わない": 0
+  };
+
+  // 回答をカウント（未回答は無視）
+  postSurveys.forEach(s => {
+    if (s.continue && bins.hasOwnProperty(s.continue)) {
+      bins[s.continue]++;
+    }
+  });
+
+  // グラフ描画
+  const ctx = document.getElementById("continueChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: Object.keys(bins),
+      datasets: [{
+        label: "回答人数",
+        data: Object.values(bins),
+        backgroundColor: [
+          "rgba(54, 162, 235, 0.7)",  // ぜひ使いたい
+          "rgba(75, 192, 192, 0.7)",  // 機会があれば使いたい
+          "rgba(255, 99, 132, 0.7)"   // あまり使いたいと思わない
+        ]
+      }]
+    },
+    options: {
+      indexAxis: "y", // ← 横棒グラフ
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "今後も使いたいか（継続意向）",
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: "人数" },
+          ticks: { stepSize: 5 }
+        },
+        y: {
+          title: { display: true, text: "回答内容" }
+        }
+      }
+    }
+  });
+}
+
+function drawFutureTrickChart(postSurveys) {
+  const labels = [
+    "ホップザフェンス", "ダブルループ", "イーライホップ", "フック", "ボヨンボヨン",
+    "ジャーブル", "ラセレーション", "トラピーズ", "ストリングトリック",
+    "アウトサイドループ", "アラウンドザワールド",
+    "シュートザムーン", "オーバーザフェンス", "ローラーコースター",
+    "キャンディレイン", "ラップ系トリック", "ブレインツイスターコンボ",
+    "ファウンテン", "スリーパー", "プロペラ", "5A", "1A", "L.C.L",
+    "ツーハンドトラピーズ", "ソロハム"
+  ];
+
+  const counts = {};
+  labels.forEach(label => counts[label] = 0);
+
+  postSurveys.forEach(s => {
+    const val = (s["future-trick"] || "").trim();
+    if (!val || val === ":") return;
+    const tricks = val.split(",").map(t => t.trim()).filter(Boolean);
+    tricks.forEach(t => {
+      if (counts.hasOwnProperty(t)) counts[t]++;
+    });
+  });
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const sortedLabels = sorted.map(([k]) => k);
+  const values = sorted.map(([, v]) => v);
+
+  // ✅ ラベル数に応じてキャンバス高さを自動調整
+  const canvas = document.getElementById("futureTrickChart");
+  const barHeight = 35; // 1項目あたりの高さ(px)
+  canvas.height = sortedLabels.length * barHeight;
+
+  const ctx = canvas.getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: sortedLabels,
+      datasets: [{
+        label: "希望人数",
+        data: values,
+        backgroundColor: "rgba(54, 162, 235, 0.7)"
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: "今後分析してほしいトリック（複数回答含む）",
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 },
+          title: { display: true, text: "回答人数" }
+        },
+        y: {
+          title: { display: true, text: "トリック名" }
+        }
+      }
+    }
+  });
+}
+
+
+
+
+
+
+
 
     // === 散布図 ===
     function drawHistoryScoreChart(preSurveys) {

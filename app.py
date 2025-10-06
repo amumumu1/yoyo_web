@@ -810,23 +810,36 @@ def survey_summary():
     rows = cur.fetchall()
     conn.close()
 
-    pre_all, post_all = [], []
+    pre_all, post_all, scores = [], [], []
+
     for result_id, pre, post, score in rows:
         if pre:
-            obj = json.loads(pre)
-            obj["id"] = result_id
-            obj["total_score"] = score
-            pre_all.append(obj)
+            try:
+                obj = json.loads(pre)
+                obj["id"] = result_id
+                obj["total_score"] = score
+                pre_all.append(obj)
+            except json.JSONDecodeError:
+                pass
+
         if post:
-            obj = json.loads(post)
-            obj["id"] = result_id
-            obj["total_score"] = score
-            post_all.append(obj)
+            try:
+                obj = json.loads(post)
+                obj["id"] = result_id
+                obj["total_score"] = score
+                post_all.append(obj)
+            except json.JSONDecodeError:
+                pass
+
+        # スコア配列としても追加（インデックス合わせ用）
+        scores.append({"id": result_id, "total_score": score})
 
     return jsonify({
         "pre": pre_all,
-        "post": post_all
+        "post": post_all,
+        "scores": scores
     })
+
 
 
 

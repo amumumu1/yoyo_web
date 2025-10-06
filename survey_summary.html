@@ -45,6 +45,10 @@
   <h2>ヨーヨー歴とスコアの関係</h2>
   <canvas id="historyScoreChart"></canvas>
 
+  <h2>得意不得意とスコアの関係</h2>
+  <canvas id="skillScoreChart"></canvas>
+
+
   <div id="summary"></div>
 
   <script>
@@ -68,8 +72,10 @@
 
       // スコア付きの散布図
       if (data.pre?.length) {
-       drawHistoryScoreChart(data.pre);
-      }
+    drawHistoryScoreChart(data.pre);
+    drawSkillScoreChart(data.pre); // ← これ追加！
+    }
+
     }
 
     function renderSummaryTable(surveys) {
@@ -253,6 +259,123 @@
     }
   });
 }
+
+// === 得意不得意とスコアの散布図 ===
+function drawSkillScoreChart(preSurveys) {
+  if (skillChartInstance) skillChartInstance.destroy();
+
+  // --- 全角→半角＋整形 ---
+  const normalize = (str) =>
+    (str || "")
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+      .replace(/[〜～]/g, "～")
+      .replace(/\s+/g, "")
+      .trim();
+
+  const categories = [
+    "スリープが得意",
+    "ルーピングが得意",
+    "どちらも得意",
+    "どちらも苦手",
+    "わからない"
+  ];
+
+  const mapSkillToIndex = (skill) => {
+    const s = normalize(skill);
+    return categories.findIndex(cat => s === cat);
+  };
+
+  // --- データ点を数値軸に変換 ---
+  const numericData = preSurveys
+    .map(s => {
+      const idx = mapSkillToIndex(s.skill);
+      const score = parseFloat(s.total_score);
+      return idx >= 0 && !isNaN(score) ? { x: idx, y: score } : null;
+    })
+    .filter(Boolean);
+
+  if (!numericData.length) {
+    console.warn("⚠️ 散布図データが空です（skill未記入または形式不一致）。");
+    return;
+  }
+
+  // --- 回帰直線を計算 ---
+  const n = numericData.length;
+  const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
+
+  let num = 0, den = 0;
+  numericData.forEach(p => {
+    num += (p.x - meanX) * (p.y - meanY);
+    den += (p.x - meanX) ** 2;
+  });
+
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+
+  // --- 相関係数 r ---
+  const numerator = numericData.reduce((a, p) => a + (p.x - meanX) * (p.y - meanY), 0);
+  const denomX = Math.sqrt(numericData.reduce((a, p) => a + (p.x - meanX) ** 2, 0));
+  const denomY = Math.sqrt(numericData.reduce((a, p) => a + (p.y - meanY) ** 2, 0));
+  const r = numerator / (denomX * denomY);
+
+  console.log(`✅ 得意不得意 回帰線: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}, r=${r.toFixed(3)}`);
+
+  const linePoints = [
+    { x: 0, y: slope * 0 + intercept },
+    { x: categories.length - 1, y: slope * (categories.length - 1) + intercept }
+  ];
+
+  const ctx = document.getElementById("skillScoreChart").getContext("2d");
+  skillChartInstance = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "得意不得意とスコア",
+          data: numericData.map(p => ({ x: categories[p.x], y: p.y })),
+          backgroundColor: "rgba(75, 192, 192, 0.7)",
+          borderColor: "rgba(75, 192, 192, 1)",
+          pointRadius: 7
+        },
+        {
+          label: `回帰線（r=${r.toFixed(3)}）`,
+          type: "line",
+          data: linePoints.map(p => ({ x: categories[p.x], y: p.y })),
+          borderColor: "rgba(0, 0, 0, 0.8)",
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 20 } },
+        title: {
+          display: true,
+          text: `相関係数 r = ${r.toFixed(3)}（回帰式: y = ${slope.toFixed(2)}x + ${intercept.toFixed(2)}）`,
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          type: "category",
+          labels: categories,
+          title: { display: true, text: "得意不得意（アンケート回答）" }
+        },
+        y: {
+          title: { display: true, text: "総合評価（点）" },
+          beginAtZero: true,
+          suggestedMax: 100
+        }
+      }
+    }
+  });
+}
+
 
 
 

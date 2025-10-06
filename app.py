@@ -806,14 +806,22 @@ def save_survey(result_id):
 def survey_summary():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT pre_survey, post_survey FROM results")
+    cur.execute("SELECT id, pre_survey, post_survey, total_score FROM results")
     rows = cur.fetchall()
     conn.close()
 
     pre_all, post_all = [], []
-    for pre, post in rows:
-        if pre: pre_all.append(json.loads(pre))
-        if post: post_all.append(json.loads(post))
+    for result_id, pre, post, score in rows:
+        if pre:
+            obj = json.loads(pre)
+            obj["id"] = result_id
+            obj["total_score"] = score
+            pre_all.append(obj)
+        if post:
+            obj = json.loads(post)
+            obj["id"] = result_id
+            obj["total_score"] = score
+            post_all.append(obj)
 
     return jsonify({
         "pre": pre_all,

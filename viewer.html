@@ -67,7 +67,8 @@
 <body>
   <h1>履歴一覧</h1>
   <a href="index.html" class="button">戻る</a>
-  <button onclick="openSurveySummary()">アンケートの集計結果を見る</button>
+  <a href="survey_summary.html" class="button" target="_blank">アンケートの集計結果を見る</a>
+
 
   <div id="history"></div>
   <script>
@@ -449,31 +450,31 @@
   }
 
   function openSurveySummary() {
-  const width = 800, height = 600;
-  const left = (window.screen.width - width) / 2;
-  const top = (window.screen.height - height) / 2;
+    const width = 800, height = 600;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
 
-  const popup = window.open("", "surveySummary",
-    `width=${width},height=${height},left=${left},top=${top}`);
+    const popup = window.open("", "surveySummary",
+      `width=${width},height=${height},left=${left},top=${top}`);
 
-  fetch("https://yoyo-backend.kajilab.dev/survey_summary")
-    .then(res => res.json())
-    .then(data => {
-      let html = `
-        <html lang="ja">
-        <head><meta charset="UTF-8"><title>アンケート集計結果</title></head>
-        <body style="font-family:sans-serif; padding:10px;">
-          <h2>アンケート集計結果</h2>
-          <h3>事前アンケート</h3>
-          ${renderSummaryTable(data.pre)}
-          <h3>事後アンケート</h3>
-          ${renderSummaryTable(data.post)}
-        </body>
-        </html>
-      `;
-      popup.document.write(html);
-    });
-}
+    fetch("https://yoyo-backend.kajilab.dev/survey_summary")
+      .then(res => res.json())
+      .then(data => {
+        let html = `
+          <html lang="ja">
+          <head><meta charset="UTF-8"><title>アンケート集計結果</title></head>
+          <body style="font-family:sans-serif; padding:10px;">
+            <h2>アンケート集計結果</h2>
+            <h3>事前アンケート</h3>
+            ${renderSummaryTable(data.pre)}
+            <h3>事後アンケート</h3>
+            ${renderSummaryTable(data.post)}
+          </body>
+          </html>
+        `;
+        popup.document.write();
+      });
+  }
 
 function renderSummaryTable(surveys) {
   if (!surveys.length) return "<p>データなし</p>";

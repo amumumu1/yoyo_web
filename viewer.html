@@ -199,7 +199,26 @@ document.addEventListener("DOMContentLoaded", () => {
         <button id="post-btn-${id}" onclick="openSurvey(${id}, 'post')">
           ${detail.post_survey ? "事後アンケートを編集" : "事後アンケートを入力"}
         </button><br>
+        <button onclick="uploadVideo(${id})">動画をアップロード</button><br>
       `;
+
+      // --- 動画プレビューエリア ---
+      if (detail.video_url) {
+        const youtubeId = extractYouTubeId(detail.video_url);
+        if (youtubeId) {
+          container.innerHTML += `
+            <div id="video-preview-${id}" style="margin-top:20px;">
+              <h3>アップロードされた動画</h3>
+              <iframe width="560" height="315"
+                src="https://www.youtube.com/embed/${youtubeId}"
+                title="YouTube video player"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+            </div>
+          `;
+        }
+      }
 
       // --- ループ詳細 ---
       const statsEl = document.getElementById(`loopDetails-${id}`);
@@ -574,6 +593,52 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchHistory();
   }
 });
+
+function extractYouTubeId(url) {
+  const regExp = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S*?v=|v\/|embed\/|shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+}
+
+async function uploadVideo(id) {
+  const url = prompt("YouTubeのURLを入力してください（例: https://youtu.be/xxxx）：");
+  if (!url) return;
+
+  const youtubeId = extractYouTubeId(url);
+  if (!youtubeId) {
+    alert("正しいYouTubeのURLを入力してください。");
+    return;
+  }
+
+  const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}/video`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ video_url: url })
+  });
+
+  if (res.ok) {
+    alert("動画URLを保存しました！");
+    const preview = document.getElementById(`video-preview-${id}`);
+    if (preview) preview.remove(); // 既存プレビュー削除
+    const container = document.getElementById(`detail-${id}`);
+    container.innerHTML += `
+      <div id="video-preview-${id}" style="margin-top:20px;">
+        <h3>アップロードされた動画</h3>
+        <iframe width="560" height="315"
+          src="https://www.youtube.com/embed/${youtubeId}"
+          title="YouTube video player"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+    `;
+  } else {
+    const err = await res.text();
+    console.error("動画アップロードエラー:", res.status, err);
+    alert("動画URLの保存に失敗しました");
+  }
+}
+
 
   </script>
 </body>

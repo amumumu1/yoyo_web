@@ -39,51 +39,55 @@
   <h1>アンケート集計結果</h1>
   <a href="viewer.html" class="button">履歴一覧に戻る</a>
 
+  <br><h1>事前アンケート</h1>
   <h2>年齢分布</h2>
   <canvas id="ageChart"></canvas>
 
-  <h2>ヨーヨー歴（アンケート回答）</h2>
-  <canvas id="historyChart"></canvas> <!-- ← 新しく追加 -->
+  <h2>1.ヨーヨー歴(どのくらい続けていますか？)</h2>
+  <canvas id="historyChart"></canvas> 
 
-
-  
-
-  <h2>ヨーヨーをする頻度</h2>
+  <h2>2.ヨーヨーをする頻度はどのくらいですか？</h2>
   <canvas id="freqChart"></canvas> 
 
-  <h2>練習方法の傾向</h2>
+  <h2>3.普段どのようにヨーヨーを練習していますか？（複数回答可）</h2>
   <canvas id="practiceChart"></canvas>
 
 
-  <h2>練習で困っていること</h2>
+  <h2>4.練習するときに困っていることはありますか？（複数回答可）</h2>
   <canvas id="troubleChart"></canvas>
 
-  <h2>得意度分布</h2>
+  <h2>5.ヨーヨーがどのくらい得意ですか？（0 = 不得意 / 5 = 得意）</h2>
   <canvas id="skillDistributionChart"></canvas>
 
-
-  <h2>デバイス装着時の違和感</h2>
+  <br><h1>事後アンケート</h1>
+  <br><h1>指輪型センシングデバイスについて</h1>
+  <h2>1.デバイスをつけてヨーヨーをすることに違和感はありましたか？</h2>
   <canvas id="discomfortChart"></canvas>
 
-  <h2>デバイスの重さ・装着性に関する印象</h2>
+  <h2>2.デバイスの重さや大きさ、装着性は気になりましたか？</h2>
   <canvas id="weightfitChart"></canvas>
 
-  <h2>評価結果のわかりやすさ</h2>
+  <br><h1>技能評価システムについて</h1>
+  <h2>4.評価結果の表示（例：グラフ、評価など）はわかりやすかったですか？</h2>
   <canvas id="resultviewChart"></canvas>
 
-  <h2>評価結果の有用性（今後の練習の参考になったか）</h2>
+  <h2>5.評価結果（できている点・できていない点など）は、今後の練習の参考になると思いますか？</h2>
   <canvas id="usefulChart"></canvas>
 
 
-  <h2>今後も使いたいか（継続意向）</h2>
+  <h2>6.このシステムを使って、今後も練習したいと思いましたか？</h2>
   <canvas id="continueChart"></canvas>
 
-  <h2>今後分析してほしいトリック（複数回答含む）</h2>
+  <h2>7.今後、このシステムで分析してほしいトリックはありますか？</h2>
   <canvas id="futureTrickChart"></canvas>
 
 
 
 
+  <br><h1>おまけ</h1>
+
+  <h1>点数</h1>
+  <div id="scoreSummary"></div>
 
   <h2>ヨーヨー歴とスコアの関係</h2>
   <canvas id="historyScoreChart"></canvas>
@@ -103,13 +107,13 @@
       const data = await res.json();
       console.log("🔹 survey_summary:", data);
 
-      const container = document.getElementById("summary");
-      container.innerHTML = `
-        <h2>事前アンケート</h2>
-        ${renderSummaryTable(data.pre)}
-        <h2>事後アンケート</h2>
-        ${renderSummaryTable(data.post)}
-      `;
+    //   const container = document.getElementById("summary");
+    //   container.innerHTML = `
+    //     <h2>事前アンケート</h2>
+    //     ${renderSummaryTable(data.pre)}
+    //     <h2>事後アンケート</h2>
+    //     ${renderSummaryTable(data.post)}
+    //   `;
 
       // 年齢・頻度・ヨーヨー歴グラフ
     if (data.pre?.length) {
@@ -133,12 +137,67 @@
     if (data.post?.length) {
     drawDiscomfortChart(data.post);
     drawWeightfitChart(data.post);
+
+    // === デバイスコメント一覧を追加（weightfitChart の直後に挿入） ===
+    const htmlDevice = renderDeviceComments(data.post);
+    const weightfitSection = document.getElementById("weightfitChart");
+    const wrapperDevice = document.createElement("div");
+    wrapperDevice.innerHTML = htmlDevice;
+    weightfitSection.insertAdjacentElement("afterend", wrapperDevice);
+
     drawResultviewChart(data.post);
     drawUsefulChart(data.post);
     drawContinueChart(data.post);
     drawFutureTrickChart(data.post);
     }
 
+    if (data.post?.length) {
+    // === 総合スコア統計・分布・個別グラフ ===
+    const trickSection = document.getElementById("historyScoreChart");
+    const container = document.createElement("div");
+    container.id = "scoreSummary";
+
+    // 1️⃣ 統計パネル
+    container.innerHTML = renderScoreSummary(data.post);
+
+    // 2️⃣ ヒストグラム
+    drawScoreHistogram(data.post, container);
+
+    // 3️⃣ ランキング
+    drawIndividualScores(data.post, container);
+
+    const historyHeading = [...document.querySelectorAll("h2")]
+    .find(h => h.textContent.includes("ヨーヨー歴とスコアの関係"));
+
+    if (historyHeading) {
+    // 見出しをスコアサマリーの直後に移動
+    container.insertAdjacentElement("beforeend", historyHeading);
+
+    // その見出しの下に散布図を配置
+    const trickSection = document.getElementById("historyScoreChart");
+    container.insertAdjacentElement("beforeend", trickSection);
+
+    // 最後に container 全体を「得意不得意」グラフの前に配置
+    const skillHeading = [...document.querySelectorAll("h2")]
+        .find(h => h.textContent.includes("得意不得意とスコアの関係"));
+    if (skillHeading) skillHeading.insertAdjacentElement("beforebegin", container);
+    }
+
+
+    }
+
+
+
+
+
+    // === システムコメント表を「今後分析してほしいトリック」の直後に追加 ===
+    if (data.post?.length) {
+    const html = renderSystemComments(data.post);
+    const trickSection = document.getElementById("futureTrickChart");
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html;
+    trickSection.insertAdjacentElement("afterend", wrapper);
+    }
 
     }
 
@@ -264,7 +323,7 @@ function drawHistoryChart(preSurveys) {
       plugins: {
         title: {
           display: true,
-          text: "ヨーヨー歴（アンケート回答分布）",
+          text: "ヨーヨー歴",
           font: { size: 18 }
         },
         legend: { display: false }
@@ -328,7 +387,7 @@ function drawFreqChart(preSurveys) {
       plugins: {
         title: {
           display: true,
-          text: "ヨーヨーをする頻度（アンケート回答）",
+          text: "ヨーヨーをする頻度",
           font: { size: 18 }
         },
         legend: { display: false }
@@ -548,7 +607,7 @@ function drawDiscomfortChart(postSurveys) {
         legend: { display: false },
         title: {
           display: true,
-          text: "デバイス装着時の違和感（事後アンケート）",
+          text: "デバイス装着時の違和感",
           font: { size: 18 }
         }
       },
@@ -603,7 +662,7 @@ function drawWeightfitChart(postSurveys) {
         legend: { display: false },
         title: {
           display: true,
-          text: "デバイスの重さ・装着性に関する印象（事後アンケート）",
+          text: "デバイスの重さ・装着性に関する印象",
           font: { size: 18 }
         }
       },
@@ -620,6 +679,26 @@ function drawWeightfitChart(postSurveys) {
     }
   });
 }
+
+// === device-comment 一覧表示 ===
+function renderDeviceComments(postSurveys) {
+  const valid = postSurveys
+    .filter(p => p["device-comment"] && p["device-comment"].trim() !== ":");
+
+  if (!valid.length) return "<p>コメントなし</p>";
+
+  const rows = valid.map(p =>
+    `<tr><td>${p.name || `ID:${p.id}`}</td><td>${p["device-comment"]}</td></tr>`
+  ).join("");
+
+  return `
+    <h2>3.デバイスについてよかった点・改善してほしい点を教えてください</h2>
+    <table border="1" style="margin:10px auto; border-collapse:collapse; font-size:18px;">
+      <tr><th>名前</th><th>コメント内容</th></tr>
+      ${rows}
+    </table>`;
+}
+
 
 // === 評価結果のわかりやすさ ===
 function drawResultviewChart(postSurveys) {
@@ -662,7 +741,7 @@ function drawResultviewChart(postSurveys) {
         legend: { display: false },
         title: {
           display: true,
-          text: "評価結果のわかりやすさ（事後アンケート）",
+          text: "評価結果のわかりやすさ",
           font: { size: 18 }
         }
       },
@@ -864,6 +943,146 @@ function drawFutureTrickChart(postSurveys) {
     }
   });
 }
+
+// === system-comment 一覧表示 ===
+function renderSystemComments(postSurveys) {
+  const valid = postSurveys
+    .filter(p => p["system-comment"] && p["system-comment"].trim() !== ":");
+
+  if (!valid.length) {
+    return "<p>コメントなし</p>";
+  }
+
+  const rows = valid.map(p =>
+    `<tr><td>${p.name || `ID:${p.id}`}</td><td>${p["system-comment"]}</td></tr>`
+  ).join("");
+
+  return `
+    <h2>8.システムについてよかった点・改善してほしい点を教えてください</h2>
+    <table border="1" style="margin:10px auto; border-collapse:collapse; font-size:18px;">
+      <tr><th>名前</th><th>コメント内容</th></tr>
+      ${rows}
+    </table>`;
+}
+
+// === 総合スコアの統計パネル ===
+function renderScoreSummary(data) {
+  const scores = data.map(d => parseFloat(d.total_score)).filter(s => !isNaN(s));
+  if (!scores.length) return "<p>スコアデータなし</p>";
+
+  const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2);
+  const max = Math.max(...scores).toFixed(1);
+  const min = Math.min(...scores).toFixed(1);
+
+  return `
+    <div style="margin:40px auto; width:80%; text-align:center;">
+      <p style="font-size:22px;">
+        平均：<b>${avg}</b> 点　|　
+        最高：<b>${max}</b> 点　|　
+        最低：<b>${min}</b> 点　|　
+        回答数：${scores.length}
+      </p>
+    </div>
+  `;
+}
+
+
+// === スコア分布ヒストグラム ===
+function drawScoreHistogram(data, container = document.getElementById("scoreSummary")) {
+  const scores = data.map(d => parseFloat(d.total_score)).filter(s => !isNaN(s));
+  if (!scores.length) return;
+
+  const bins = Array(10).fill(0);
+  scores.forEach(s => {
+    const idx = Math.min(9, Math.floor(s / 10));
+    bins[idx]++;
+  });
+
+  const labels = ["0–10", "10–20", "20–30", "30–40", "40–50", "50–60", "60–70", "70–80", "80–90", "90–100"];
+
+  const canvas = document.createElement("canvas");
+  canvas.id = "scoreHistogramChart";
+  canvas.width = 1000;
+  canvas.height = 400;
+  container.appendChild(canvas);
+
+  const ctx = canvas.getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "人数",
+        data: bins,
+        backgroundColor: "rgba(75, 192, 192, 0.7)",
+        borderColor: "rgba(0,0,0,0.2)",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: { display: true, text: "点数分布", font: { size: 18 } },
+        legend: { display: false }
+      },
+      scales: {
+        x: { title: { display: true, text: "スコア範囲" } },
+        y: { title: { display: true, text: "人数" }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+
+
+
+// === 個別スコアランキング（横棒グラフ） ===
+function drawIndividualScores(data, container = document.getElementById("scoreSummary")) {
+  const sorted = data
+    .map(d => ({ name: d.name || `ID:${d.id}`, score: parseFloat(d.total_score) }))
+    .filter(d => !isNaN(d.score))
+    .sort((a, b) => b.score - a.score);
+
+  const labels = sorted.map(d => d.name);
+  const values = sorted.map(d => d.score);
+
+  const canvas = document.createElement("canvas");
+  canvas.id = "scoreRankChart";
+  canvas.width = 1000;
+  canvas.height = labels.length * 30 + 100;
+  container.appendChild(canvas);
+
+  const ctx = canvas.getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "総合評価（点）",
+        data: values,
+        backgroundColor: "rgba(153, 102, 255, 0.7)"
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: false,
+      plugins: {
+        title: { display: true, text: "参加者別点数", font: { size: 18 } },
+        legend: { display: false }
+      },
+      scales: {
+        x: { beginAtZero: true, max: 100, title: { display: true, text: "スコア（点）" } },
+        y: { title: { display: true, text: "参加者名（ID）" } }
+      }
+    }
+  });
+}
+
+
+
+
+
+
 
 
 

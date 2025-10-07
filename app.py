@@ -695,7 +695,7 @@ def get_result_detail(result_id):
         SELECT timestamp,name,score,total_score,radar_chart,pro_distance_mean,
                loop_count,stable_loop,loop_mean_duration,loop_std_duration,
                loop_plot,self_heatmap,pro_heatmap,compare_plot,
-               loop_duration_list,loop_max_acc_list,snap_median,snap_std,pre_survey, post_survey
+               loop_duration_list,loop_max_acc_list,snap_median,snap_std,pre_survey, post_survey, video_url
         FROM results WHERE id=?
     """,(result_id,))
     row=cur.fetchone(); conn.close()
@@ -711,7 +711,8 @@ def get_result_detail(result_id):
         "loop_max_acc_list":json.loads(row[15]),
         "snap_median":row[16],"snap_std":row[17],
         "pre_survey": json.loads(row[18]) if row[18] else None,
-        "post_survey": json.loads(row[19]) if row[19] else None
+        "post_survey": json.loads(row[19]) if row[19] else None,
+        "video_url": row[20] if len(row) > 20 else None  # ✅ 追加
     })
 
 @app.route("/")
@@ -841,6 +842,34 @@ def survey_summary():
         "post": post_all,
         "scores": scores
     })
+
+def add_video_column():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "video_url" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN video_url TEXT")
+        conn.commit()
+    conn.close()
+
+add_video_column()
+
+@app.route("/results/<int:result_id>/video", methods=["PUT"])
+def save_video_url(result_id):
+    data = request.get_json()
+    video_url = data.get("video_url")
+
+    if not video_url:
+        return jsonify({"error": "video_url is required"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("UPDATE results SET video_url = ? WHERE id = ?", (video_url, result_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "saved", "id": result_id, "video_url": video_url})
 
 
 

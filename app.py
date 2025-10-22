@@ -186,17 +186,18 @@ def save_result_to_db(result):
     result["loop_max_acc_list"]  = json.dumps(result.get("loop_max_acc_list", []), ensure_ascii=False)
     cur.execute("""
         INSERT INTO results (
-            timestamp, name, total_score, radar_chart, score, pro_distance_mean,
+            timestamp, name, total_score, radar_chart, score, raw_self_distance, pro_distance_mean,
             loop_count, stable_loop, loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap,
             acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
         result.get("total_score"),
         result.get("radar_chart"),
         result.get("score"),
+        result.get("raw_self_distance"),
         result.get("pro_distance_mean"),
         result.get("loop_count"),
         result.get("stable_loop"),
@@ -577,8 +578,10 @@ def analyze():
         if vals.size > 0 and not np.isnan(vals).any():
             norm = np.zeros_like(vals) if vals.max()==vals.min() else (vals - vals.min())/(vals.max()-vals.min())
             score = float((100*(1.0 - norm)).mean())
+            raw_self_distance = float(np.mean(vals))
         else:
             score = 0.0
+            raw_self_distance = None
 
         # 14: 安定開始ループ検出
         set_progress(task_id, 80, "stable")
@@ -646,6 +649,7 @@ def analyze():
             'radar_chart': radar_b64,
             'total_score': total_score,
             'score': score,
+            'raw_self_distance': raw_self_distance, 
             'loop_count': n,
             'stable_loop': stable_loop,
             'loop_mean_duration': loop_mean_duration,
@@ -718,6 +722,8 @@ def get_result_detail(result_id):
 @app.route("/")
 def index():
     return send_file("index.html")
+
+
 
 @app.route("/results/<int:result_id>/csv", methods=["GET"])
 def download_result_csv(result_id):
@@ -858,6 +864,19 @@ def add_video_column():
     conn.close()
 
 add_video_column()
+
+def add_raw_self_distance_column():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "raw_self_distance" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN raw_self_distance REAL")
+        conn.commit()
+    conn.close()
+
+add_raw_self_distance_column()
+
 
 @app.route("/results/<int:result_id>/video", methods=["PUT"])
 def save_video_url(result_id):

@@ -98,8 +98,8 @@
   <h2>得意不得意とプロ類似度の関係</h2>
   <canvas id="proDistanceSkillChart"></canvas>
 
-  <h2>得意不得意と自身の類似度の関係</h2>
-  <canvas id="selfSkillChart"></canvas>
+  <h2>自己類似度（raw_self_distance）と得意不得意の関係</h2>
+  <canvas id="rawSelfSkillChart"></canvas>
 
 
 
@@ -195,8 +195,12 @@
 
     if (data.post?.length) {
       drawProDistanceSkillChart(data.post);
-      drawSelfSimilaritySkillChart(data.post);
     }
+
+    if (data.post?.length) {
+      drawRawSelfDistanceSkillChart(data.post);
+    }
+
 
 
 
@@ -1474,24 +1478,24 @@ function drawProDistanceSkillChart(postSurveys) {
   });
 }
 
-// === 自身の類似度スコア vs 得意度 ===
-let selfSkillChartInstance = null;
+// === 非正規化自己距離（raw_self_distance） vs 得意度 ===
+let rawSelfSkillChartInstance = null;
 
-function drawSelfSimilaritySkillChart(postSurveys) {
-  if (selfSkillChartInstance) selfSkillChartInstance.destroy();
+function drawRawSelfDistanceSkillChart(postSurveys) {
+  if (rawSelfSkillChartInstance) rawSelfSkillChartInstance.destroy();
 
   const numericData = postSurveys
     .map(s => {
       const skill = parseFloat(s.skill);
-      const score = parseFloat(s.score); // ← 類似度スコア（正規化前）
-      return (!isNaN(skill) && !isNaN(score))
-        ? { x: skill, y: score, id: s.id, name: s.name }
+      const dist = parseFloat(s.raw_self_distance);
+      return (!isNaN(skill) && !isNaN(dist))
+        ? { x: skill, y: dist, id: s.id, name: s.name }
         : null;
     })
     .filter(Boolean);
 
   if (!numericData.length) {
-    console.warn("⚠️ 有効データがありません（skill または score が未記入）");
+    console.warn("⚠️ 有効データがありません（skill または raw_self_distance が未記入）");
     return;
   }
 
@@ -1511,23 +1515,19 @@ function drawSelfSimilaritySkillChart(postSurveys) {
   const denomY = Math.sqrt(numericData.reduce((a, p) => a + (p.y - meanY) ** 2, 0));
   const r = numerator / (denomX * denomY);
 
-  console.log(`✅ 自身類似度 vs skill: y=${slope.toFixed(2)}x+${intercept.toFixed(2)} (r=${r.toFixed(3)})`);
+  console.log(`✅ raw_self_distance vs skill: y=${slope.toFixed(2)}x+${intercept.toFixed(2)} (r=${r.toFixed(3)})`);
 
-  const ctx = document.createElement("canvas");
-  ctx.id = "selfSkillChart";
-  ctx.width = 1000;
-  ctx.height = 500;
-  document.getElementById("proDistanceSkillChart").insertAdjacentElement("afterend", ctx);
-
-  selfSkillChartInstance = new Chart(ctx, {
+  // --- 描画 ---
+  const ctx = document.getElementById("rawSelfSkillChart").getContext("2d");
+  rawSelfSkillChartInstance = new Chart(ctx, {
     type: "scatter",
     data: {
       datasets: [
         {
-          label: "自身類似度 vs 得意度",
+          label: "raw_self_distance vs 得意度",
           data: numericData,
-          backgroundColor: "rgba(54, 162, 235, 0.7)",
-          borderColor: "rgba(54, 162, 235, 1)",
+          backgroundColor: "rgba(153, 102, 255, 0.7)",
+          borderColor: "rgba(153, 102, 255, 1)",
           pointRadius: 7
         },
         {
@@ -1545,11 +1545,19 @@ function drawSelfSimilaritySkillChart(postSurveys) {
       ]
     },
     options: {
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const dataset = rawSelfSkillChartInstance.data.datasets[elements[0].datasetIndex];
+          const point = dataset.data[idx];
+          if (point.id) window.open(`viewer.html?id=${point.id}`, "_blank");
+        }
+      },
       responsive: false,
       plugins: {
         title: {
           display: true,
-          text: `自身の類似度と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
+          text: `非正規化自己距離と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
           font: { size: 18 }
         }
       },
@@ -1565,14 +1573,14 @@ function drawSelfSimilaritySkillChart(postSurveys) {
           title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
         },
         y: {
-          title: { display: true, text: "自身の類似度スコア（正規化前）" },
-          beginAtZero: true,
-          suggestedMax: 100
+          title: { display: true, text: "raw_self_distance（小さいほど安定）" },
+          beginAtZero: true
         }
       }
     }
   });
 }
+
 
 
 

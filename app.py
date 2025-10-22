@@ -813,7 +813,7 @@ def survey_summary():
 
     pre_all, post_all, scores = [], [], []
 
-    for result_id, name, pre, post, score, pro_distance in rows:
+    for result_id, name, pre, post, score, pro_distance, score in rows:
         if pre:
             try:
                 obj = json.loads(pre)

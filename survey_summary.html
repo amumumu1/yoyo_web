@@ -98,6 +98,10 @@
   <h2>得意不得意とプロ類似度の関係</h2>
   <canvas id="proDistanceSkillChart"></canvas>
 
+  <h2>得意不得意と自身の類似度の関係</h2>
+  <canvas id="selfSkillChart"></canvas>
+
+
 
   <div id="summary"></div>
 
@@ -190,7 +194,8 @@
     }
 
     if (data.post?.length) {
-      drawProDistanceSkillChart(data.post); // ← これを追加
+      drawProDistanceSkillChart(data.post);
+      drawSelfSimilaritySkillChart(data.post);
     }
 
 
@@ -1468,6 +1473,107 @@ function drawProDistanceSkillChart(postSurveys) {
     }
   });
 }
+
+// === 自身の類似度スコア vs 得意度 ===
+let selfSkillChartInstance = null;
+
+function drawSelfSimilaritySkillChart(postSurveys) {
+  if (selfSkillChartInstance) selfSkillChartInstance.destroy();
+
+  const numericData = postSurveys
+    .map(s => {
+      const skill = parseFloat(s.skill);
+      const score = parseFloat(s.score); // ← 類似度スコア（正規化前）
+      return (!isNaN(skill) && !isNaN(score))
+        ? { x: skill, y: score, id: s.id, name: s.name }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (!numericData.length) {
+    console.warn("⚠️ 有効データがありません（skill または score が未記入）");
+    return;
+  }
+
+  // --- 回帰直線 ---
+  const n = numericData.length;
+  const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0, den = 0;
+  numericData.forEach(p => {
+    num += (p.x - meanX) * (p.y - meanY);
+    den += (p.x - meanX) ** 2;
+  });
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+  const numerator = numericData.reduce((a, p) => a + (p.x - meanX) * (p.y - meanY), 0);
+  const denomX = Math.sqrt(numericData.reduce((a, p) => a + (p.x - meanX) ** 2, 0));
+  const denomY = Math.sqrt(numericData.reduce((a, p) => a + (p.y - meanY) ** 2, 0));
+  const r = numerator / (denomX * denomY);
+
+  console.log(`✅ 自身類似度 vs skill: y=${slope.toFixed(2)}x+${intercept.toFixed(2)} (r=${r.toFixed(3)})`);
+
+  const ctx = document.createElement("canvas");
+  ctx.id = "selfSkillChart";
+  ctx.width = 1000;
+  ctx.height = 500;
+  document.getElementById("proDistanceSkillChart").insertAdjacentElement("afterend", ctx);
+
+  selfSkillChartInstance = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "自身類似度 vs 得意度",
+          data: numericData,
+          backgroundColor: "rgba(54, 162, 235, 0.7)",
+          borderColor: "rgba(54, 162, 235, 1)",
+          pointRadius: 7
+        },
+        {
+          label: `回帰線（r=${r.toFixed(3)}）`,
+          type: "line",
+          data: [
+            { x: 0, y: slope * 0 + intercept },
+            { x: 5, y: slope * 5 + intercept }
+          ],
+          borderColor: "rgba(0,0,0,0.8)",
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `自身の類似度と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: {
+          type: "linear",
+          min: -0.3,
+          max: 5.3,
+          ticks: {
+            stepSize: 1,
+            callback: (v) => Number.isInteger(v) ? v.toString() : ""
+          },
+          title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
+        },
+        y: {
+          title: { display: true, text: "自身の類似度スコア（正規化前）" },
+          beginAtZero: true,
+          suggestedMax: 100
+        }
+      }
+    }
+  });
+}
+
 
 
 

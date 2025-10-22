@@ -807,7 +807,7 @@ def save_survey(result_id):
 def survey_summary():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, name, pre_survey, post_survey, total_score, pro_distance_mean FROM results")
+    cur.execute("SELECT id, name, pre_survey, post_survey, total_score, pro_distance_mean, score FROM results")
     rows = cur.fetchall()
     conn.close()
 
@@ -820,7 +820,8 @@ def survey_summary():
                 obj["id"] = result_id
                 obj["name"] = name or f"ID:{result_id}"
                 obj["total_score"] = score
-                obj["pro_distance_mean"] = pro_distance  # ← 追加！
+                obj["pro_distance_mean"] = pro_distance
+                obj["score"] = score 
                 pre_all.append(obj)
             except json.JSONDecodeError:
                 pass
@@ -832,12 +833,13 @@ def survey_summary():
                 obj["name"] = name or f"ID:{result_id}"
                 obj["total_score"] = score
                 obj["pro_distance_mean"] = pro_distance
+                obj["score"] = score 
                 post_all.append(obj)
             except json.JSONDecodeError:
                 pass
 
         # スコア配列としても追加（インデックス合わせ用）
-        scores.append({"id": result_id, "total_score": score, "pro_distance_mean": pro_distance})
+        scores.append({"id": result_id, "total_score": score, "pro_distance_mean": pro_distance,"score": score })
 
     return jsonify({
         "pre": pre_all,

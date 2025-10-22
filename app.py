@@ -186,7 +186,7 @@ def save_result_to_db(result):
     result["loop_max_acc_list"]  = json.dumps(result.get("loop_max_acc_list", []), ensure_ascii=False)
     cur.execute("""
         INSERT INTO results (
-            timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean, pro_dist_median,
+            timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean, pro_distance_median,
             loop_count, stable_loop, loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap,
             acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list

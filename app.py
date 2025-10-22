@@ -837,7 +837,7 @@ def survey_summary():
                 pass
 
         # スコア配列としても追加（インデックス合わせ用）
-        scores.append({"id": result_id, "total_score": score})
+        scores.append({"id": result_id, "total_score": score, "pro_distance_mean": pro_distance})
 
     return jsonify({
         "pre": pre_all,

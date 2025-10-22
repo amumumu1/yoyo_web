@@ -186,11 +186,11 @@ def save_result_to_db(result):
     result["loop_max_acc_list"]  = json.dumps(result.get("loop_max_acc_list", []), ensure_ascii=False)
     cur.execute("""
         INSERT INTO results (
-            timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean,
+            timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean, pro_dist_median,
             loop_count, stable_loop, loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap,
             acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
@@ -200,6 +200,7 @@ def save_result_to_db(result):
         result.get("raw_self_distance"),
         result.get("raw_self_median"),
         result.get("pro_distance_mean"),
+        result.get("pro_distance_median"),
         result.get("loop_count"),
         result.get("stable_loop"),
         result.get("loop_mean_duration"),
@@ -630,6 +631,8 @@ def analyze():
         loop_mean_duration = float(np.mean(loop_durations)) if loop_durations else None
         loop_std_duration  = float(np.std(loop_durations))  if loop_durations else None
         pro_dist_mean = float(np.mean(distances[1:])) if len(distances) > 1 else None
+        pro_dist_median = float(np.median(distances)) if len(distances) > 0 else None
+
 
 
         radar_b64, total_score, s_pro_5 = generate_radar_chart(
@@ -663,7 +666,8 @@ def analyze():
             'snap_median': snap_median,
             'snap_std': snap_std,
             'pro_score_100': float(s_pro_5*20),
-            'pro_distance_mean': pro_dist_mean
+            'pro_distance_mean': pro_dist_mean,
+            'pro_distance_median': pro_dist_median
         }
         return jsonify(result)
     except Exception:
@@ -824,7 +828,7 @@ def survey_summary():
     cur = conn.cursor()
     cur.execute("""
         SELECT id, name, pre_survey, post_survey,
-               total_score, pro_distance_mean, score,
+               total_score, pro_distance_mean, pro_distance_median, score,
                raw_self_distance, raw_self_median
         FROM results
     """)
@@ -832,56 +836,56 @@ def survey_summary():
     conn.close()
 
     pre_all, post_all, scores = [], [], []
-    pre_map = {}  # ← id→pre_surveyマップ
+    pre_map = {}  # id → pre_survey
 
-    # ① まず pre_survey を全収集
-    for result_id, name, pre, post, total_score, pro_distance, score, raw_self_distance, raw_self_median in rows:
+    # ① pre_survey を収集
+    for row in rows:
+        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median = row
         if pre:
             try:
-                pre_obj = json.loads(pre)
-                pre_obj.update({
-                    "id": result_id,
-                    "name": name or f"ID:{result_id}",
-                    "total_score": total_score,
-                    "pro_distance_mean": pro_distance,
-                    "score": score,
-                    "raw_self_distance": raw_self_distance,
-                    "raw_self_median": raw_self_median
-                })
-                pre_all.append(pre_obj)
-                pre_map[result_id] = pre_obj
-            except json.JSONDecodeError:
+                pre_json = json.loads(pre)
+                pre_json["id"] = id_
+                pre_all.append(pre_json)
+                pre_map[id_] = pre_json
+            except Exception:
                 pass
 
-    # ② post_survey に skill をマージ
-    for result_id, name, pre, post, total_score, pro_distance, score, raw_self_distance, raw_self_median in rows:
+    # ② post_survey を収集（skill, discomfort, future_trick など）
+    for row in rows:
+        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median = row
         if post:
             try:
-                post_obj = json.loads(post)
-                # preにskillがあれば追加
-                if result_id in pre_map and "skill" in pre_map[result_id]:
-                    post_obj["skill"] = pre_map[result_id]["skill"]
+                post_json = json.loads(post)
+                post_json["id"] = id_
+                post_json["name"] = name
+                post_json["total_score"] = total
+                post_json["pro_distance_mean"] = pro_mean
+                post_json["pro_distance_median"] = pro_median  # ✅ 追加
+                post_json["score"] = score
+                post_json["raw_self_distance"] = raw_self
+                post_json["raw_self_median"] = raw_self_median
 
-                post_obj.update({
-                    "id": result_id,
-                    "name": name or f"ID:{result_id}",
-                    "total_score": total_score,
-                    "pro_distance_mean": pro_distance,
-                    "score": score,
-                    "raw_self_distance": raw_self_distance,
-                    "raw_self_median": raw_self_median
-                })
-                post_all.append(post_obj)
-            except json.JSONDecodeError:
+                # skill は pre_survey と対応
+                pre = pre_map.get(id_)
+                if pre and "skill" in pre:
+                    post_json["skill"] = pre["skill"]
+                else:
+                    post_json["skill"] = None
+
+                post_all.append(post_json)
+            except Exception:
                 pass
 
+    # ③ スコア系だけ抽出（分析・描画用）
+    for row in rows:
+        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median = row
         scores.append({
-            "id": result_id,
-            "total_score": total_score,
-            "pro_distance_mean": pro_distance,
-            "score": score,
-            "raw_self_distance": raw_self_distance,
-            "raw_self_median": raw_self_median
+            "id": id_,
+            "pro_distance_mean": pro_mean,
+            "pro_distance_median": pro_median,  # ✅ 追加
+            "raw_self_distance": raw_self,
+            "raw_self_median": raw_self_median,
+            "total_score": total
         })
 
     return jsonify({
@@ -889,6 +893,7 @@ def survey_summary():
         "post": post_all,
         "scores": scores
     })
+
 
 
 
@@ -927,6 +932,19 @@ def add_raw_self_median_column():
     conn.close()
 
 add_raw_self_median_column()
+
+def add_pro_distance_median_column():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "pro_distance_median" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN pro_distance_median REAL")
+        conn.commit()
+    conn.close()
+
+add_pro_distance_median_column()
+
 
 
 

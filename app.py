@@ -674,6 +674,11 @@ def save_result():
     result = request.get_json()
     if not result:
         return jsonify({"error":"No result data"}),400
+    
+    # --- ここを追加 ---
+    if "raw_self_distance" not in result or result["raw_self_distance"] is None:
+        result["raw_self_distance"] = 0.0  # もしくは default 値 / 再計算
+    # ------------------
     save_result_to_db(result)
     return jsonify({"status":"saved"})
 

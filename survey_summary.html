@@ -197,6 +197,22 @@
 
     }
 
+    // --- post データに raw_self_xx を結合 ---
+    if (data.post?.length && data.scores?.length) {
+      data.post = data.post.map(p => {
+        const s = data.scores.find(x => x.id === p.id);
+        return {
+          ...p,
+          total_score: s?.total_score ?? null,
+          pro_distance_mean: s?.pro_distance_mean ?? null,
+          raw_self_distance: s?.raw_self_distance ?? null,
+          raw_self_median: s?.raw_self_median ?? null
+        };
+      });
+      console.log("✅ merged post sample:", data.post[0]);
+    }
+
+
     if (data.post?.length) {
       drawProDistanceSkillChart(data.post);
       drawRawSelfDistanceSkillChart(data.post);

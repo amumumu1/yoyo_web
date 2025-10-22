@@ -822,47 +822,67 @@ def save_survey(result_id):
 def survey_summary():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, name, pre_survey, post_survey, total_score, pro_distance_mean, raw_self_distance, raw_self_median  FROM results")
+    cur.execute("""
+        SELECT id, name, pre_survey, post_survey,
+               total_score, pro_distance_mean, score,
+               raw_self_distance, raw_self_median
+        FROM results
+    """)
     rows = cur.fetchall()
     conn.close()
 
     pre_all, post_all, scores = [], [], []
 
-    for result_id, name, pre, post, score, pro_distance, raw_self_distance, raw_self_median in rows:
+    for result_id, name, pre, post, total_score, pro_distance, score, raw_self_distance, raw_self_median in rows:
+        pre_obj = None
         if pre:
             try:
-                obj = json.loads(pre)
-                obj["id"] = result_id
-                obj["name"] = name or f"ID:{result_id}"
-                obj["total_score"] = score
-                obj["pro_distance_mean"] = pro_distance
-                obj["raw_self_distance"] = raw_self_distance
-                obj["raw_self_median"] = raw_self_median 
-                pre_all.append(obj)
+                pre_obj = json.loads(pre)
+                pre_obj["id"] = result_id
+                pre_obj["name"] = name or f"ID:{result_id}"
+                pre_obj["total_score"] = total_score
+                pre_obj["pro_distance_mean"] = pro_distance
+                pre_obj["score"] = score
+                pre_obj["raw_self_distance"] = raw_self_distance
+                pre_obj["raw_self_median"] = raw_self_median
+                pre_all.append(pre_obj)
             except json.JSONDecodeError:
                 pass
 
         if post:
             try:
-                obj = json.loads(post)
-                obj["id"] = result_id
-                obj["name"] = name or f"ID:{result_id}"
-                obj["total_score"] = score
-                obj["pro_distance_mean"] = pro_distance
-                obj["raw_self_distance"] = raw_self_distance
-                obj["raw_self_median"] = raw_self_median
-                post_all.append(obj)
+                post_obj = json.loads(post)
+
+                # ✅ skill が pre にある場合は post にコピー
+                if pre_obj and "skill" in pre_obj:
+                    post_obj["skill"] = pre_obj["skill"]
+
+                post_obj["id"] = result_id
+                post_obj["name"] = name or f"ID:{result_id}"
+                post_obj["total_score"] = total_score
+                post_obj["pro_distance_mean"] = pro_distance
+                post_obj["score"] = score
+                post_obj["raw_self_distance"] = raw_self_distance
+                post_obj["raw_self_median"] = raw_self_median
+                post_all.append(post_obj)
             except json.JSONDecodeError:
                 pass
 
-        # スコア配列としても追加（インデックス合わせ用）
-        scores.append({"id": result_id, "total_score": score, "pro_distance_mean": pro_distance, "raw_self_distance": raw_self_distance, "raw_self_median": raw_self_median})
+        scores.append({
+            "id": result_id,
+            "total_score": total_score,
+            "pro_distance_mean": pro_distance,
+            "score": score,
+            "raw_self_distance": raw_self_distance,
+            "raw_self_median": raw_self_median
+        })
 
     return jsonify({
         "pre": pre_all,
         "post": post_all,
         "scores": scores
     })
+
 
 def add_video_column():
     conn = sqlite3.connect(DB_PATH)

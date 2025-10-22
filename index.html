@@ -1264,6 +1264,7 @@
         const name = document.getElementById('resultName').value.trim() || t('untitled');
         const accCsv  = 'time,x,y,z\n'+acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         const gyroCsv = 'time,x,y,z\n'+gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
+        console.log("raw_self_distance:", lastResult.raw_self_distance);
         const res = await fetch(`${API_ROOT}/save_result`,{
           method:'POST', headers:{'Content-Type':'application/json'},
           body:JSON.stringify({...lastResult,name,acc_csv:accCsv,gyro_csv:gyroCsv})

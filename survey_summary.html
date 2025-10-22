@@ -98,8 +98,12 @@
   <h2>得意不得意とプロ類似度の関係</h2>
   <canvas id="proDistanceSkillChart"></canvas>
 
-  <h2>自己類似度（raw_self_distance）と得意不得意の関係</h2>
+  <h2>自己類似度（距離行列の平均値）と得意不得意の関係</h2>
   <canvas id="rawSelfSkillChart"></canvas>
+
+  <h2>自己類似度（距離行列の中央値）と得意不得意の関係</h2>
+  <canvas id="rawSelfMedianSkillChart"></canvas>
+
 
 
 
@@ -195,11 +199,11 @@
 
     if (data.post?.length) {
       drawProDistanceSkillChart(data.post);
+      drawRawSelfDistanceSkillChart(data.post);
+      drawRawSelfMedianSkillChart(data.post);
     }
 
-    if (data.post?.length) {
-      drawRawSelfDistanceSkillChart(data.post);
-    }
+ 
 
 
 
@@ -1053,6 +1057,7 @@ function drawScoreHistogram(data, container = document.getElementById("scoreSumm
 
 
 
+
 // === 個別スコアランキング（横棒グラフ） ===
 function drawIndividualScores(data, container = document.getElementById("scoreSummary")) {
   const sorted = data
@@ -1580,6 +1585,97 @@ function drawRawSelfDistanceSkillChart(postSurveys) {
     }
   });
 }
+
+let rawSelfMedianSkillChartInstance = null;
+
+function drawRawSelfMedianSkillChart(postSurveys) {
+  if (rawSelfMedianSkillChartInstance) rawSelfMedianSkillChartInstance.destroy();
+
+  const numericData = postSurveys
+    .map(s => {
+      const skill = parseFloat(s.skill);
+      const dist = parseFloat(s.raw_self_median);
+      return (!isNaN(skill) && !isNaN(dist))
+        ? { x: skill, y: dist, id: s.id, name: s.name }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (!numericData.length) {
+    console.warn("⚠️ 有効データがありません（skill または raw_self_median が未記入）");
+    return;
+  }
+
+  const n = numericData.length;
+  const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0, den = 0;
+  numericData.forEach(p => {
+    num += (p.x - meanX) * (p.y - meanY);
+    den += (p.x - meanX) ** 2;
+  });
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+  const numerator = numericData.reduce((a, p) => a + (p.x - meanX) * (p.y - meanY), 0);
+  const denomX = Math.sqrt(numericData.reduce((a, p) => a + (p.x - meanX) ** 2, 0));
+  const denomY = Math.sqrt(numericData.reduce((a, p) => a + (p.y - meanY) ** 2, 0));
+  const r = numerator / (denomX * denomY);
+
+  console.log(`✅ raw_self_median vs skill: y=${slope.toFixed(2)}x+${intercept.toFixed(2)} (r=${r.toFixed(3)})`);
+
+  const ctx = document.getElementById("rawSelfMedianSkillChart").getContext("2d");
+  rawSelfMedianSkillChartInstance = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "raw_self_median vs 得意度",
+          data: numericData,
+          backgroundColor: "rgba(100, 200, 255, 0.7)",
+          borderColor: "rgba(100, 200, 255, 1)",
+          pointRadius: 7
+        },
+        {
+          label: `回帰線（r=${r.toFixed(3)}）`,
+          type: "line",
+          data: [
+            { x: 0, y: slope * 0 + intercept },
+            { x: 5, y: slope * 5 + intercept }
+          ],
+          borderColor: "rgba(0,0,0,0.8)",
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      onClick: (evt, elements) => {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const dataset = rawSelfMedianSkillChartInstance.data.datasets[elements[0].datasetIndex];
+          const point = dataset.data[idx];
+          if (point.id) window.open(`viewer.html?id=${point.id}`, "_blank");
+        }
+      },
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `非正規化自己距離（中央値）と得意不得意の関係（r=${r.toFixed(3)})`,
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: { type: "linear", min: -0.3, max: 5.3, ticks: { stepSize: 1 },
+             title: { display: true, text: "得意不得意（0=苦手, 5=得意）" } },
+        y: { title: { display: true, text: "raw_self_median（小さいほど安定）" },
+             beginAtZero: true }
+      }
+    }
+  });
+}
+
 
 
 

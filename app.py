@@ -807,19 +807,20 @@ def save_survey(result_id):
 def survey_summary():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT id, name, pre_survey, post_survey, total_score FROM results")
+    cur.execute("SELECT id, name, pre_survey, post_survey, total_score, pro_distance_mean FROM results")
     rows = cur.fetchall()
     conn.close()
 
     pre_all, post_all, scores = [], [], []
 
-    for result_id, name, pre, post, score in rows:
+    for result_id, name, pre, post, score, pro_distance in rows:
         if pre:
             try:
                 obj = json.loads(pre)
                 obj["id"] = result_id
                 obj["name"] = name or f"ID:{result_id}"
                 obj["total_score"] = score
+                obj["pro_distance_mean"] = pro_distance  # ← 追加！
                 pre_all.append(obj)
             except json.JSONDecodeError:
                 pass
@@ -830,6 +831,7 @@ def survey_summary():
                 obj["id"] = result_id
                 obj["name"] = name or f"ID:{result_id}"
                 obj["total_score"] = score
+                obj["pro_distance_mean"] = pro_distance
                 post_all.append(obj)
             except json.JSONDecodeError:
                 pass

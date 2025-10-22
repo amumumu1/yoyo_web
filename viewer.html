@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
           container.innerHTML += `
             <div id="video-preview-${id}" style="margin-top:20px;">
               <h3>アップロードされた動画</h3>
-              <iframe width="560" height="315"
+              <iframe width="900" height="500"
                 src="https://www.youtube.com/embed/${youtubeId}"
                 title="YouTube video player"
                 frameborder="0"
@@ -543,55 +543,84 @@ document.addEventListener("DOMContentLoaded", () => {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
-  // id付きでアクセスした場合 → その履歴だけを全画面表示
-  if (id) {
-    const container = document.getElementById("history");
-    container.innerHTML = "<p>読み込み中...</p>";
+ // id付きでアクセスした場合 → その履歴だけを全画面表示
+if (id) {
+  const container = document.getElementById("history");
+  container.innerHTML = "<p>読み込み中...</p>";
 
-    try {
-      const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
-      if (!res.ok) throw new Error("データ取得に失敗");
-      const detail = await res.json();
+  try {
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
+    if (!res.ok) throw new Error("データ取得に失敗");
+    const detail = await res.json();
 
-      // --- 詳細のみ表示 ---
-      container.innerHTML = `
-        <div class="result">
-          <p>${detail.timestamp ?? ""}</p>
-          <p>${detail.name ?? "無題"}</p>
-          <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + "点" : "なし"}</p>
+    // --- YouTube ID 抽出用関数 ---
+    const extractYouTubeId = (url) => {
+      const regExp = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S*?v=|v\/|embed\/|shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const match = url?.match(regExp);
+      return match ? match[1] : null;
+    };
 
-          ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">` : ""}
-          <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
-          <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : "なし"}</p>
-          <p>ループ数: ${detail.loop_count ?? "なし"}</p>
-          <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + "周目" : "なし"}</p>
-          <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : "-"} 秒</p>
-          <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : "-"} 秒</p>
-          <p>手首を返す強さ（中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : "-"} 秒</p>
-          <p>手首を返す強さ（ばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : "-"} 秒</p>
-          <pre style="font-size: 30px; white-space: pre-wrap;">${Array.isArray(detail.loop_duration_list) ? detail.loop_duration_list.join("\n") : ""}</pre>
-          ${detail.loop_plot ? `<img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">` : ""}
-          <div class="heatmap-row">
-            ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}"></div>` : ""}
-            ${detail.pro_heatmap ? `<div><h4>プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}"></div>` : ""}
+    // --- 動画埋め込みHTML ---
+    let videoHTML = "";
+    if (detail.video_url) {
+      const youtubeId = extractYouTubeId(detail.video_url);
+      if (youtubeId) {
+        videoHTML = `
+          <div style="margin-top:20px;">
+            <h3>アップロードされた動画</h3>
+            <iframe width="800" height="500"
+              src="https://www.youtube.com/embed/${youtubeId}"
+              title="YouTube video player"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
           </div>
-
-          ${detail.pre_survey ? renderSurveyTable("事前アンケート結果", detail.pre_survey) : ""}
-          ${detail.post_survey ? renderSurveyTable("事後アンケート結果", detail.post_survey) : ""}
-
-          <button onclick="window.location.href='viewer.html'">一覧に戻る</button>
-          <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">CSVをダウンロード</button>
-          <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">この結果を削除</button>
-        </div>
-      `;
-    } catch (e) {
-      console.error(e);
-      container.innerHTML = "<p>データの読み込みに失敗しました。</p>";
+        `;
+      }
     }
-  } else {
-    // 通常時 → 一覧を表示
-    fetchHistory();
+
+    // --- 詳細のみ表示 ---
+    container.innerHTML = `
+      <div class="result">
+        <p>${detail.timestamp ?? ""}</p>
+        <p>${detail.name ?? "無題"}</p>
+        <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + "点" : "なし"}</p>
+
+        ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">` : ""}
+        <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
+        <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : "なし"}</p>
+        <p>ループ数: ${detail.loop_count ?? "なし"}</p>
+        <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + "周目" : "なし"}</p>
+        <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : "-"} 秒</p>
+        <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : "-"} 秒</p>
+        <p>手首を返す強さ（中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : "-"} 秒</p>
+        <p>手首を返す強さ（ばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : "-"} 秒</p>
+        <pre style="font-size: 30px; white-space: pre-wrap;">${Array.isArray(detail.loop_duration_list) ? detail.loop_duration_list.join("\n") : ""}</pre>
+        ${detail.loop_plot ? `<img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">` : ""}
+        <div class="heatmap-row">
+          ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}"></div>` : ""}
+          ${detail.pro_heatmap ? `<div><h4>プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}"></div>` : ""}
+        </div>
+
+        ${detail.pre_survey ? renderSurveyTable("事前アンケート結果", detail.pre_survey) : ""}
+        ${detail.post_survey ? renderSurveyTable("事後アンケート結果", detail.post_survey) : ""}
+
+        ${videoHTML}  <!-- 👈 ここで動画を埋め込み表示 -->
+
+        <button onclick="window.location.href='viewer.html'">一覧に戻る</button>
+        <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">CSVをダウンロード</button>
+        <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">この結果を削除</button>
+      </div>
+    `;
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = "<p>データの読み込みに失敗しました。</p>";
   }
+} else {
+  // 通常時 → 一覧を表示
+  fetchHistory();
+}
+
 });
 
 function extractYouTubeId(url) {
@@ -624,7 +653,7 @@ async function uploadVideo(id) {
     container.innerHTML += `
       <div id="video-preview-${id}" style="margin-top:20px;">
         <h3>アップロードされた動画</h3>
-        <iframe width="560" height="315"
+        <iframe width="800" height="500"
           src="https://www.youtube.com/embed/${youtubeId}"
           title="YouTube video player"
           frameborder="0"

@@ -824,8 +824,6 @@ def save_survey(result_id):
 
 @app.route("/survey_summary", methods=["GET"])
 def survey_summary():
-
-    
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("""

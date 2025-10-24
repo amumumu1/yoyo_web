@@ -824,6 +824,11 @@ def save_survey(result_id):
 
 @app.route("/survey_summary", methods=["GET"])
 def survey_summary():
+
+    # survey_summary() 内で
+    loop_std = loop_std or 0.0
+    snap_std = snap_std or 0.0
+
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     cur.execute("""

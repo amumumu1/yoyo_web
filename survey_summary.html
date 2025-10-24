@@ -95,8 +95,6 @@
   <h2>得意不得意とスコアの関係</h2>
   <canvas id="skillScoreChart"></canvas>
 
-  <h2>得意不得意とプロ類似度の関係</h2>
-  <canvas id="proDistanceSkillChart"></canvas>
 
   <h2>自己類似度（距離行列の平均値）と得意不得意の関係</h2>
   <canvas id="rawSelfSkillChart"></canvas>
@@ -104,8 +102,18 @@
   <h2>自己類似度（距離行列の中央値）と得意不得意の関係</h2>
   <canvas id="rawSelfMedianSkillChart"></canvas>
 
-  <h2>プロ類似度（中央値）と得意不得意の関係</h2>
+  <h2>プロ類似度（距離行列の平均値 vs プロの代表ループ）と得意不得意の関係</h2>
+  <canvas id="proDistanceSkillChart"></canvas>
+
+  <h2>プロ類似度（距離行列の中央値 vs プロの代表ループ）と得意不得意の関係</h2>
   <canvas id="proMedianSkillChart"></canvas>
+
+  <h2>ループ時間のばらつきと得意不得意の関係</h2>
+  <canvas id="loopStdSkillChart" width="1000" height="400"></canvas>
+
+  <h2>スナップのばらつきと得意不得意の関係</h2>
+  <canvas id="snapStdSkillChart" width="1000" height="400"></canvas>
+
 
 
 
@@ -223,6 +231,12 @@
       drawRawSelfDistanceSkillChart(data.post);
       drawRawSelfMedianSkillChart(data.post);
     }
+
+    if (data.post?.length) {
+      drawLoopStdSkillChart(data.post);
+      drawSnapStdSkillChart(data.post);
+    }
+
 
  
 
@@ -1479,7 +1493,7 @@ function drawProDistanceSkillChart(postSurveys) {
       plugins: {
         title: {
           display: true,
-          text: `プロ距離と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
+          text: `プロ類似度（平均値）と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
           font: { size: 18 }
         },
         legend: { labels: { boxWidth: 20 } }
@@ -1496,7 +1510,7 @@ function drawProDistanceSkillChart(postSurveys) {
           title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
         },
         y: {
-          title: { display: true, text: "プロ距離（小さいほど類似）" },
+          title: { display: true, text: "プロとの距離（小さいほど類似）" },
           beginAtZero: true
         }
       }
@@ -1550,7 +1564,7 @@ function drawRawSelfDistanceSkillChart(postSurveys) {
     data: {
       datasets: [
         {
-          label: "raw_self_distance vs 得意度",
+          label: "自己類似度（平均） vs 得意度",
           data: numericData,
           backgroundColor: "rgba(153, 102, 255, 0.7)",
           borderColor: "rgba(153, 102, 255, 1)",
@@ -1583,7 +1597,7 @@ function drawRawSelfDistanceSkillChart(postSurveys) {
       plugins: {
         title: {
           display: true,
-          text: `非正規化自己距離と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
+          text: `自己類似度（平均）と得意不得意の関係（r=${r.toFixed(3)} / 回帰式: y=${slope.toFixed(2)}x+${intercept.toFixed(2)}）`,
           font: { size: 18 }
         }
       },
@@ -1599,7 +1613,7 @@ function drawRawSelfDistanceSkillChart(postSurveys) {
           title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
         },
         y: {
-          title: { display: true, text: "raw_self_distance（小さいほど安定）" },
+          title: { display: true, text: "自己距離（小さいほど類似）" },
           beginAtZero: true
         }
       }
@@ -1650,7 +1664,7 @@ function drawRawSelfMedianSkillChart(postSurveys) {
     data: {
       datasets: [
         {
-          label: "raw_self_median vs 得意度",
+          label: "自己類似度（中央値） vs 得意度",
           data: numericData,
           backgroundColor: "rgba(100, 200, 255, 0.7)",
           borderColor: "rgba(100, 200, 255, 1)",
@@ -1683,14 +1697,14 @@ function drawRawSelfMedianSkillChart(postSurveys) {
       plugins: {
         title: {
           display: true,
-          text: `非正規化自己距離（中央値）と得意不得意の関係（r=${r.toFixed(3)})`,
+          text: `自己類似度（中央値）と得意不得意の関係（r=${r.toFixed(3)})`,
           font: { size: 18 }
         }
       },
       scales: {
         x: { type: "linear", min: -0.3, max: 5.3, ticks: { stepSize: 1 },
              title: { display: true, text: "得意不得意（0=苦手, 5=得意）" } },
-        y: { title: { display: true, text: "raw_self_median（小さいほど安定）" },
+        y: { title: { display: true, text: "自己距離（小さいほど類似）" },
              beginAtZero: true }
       }
     }
@@ -1735,7 +1749,7 @@ function drawProMedianSkillChart(postSurveys) {
     data: {
       datasets: [
         {
-          label: "プロ距離（中央値） vs 得意度",
+          label: "プロ類似度（中央値） vs 得意度",
           data: numericData,
           backgroundColor: "rgba(255, 206, 86, 0.7)",
           borderColor: "rgba(255, 206, 86, 1)",
@@ -1764,7 +1778,7 @@ function drawProMedianSkillChart(postSurveys) {
       plugins: {
         title: {
           display: true,
-          text: `プロ距離（中央値）と得意不得意の関係（r=${r.toFixed(3)})`,
+          text: `プロ類似度（中央値）と得意不得意の関係（r=${r.toFixed(3)})`,
           font: { size: 18 }
         }
       },
@@ -1776,13 +1790,159 @@ function drawProMedianSkillChart(postSurveys) {
           title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
         },
         y: {
-          title: { display: true, text: "プロ距離（中央値, 小さいほど類似）" },
+          title: { display: true, text: "プロとの距離（小さいほど類似）" },
           beginAtZero: true
         }
       }
     }
   });
 }
+
+
+let loopStdSkillChartInstance = null;
+function drawLoopStdSkillChart(postSurveys) {
+  if (loopStdSkillChartInstance) loopStdSkillChartInstance.destroy();
+
+  const numericData = postSurveys
+    .map(s => {
+      const skill = parseFloat(s.skill);
+      const loopStd = parseFloat(s.loop_std_duration);
+      return (!isNaN(skill) && !isNaN(loopStd))
+        ? { x: skill, y: loopStd, id: s.id, name: s.name }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (!numericData.length) {
+    console.warn("⚠️ データ不足（skill または loop_std_duration 欠落）");
+    return;
+  }
+
+  // --- 回帰線 ---
+  const n = numericData.length;
+  const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0, den = 0;
+  numericData.forEach(p => { num += (p.x - meanX)*(p.y - meanY); den += (p.x - meanX)**2; });
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+  const r = num / Math.sqrt(den * numericData.reduce((a,p)=>a+(p.y-meanY)**2,0));
+
+  const ctx = document.getElementById("loopStdSkillChart").getContext("2d");
+  loopStdSkillChartInstance = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "ループ時間のばらつき vs 得意度",
+          data: numericData,
+          backgroundColor: "rgba(54, 162, 235, 0.7)"
+        },
+        {
+          label: `回帰線（r=${r.toFixed(3)}）`,
+          type: "line",
+          data: [{x:0,y:intercept},{x:5,y:slope*5+intercept}],
+          borderColor: "rgba(0,0,0,0.8)",
+          borderWidth: 2,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      onClick: (evt, el) => {
+        if (el.length > 0) {
+          const id = numericData[el[0].index].id;
+          if (id) window.open(`viewer.html?id=${id}`, "_blank");
+        }
+      },
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `ループ時間のばらつきと得意不得意の関係（r=${r.toFixed(3)})`,
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: { type: "linear", min:-0.3, max:5.3, ticks:{stepSize:1}, title:{display:true,text:"得意不得意（0=苦手,5=得意）"} },
+        y: { title:{display:true,text:"ループ時間の標準偏差 [s]（小さいほど安定）"}, beginAtZero:true }
+      }
+    }
+  });
+}
+
+let snapStdSkillChartInstance = null;
+function drawSnapStdSkillChart(postSurveys) {
+  if (snapStdSkillChartInstance) snapStdSkillChartInstance.destroy();
+
+  const numericData = postSurveys
+    .map(s => {
+      const skill = parseFloat(s.skill);
+      const snapStd = parseFloat(s.snap_std);
+      return (!isNaN(skill) && !isNaN(snapStd))
+        ? { x: skill, y: snapStd, id: s.id, name: s.name }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (!numericData.length) {
+    console.warn("⚠️ データ不足（skill または snap_std 欠落）");
+    return;
+  }
+
+  const n = numericData.length;
+  const meanX = numericData.reduce((a, p) => a + p.x, 0) / n;
+  const meanY = numericData.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0, den = 0;
+  numericData.forEach(p => { num += (p.x - meanX)*(p.y - meanY); den += (p.x - meanX)**2; });
+  const slope = num / den;
+  const intercept = meanY - slope * meanX;
+  const r = num / Math.sqrt(den * numericData.reduce((a,p)=>a+(p.y-meanY)**2,0));
+
+  const ctx = document.getElementById("snapStdSkillChart").getContext("2d");
+  snapStdSkillChartInstance = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "スナップのばらつき vs 得意度",
+          data: numericData,
+          backgroundColor: "rgba(255, 99, 132, 0.7)"
+        },
+        {
+          label: `回帰線（r=${r.toFixed(3)}）`,
+          type: "line",
+          data: [{x:0,y:intercept},{x:5,y:slope*5+intercept}],
+          borderColor: "rgba(0,0,0,0.8)",
+          borderWidth: 2,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      onClick: (evt, el) => {
+        if (el.length > 0) {
+          const id = numericData[el[0].index].id;
+          if (id) window.open(`viewer.html?id=${id}`, "_blank");
+        }
+      },
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: `スナップのばらつきと得意不得意の関係（r=${r.toFixed(3)})`,
+          font: { size: 18 }
+        }
+      },
+      scales: {
+        x: { type: "linear", min:-0.3, max:5.3, ticks:{stepSize:1}, title:{display:true,text:"得意不得意（0=苦手,5=得意）"} },
+        y: { title:{display:true,text:"スナップ標準偏差 [m/s²]（小さいほど安定）"}, beginAtZero:true }
+      }
+    }
+  });
+}
+
+
 
 
 

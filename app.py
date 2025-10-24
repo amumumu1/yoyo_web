@@ -829,7 +829,7 @@ def survey_summary():
     cur.execute("""
         SELECT id, name, pre_survey, post_survey,
                total_score, pro_distance_mean, pro_distance_median, score,
-               raw_self_distance, raw_self_median
+               raw_self_distance, raw_self_median, loop_std_duration, snap_std
         FROM results
     """)
     rows = cur.fetchall()
@@ -840,7 +840,7 @@ def survey_summary():
 
     # ① pre_survey を収集
     for row in rows:
-        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median = row
+        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median, loop_std, snap_std = row
         if pre:
             try:
                 pre_json = json.loads(pre)
@@ -852,7 +852,7 @@ def survey_summary():
 
     # ② post_survey を収集（skill, discomfort, future_trick など）
     for row in rows:
-        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median = row
+        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median, loop_std, snap_std = row
         if post:
             try:
                 post_json = json.loads(post)
@@ -864,6 +864,9 @@ def survey_summary():
                 post_json["score"] = score
                 post_json["raw_self_distance"] = raw_self
                 post_json["raw_self_median"] = raw_self_median
+                post_json["loop_std_duration"] = loop_std
+                post_json["snap_std"] = snap_std
+                
 
                 # skill は pre_survey と対応
                 pre = pre_map.get(id_)
@@ -885,6 +888,8 @@ def survey_summary():
             "pro_distance_median": pro_median,  # ✅ 追加
             "raw_self_distance": raw_self,
             "raw_self_median": raw_self_median,
+            "loop_std_duration": loop_std,
+            "snap_std": snap_std,
             "total_score": total
         })
 

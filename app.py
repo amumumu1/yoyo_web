@@ -881,17 +881,23 @@ def survey_summary():
 
     # ③ スコア系だけ抽出（分析・描画用）
     for row in rows:
-        id_, name, pre, post, total, pro_mean, pro_median, score, raw_self, raw_self_median = row
+        (
+            id_, name, pre, post,
+            total, pro_mean, pro_median, score,
+            raw_self, raw_self_median, loop_std, snap_std
+        ) = row
+
         scores.append({
             "id": id_,
             "pro_distance_mean": pro_mean,
-            "pro_distance_median": pro_median,  # ✅ 追加
+            "pro_distance_median": pro_median,
             "raw_self_distance": raw_self,
             "raw_self_median": raw_self_median,
             "loop_std_duration": loop_std,
             "snap_std": snap_std,
             "total_score": total
         })
+
 
     return jsonify({
         "pre": pre_all,

@@ -99,8 +99,8 @@
   <h2>自己類似度（距離行列の平均値）と得意不得意の関係</h2>
   <canvas id="rawSelfSkillChart"></canvas>
 
-  <h2>自己類似度（距離行列の中央値）と得意不得意の関係</h2>
-  <canvas id="rawSelfMedianSkillChart"></canvas>
+  <!-- <h2>自己類似度（距離行列の中央値）と得意不得意の関係</h2>
+  <canvas id="rawSelfMedianSkillChart"></canvas> -->
 
   <h2>プロ類似度（距離行列の平均値 vs プロの代表ループ）と得意不得意の関係</h2>
   <canvas id="proDistanceSkillChart"></canvas>
@@ -108,11 +108,14 @@
   <h2>プロ類似度（距離行列の中央値 vs プロの代表ループ）と得意不得意の関係</h2>
   <canvas id="proMedianSkillChart"></canvas>
 
+  <h2>自己類似度（距離行列の中央値）と得意不得意の関係</h2>
+  <canvas id="rawSelfMedianSkillChart" width="1000" height="600"></canvas>
+
   <h2>ループ時間のばらつきと得意不得意の関係</h2>
-  <canvas id="loopStdSkillChart" width="1000" height="400"></canvas>
+  <canvas id="loopStdSkillChart" width="1000" height="600"></canvas>
 
   <h2>スナップのばらつきと得意不得意の関係</h2>
-  <canvas id="snapStdSkillChart" width="1000" height="400"></canvas>
+  <canvas id="snapStdSkillChart" width="1000" height="600"></canvas>
 
 
 
@@ -1395,7 +1398,7 @@ function drawSkillScoreChart(preSurveys) {
             },
             title: {
             display: true,
-            text: "得意不得意（0=苦手, 5=得意）"
+            text: "得意不得意（0=不得意, 5=得意）"
             }
         },
         y: {
@@ -1507,7 +1510,7 @@ function drawProDistanceSkillChart(postSurveys) {
             stepSize: 1,
             callback: (v) => Number.isInteger(v) ? v.toString() : ""
           },
-          title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
+          title: { display: true, text: "得意不得意（0=不得意, 5=得意）" }
         },
         y: {
           title: { display: true, text: "プロとの距離（小さいほど類似）" },
@@ -1568,7 +1571,7 @@ function drawRawSelfDistanceSkillChart(postSurveys) {
           data: numericData,
           backgroundColor: "rgba(153, 102, 255, 0.7)",
           borderColor: "rgba(153, 102, 255, 1)",
-          pointRadius: 7
+          pointRadius: 5
         },
         {
           label: `回帰線（r=${r.toFixed(3)}）`,
@@ -1610,10 +1613,10 @@ function drawRawSelfDistanceSkillChart(postSurveys) {
             stepSize: 1,
             callback: (v) => Number.isInteger(v) ? v.toString() : ""
           },
-          title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
+          title: { display: true, text: "得意不得意（0=不得意, 5=得意）" }
         },
         y: {
-          title: { display: true, text: "自己距離（小さいほど類似）" },
+          title: { display: true, text: "ループ間の類似度距離の中央値（小さいほど類似）" },
           beginAtZero: true
         }
       }
@@ -1666,9 +1669,10 @@ function drawRawSelfMedianSkillChart(postSurveys) {
         {
           label: "自己類似度（中央値） vs 得意度",
           data: numericData,
-          backgroundColor: "rgba(100, 200, 255, 0.7)",
+          backgroundColor: "rgba(54, 162, 235, 0.7)",
           borderColor: "rgba(100, 200, 255, 1)",
-          pointRadius: 7
+          pointRadius: 5,
+          pointStyle: 'circle'
         },
         {
           label: `回帰線（r=${r.toFixed(3)}）`,
@@ -1702,10 +1706,26 @@ function drawRawSelfMedianSkillChart(postSurveys) {
         }
       },
       scales: {
-        x: { type: "linear", min: -0.3, max: 5.3, ticks: { stepSize: 1 },
-             title: { display: true, text: "得意不得意（0=苦手, 5=得意）" } },
-        y: { title: { display: true, text: "自己距離（小さいほど類似）" },
-             beginAtZero: true }
+        x: {
+          type: "linear",
+          // min: -0.3,
+          // max: 5.3,
+          ticks: {
+            stepSize: 1,
+            font: { size: 20 } ,
+            callback: (v) => Number.isInteger(v) ? v.toString() : ""
+          },
+          title: { display: true, text: "得意不得意（0=不得意, 5=得意）", font: { size: 18 } }
+        },
+        y: {
+          title: {
+            display: true,
+            text: "ループ間の類似度距離の中央値（小さいほど類似）",
+            font: { size: 20 }   // ← Y軸ラベル
+          },
+          ticks: { font: { size: 20 } },  // ← Y軸目盛り
+          beginAtZero: true
+        }
       }
     }
   });
@@ -1779,7 +1799,7 @@ function drawProMedianSkillChart(postSurveys) {
         title: {
           display: true,
           text: `プロ類似度（中央値）と得意不得意の関係（r=${r.toFixed(3)})`,
-          font: { size: 18 }
+          font: { size: 20 }
         }
       },
       scales: {
@@ -1787,10 +1807,16 @@ function drawProMedianSkillChart(postSurveys) {
           type: "linear",
           min: -0.3, max: 5.3,
           ticks: { stepSize: 1 },
-          title: { display: true, text: "得意不得意（0=苦手, 5=得意）" }
+          font: { size: 20 },
+          title: { display: true, text: "得意不得意（0=不得意, 5=得意）" }
         },
         y: {
-          title: { display: true, text: "プロとの距離（小さいほど類似）" },
+          title: {
+            display: true,
+            text: "プロとの距離（小さいほど類似）",
+            font: { size: 20 }   // ← Y軸ラベル
+          },
+          ticks: { font: { size: 20 } },  // ← Y軸目盛り
           beginAtZero: true
         }
       }
@@ -1836,7 +1862,9 @@ function drawLoopStdSkillChart(postSurveys) {
         {
           label: "ループ時間のばらつき vs 得意度",
           data: numericData,
-          backgroundColor: "rgba(54, 162, 235, 0.7)"
+          backgroundColor: "rgba(54, 162, 235, 0.7)",
+          pointRadius: 5,
+          pointStyle: 'circle'
         },
         {
           label: `回帰線（r=${r.toFixed(3)}）`,
@@ -1859,13 +1887,37 @@ function drawLoopStdSkillChart(postSurveys) {
       plugins: {
         title: {
           display: true,
-          text: `ループ時間のばらつきと得意不得意の関係（r=${r.toFixed(3)})`,
-          font: { size: 18 }
+          // text: `ループ時間のばらつきと得意不得意の関係（r=${r.toFixed(3)})`,
+          // font: { size: 20 }
+        },
+        legend: {
+          labels: {
+            usePointStyle: true,  // ← ポイントの形状を凡例にも反映
+            pointStyle: 'circle'  // ← 丸にする
+          }
         }
       },
       scales: {
-        x: { type: "linear", min:-0.3, max:5.3, ticks:{stepSize:1}, title:{display:true,text:"得意不得意（0=苦手,5=得意）"} },
-        y: { title:{display:true,text:"ループ時間の標準偏差 [s]（小さいほど安定）"}, beginAtZero:true }
+        x: {
+          type: "linear",
+          // min: -0.3,
+          // max: 5.3,
+          ticks: {
+            stepSize: 1,
+            font: { size: 20 },
+            callback: (v) => Number.isInteger(v) ? v.toString() : ""
+          },
+          title: { display: true, text: "得意不得意（0=不得意, 5=得意）", font: { size: 18 } }
+        },
+        y: {
+          title: {
+            display: true,
+            text: "ループ時間のばらつき（標準偏差）[s]",
+            font: { size: 20 }   // ← Y軸ラベル
+          },
+          ticks: { font: { size: 20 } },  // ← Y軸目盛り
+          beginAtZero: true
+        }
       }
     }
   });
@@ -1905,12 +1957,14 @@ function drawSnapStdSkillChart(postSurveys) {
     data: {
       datasets: [
         {
-          label: "スナップのばらつき vs 得意度",
+          label: "スナップ安定性と得意度の関係",
           data: numericData,
-          backgroundColor: "rgba(255, 99, 132, 0.7)"
+          backgroundColor: "rgba(54, 162, 235, 0.7)",
+          pointRadius: 5,
+          pointStyle: 'circle'
         },
         {
-          label: `回帰線（r=${r.toFixed(3)}）`,
+          label: ` 回帰線（r=${r.toFixed(3)}）`,
           type: "line",
           data: [{x:0,y:intercept},{x:5,y:slope*5+intercept}],
           borderColor: "rgba(0,0,0,0.8)",
@@ -1930,28 +1984,57 @@ function drawSnapStdSkillChart(postSurveys) {
       plugins: {
         title: {
           display: true,
-          text: `スナップのばらつきと得意不得意の関係（r=${r.toFixed(3)})`,
-          font: { size: 18 }
+          // text: `スナップのばらつきと得意不得意の関係（r=${r.toFixed(3)})`,
+          // font: { size: 22 }   // ← タイトルの文字サイズ
+        },
+        legend: {
+          labels: {
+            usePointStyle: true,
+            font: { size: 20 },
+            generateLabels: (chart) => {
+              const datasets = chart.data.datasets;
+              return datasets.map((ds, i) => ({
+                text: ds.label,
+                fillStyle: ds.backgroundColor || ds.borderColor,
+                strokeStyle: ds.borderColor,
+                lineWidth: ds.type === "line" ? 4 : 0, // ← 回帰線用の「━」
+                pointStyle: ds.type === "line" ? "line" : "circle", // ← 丸 or 線
+                pointRadius: ds.type === "line" ? 6 : 5, // ← 丸は小さく
+                hidden: !chart.isDatasetVisible(i),
+                datasetIndex: i
+              }));
+            },
+            boxWidth: 8, // ← 凡例アイコンの横幅
+            boxHeight: 8 // ← 凡例アイコンの高さ（丸が小さくなる）
+          }
         }
+
       },
       scales: {
-        x: { type: "linear", min:-0.3, max:5.3, ticks:{stepSize:1}, title:{display:true,text:"得意不得意（0=苦手,5=得意）"} },
-        y: { title:{display:true,text:"スナップ標準偏差 [m/s²]（小さいほど安定）"}, beginAtZero:true }
+        x: {
+          type: "linear",
+          // min: -0.3,
+          // max: 5.4,
+          ticks: {
+            stepSize: 1,
+            font: { size: 20 },  // ← X軸の目盛りの文字サイズ
+            callback: (v) => Number.isInteger(v) ? v.toString() : ""
+          },
+          title: { display: true, text: "得意不得意（0=不得意, 5=得意）", font: { size: 18 } } // ← X軸ラベル
+        },
+        y: {
+          title: {
+            display: true,
+            text: "スナップの強さのばらつき（標準偏差）[m/s²]",
+            font: { size: 20 }   // ← Y軸ラベル
+          },
+          ticks: { font: { size: 20 } },  // ← Y軸目盛り
+          beginAtZero: true
+        }
       }
     }
   });
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
     loadSurveySummary();

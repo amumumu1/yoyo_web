@@ -178,6 +178,9 @@ def init_db():
     conn.commit()
     conn.close()
 
+print("📂 Using database file:", os.path.abspath(DB_PATH))
+
+
 def save_result_to_db(result):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()

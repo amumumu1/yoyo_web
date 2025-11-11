@@ -290,10 +290,20 @@ def segment_loops(gyro, quats):
     y_raw     = gyro['y']
     y_smooth  = savgol_filter(y_raw, window_length=11, polyorder=3)
     mean_y, std_y = y_smooth.mean(), y_smooth.std()
-    threshold_scale_peak = 1.0  # ピークはそのまま
+    threshold_scale_peak = 1.0   # ピークはそのまま
     threshold_scale_valley = 0.005  # 谷だけ緩く（0.5〜0.7くらいが良い）
-    peaks, _   = find_peaks(y_smooth, height=mean_y + threshold_scale_peak * std_y)
-    valleys, _ = find_peaks(-y_smooth, height=threshold_scale_valley * std_y - mean_y)
+
+    # ✅ 閾値を先に計算
+    peak_threshold   = mean_y + threshold_scale_peak * std_y
+    valley_threshold = threshold_scale_valley * std_y - mean_y
+
+    # ✅ デバッグ出力
+    print(f"[DEBUG] Peak threshold = {peak_threshold:.4f}, Valley threshold = {valley_threshold:.4f}")
+    print(f"[DEBUG] mean_y = {mean_y:.4f}, std_y = {std_y:.4f}")
+
+    # 検出処理
+    peaks, _   = find_peaks(y_smooth, height=peak_threshold)
+    valleys, _ = find_peaks(-y_smooth, height=valley_threshold)
     valid_loops = []
     i = 0
     while i < len(valleys)-1:

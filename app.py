@@ -293,17 +293,14 @@ def segment_loops(gyro, quats):
     threshold_scale_peak = 1.0   # ピークはそのまま
     threshold_scale_valley = 0.005  # 谷だけ緩く（0.5〜0.7くらいが良い）
 
-    # ✅ 閾値を先に計算
     peak_threshold   = mean_y + threshold_scale_peak * std_y
-    valley_threshold = threshold_scale_valley * std_y - mean_y
+    valley_threshold = mean_y - threshold_scale_valley * std_y  # ← ここ修正
+    print(f"[DEBUG] mean_y={mean_y:.4f}, std_y={std_y:.4f}")
+    print(f"[DEBUG] Peak threshold={peak_threshold:.4f}, Valley threshold={valley_threshold:.4f}")
 
-    # ✅ デバッグ出力
-    print(f"[DEBUG] Peak threshold = {peak_threshold:.4f}, Valley threshold = {valley_threshold:.4f}")
-    print(f"[DEBUG] mean_y = {mean_y:.4f}, std_y = {std_y:.4f}")
-
-    # 検出処理
+    # ✅ 検出
     peaks, _   = find_peaks(y_smooth, height=peak_threshold)
-    valleys, _ = find_peaks(-y_smooth, height=valley_threshold)
+    valleys, _ = find_peaks(-y_smooth, height=-valley_threshold)  # ← 修正点！
     valid_loops = []
     i = 0
     while i < len(valleys)-1:

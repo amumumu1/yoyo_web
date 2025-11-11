@@ -290,60 +290,33 @@ def segment_loops(gyro, quats):
     y_raw     = gyro['y']
     y_smooth  = savgol_filter(y_raw, window_length=11, polyorder=3)
     mean_y, std_y = y_smooth.mean(), y_smooth.std()
-
-    threshold_scale_peak = 1.0
-    threshold_scale_valley = 0.005
-
-    peak_threshold   = mean_y + threshold_scale_peak * std_y
-    valley_threshold = mean_y - threshold_scale_valley * std_y
-    print(f"[DEBUG] mean_y={mean_y:.4f}, std_y={std_y:.4f}")
-    print(f"[DEBUG] Peak threshold={peak_threshold:.4f}, Valley threshold={valley_threshold:.4f}")
-
-    # ===== 極値検出 =====
-    peaks, _   = find_peaks(y_smooth, height=peak_threshold)
-    valleys, _ = find_peaks(-y_smooth, height=-valley_threshold)
-
-    # ===== 端点チェック =====
-    if y_smooth[0] < y_smooth[1]:
-        valleys = np.insert(valleys, 0, 0)
-    if y_smooth[-1] < y_smooth[-2]:
-        valleys = np.append(valleys, len(y_smooth)-1)
-
-    print(f"[DEBUG] peaks={len(peaks)}, valleys={len(valleys)} (first few: {valleys[:5]})")
-
-    # ===== ループ検出 =====
+    peaks, _   = find_peaks(y_smooth, height=mean_y+std_y)
+    valleys, _ = find_peaks(-y_smooth, height=std_y-mean_y)
     valid_loops = []
     i = 0
     while i < len(valleys)-1:
         v1 = valleys[i]
-        ps = [p for p in peaks if p > v1 and y_smooth[p] > mean_y + std_y]
+        ps = [p for p in peaks if p>v1 and y_smooth[p]>mean_y+std_y]
         if not ps:
-            i += 1
-            continue
+            i += 1; continue
         p = ps[0]
-        vs2 = [v for v in valleys if v > p and y_smooth[v] < mean_y - std_y]
+        vs2 = [v for v in valleys if v>p and y_smooth[v]<mean_y-std_y]
         if not vs2:
-            i += 1
-            continue
+            i += 1; continue
         v2 = vs2[0]
-        if (
-            y_smooth[p] - y_smooth[v1] >= 0
-            and y_smooth[p] - y_smooth[v2] >= 0
-            and time_data[v2] - time_data[v1] <= 1.0
-        ):
-            valid_loops.append((v1, p, v2))
+        if (y_smooth[p]-y_smooth[v1]>=0 and
+            y_smooth[p]-y_smooth[v2]>=0 and
+            time_data[v2]-time_data[v1]<=1.0):
+            valid_loops.append((v1,p,v2))
             i = valleys.tolist().index(v2)
         else:
             i += 1
-
-    # ===== セグメント抽出 =====
     segments = []
     for v1, _, v2 in valid_loops:
         t_start, t_end = time_data[v1], time_data[v2]
-        mask = (quats["time"] >= t_start) & (quats["time"] <= t_end)
+        mask = (quats["time"]>=t_start)&(quats["time"]<=t_end)
         segments.append(quats[mask].reset_index(drop=True))
     return segments
-
 
 def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, loop_count, labels=None):
     # 各指標を0〜5にスケーリング
@@ -506,26 +479,10 @@ def analyze():
         quat_df = pd.DataFrame(quats, columns=['time','w','x','y','z'])
 
         # 6: フィルタ＆ピーク検出
-        # 6: フィルタ＆ピーク検出
         set_progress(task_id, 30, "extrema")
-
         y = savgol_filter(gyro_df['gy'], window_length=11, polyorder=3)
-        mean_y, std_y = y.mean(), y.std()
-
-        # --- プロデータ側と同様にスケールを掛ける ---
-        threshold_scale_peak = 1.0     # 実験で変えやすいように
-        threshold_scale_valley = 0.3 # ← 今は実験値のままでOK
-
-        peak_threshold   = mean_y + threshold_scale_peak * std_y
-        valley_threshold = mean_y - threshold_scale_valley * std_y
-
-        print(f"[DEBUG] mean_y={mean_y:.4f}, std_y={std_y:.4f}")
-        print(f"[DEBUG] Peak threshold={peak_threshold:.4f}, Valley threshold={valley_threshold:.4f}")
-
-        # --- find_peaks にしっかり閾値を反映 ---
-        peaks, _   = find_peaks(y, height=peak_threshold)
-        valleys, _ = find_peaks(-y, height=-valley_threshold)
-
+        peaks, _   = find_peaks(y, height=y.mean()+y.std())
+        valleys, _ = find_peaks(-y, height=y.std()-y.mean())
 
         # 7: ループ検出
         set_progress(task_id, 35, "segment")
@@ -594,29 +551,14 @@ def analyze():
         pro_hm = encode_heatmap(pro_mat, I18N[lang]["titles"]["pro_hm"])
 
         # 12: ループ検出グラフ
-        print(f"[DEBUG] Plotting {len(peaks)} peaks, {len(valleys)} valleys")
-        print(f"[DEBUG] First few peak times: {t_sec.values[peaks[:5]]}")
-        print(f"[DEBUG] First few valley times: {t_sec.values[valleys[:5]]}")
-
         set_progress(task_id, 70, "seg_plot")
         fig2, ax2 = plt.subplots(figsize=(12,6))
-        # --- 修正版 ---
         ax2.plot(t_sec, y, color='orange')
-
-        # セグメント帯
-        for idx, (v1, p, v2) in enumerate(loops):
-            ax2.axvspan(float(t_sec.iloc[v1]), float(t_sec.iloc[v2]),
-                        color='red', alpha=0.3,
-                        label=I18N[lang]["legend"]["one_loop"] if idx == 0 else "")
-
-        # ピーク・谷マーカー（ここが重要）
-        ax2.plot(t_sec.values[peaks], y[peaks], "go", markersize=8, markeredgecolor="black",
-         label=I18N[lang]["legend"]["peak"])
-        ax2.plot(t_sec.values[valleys], y[valleys], "ro", markersize=8, markeredgecolor="black",
-                label=I18N[lang]["legend"]["valley"])
-        plt.tight_layout()
-
-
+        for idx,(v1,p,v2) in enumerate(loops):
+            ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3,
+                        label=I18N[lang]["legend"]["one_loop"] if idx==0 else "")
+        ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label=I18N[lang]["legend"]["peak"])
+        ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label=I18N[lang]["legend"]["valley"])
         ax2.set_title(I18N[lang]["titles"]["loop_det"], fontproperties=font_prop)
         ax2.set_xlabel(I18N[lang]["axes"]["time"], fontproperties=font_prop)
         ax2.set_ylabel(I18N[lang]["axes"]["gyro_gy"], fontproperties=font_prop)

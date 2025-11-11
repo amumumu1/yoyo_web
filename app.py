@@ -594,8 +594,12 @@ def analyze():
                         label=I18N[lang]["legend"]["one_loop"] if idx == 0 else "")
 
         # ピーク・谷マーカー（ここが重要）
-        ax2.plot(t_sec.values[peaks], y[peaks], "go", label=I18N[lang]["legend"]["peak"])
-        ax2.plot(t_sec.values[valleys], y[valleys], "ro", label=I18N[lang]["legend"]["valley"])
+        ax2.plot(t_sec.values[peaks], y[peaks], "go", markersize=8, markeredgecolor="black",
+         label=I18N[lang]["legend"]["peak"])
+        ax2.plot(t_sec.values[valleys], y[valleys], "ro", markersize=8, markeredgecolor="black",
+                label=I18N[lang]["legend"]["valley"])
+        plt.tight_layout()
+
 
         ax2.set_title(I18N[lang]["titles"]["loop_det"], fontproperties=font_prop)
         ax2.set_xlabel(I18N[lang]["axes"]["time"], fontproperties=font_prop)

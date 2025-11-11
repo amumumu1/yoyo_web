@@ -580,12 +580,19 @@ def analyze():
         # 12: ループ検出グラフ
         set_progress(task_id, 70, "seg_plot")
         fig2, ax2 = plt.subplots(figsize=(12,6))
+        # --- 修正版 ---
         ax2.plot(t_sec, y, color='orange')
-        for idx,(v1,p,v2) in enumerate(loops):
-            ax2.axvspan(t_sec.iloc[v1], t_sec.iloc[v2], color='red', alpha=0.3,
-                        label=I18N[lang]["legend"]["one_loop"] if idx==0 else "")
-        ax2.plot(t_sec.iloc[peaks], y[peaks], "go", label=I18N[lang]["legend"]["peak"])
-        ax2.plot(t_sec.iloc[valleys], y[valleys], "ro", label=I18N[lang]["legend"]["valley"])
+
+        # セグメント帯
+        for idx, (v1, p, v2) in enumerate(loops):
+            ax2.axvspan(float(t_sec.iloc[v1]), float(t_sec.iloc[v2]),
+                        color='red', alpha=0.3,
+                        label=I18N[lang]["legend"]["one_loop"] if idx == 0 else "")
+
+        # ピーク・谷マーカー（ここが重要）
+        ax2.plot(t_sec.values[peaks], y[peaks], "go", label=I18N[lang]["legend"]["peak"])
+        ax2.plot(t_sec.values[valleys], y[valleys], "ro", label=I18N[lang]["legend"]["valley"])
+
         ax2.set_title(I18N[lang]["titles"]["loop_det"], fontproperties=font_prop)
         ax2.set_xlabel(I18N[lang]["axes"]["time"], fontproperties=font_prop)
         ax2.set_ylabel(I18N[lang]["axes"]["gyro_gy"], fontproperties=font_prop)

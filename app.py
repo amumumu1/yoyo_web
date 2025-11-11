@@ -291,10 +291,9 @@ def segment_loops(gyro, quats):
     y_smooth  = savgol_filter(y_raw, window_length=11, polyorder=3)
     mean_y, std_y = y_smooth.mean(), y_smooth.std()
 
-    threshold_scale_peak = 1.0    # ピークは標準
-    threshold_scale_valley = 0.005  # 谷は緩く（0.005〜0.5推奨）
+    threshold_scale_peak = 1.0
+    threshold_scale_valley = 0.005
 
-    # ===== 閾値 =====
     peak_threshold   = mean_y + threshold_scale_peak * std_y
     valley_threshold = mean_y - threshold_scale_valley * std_y
     print(f"[DEBUG] mean_y={mean_y:.4f}, std_y={std_y:.4f}")
@@ -304,16 +303,12 @@ def segment_loops(gyro, quats):
     peaks, _   = find_peaks(y_smooth, height=peak_threshold)
     valleys, _ = find_peaks(-y_smooth, height=-valley_threshold)
 
-    # ===== 端点チェック（投げ出しなどを拾う）=====
-    # 先頭が下降→上昇するなら最初の点を谷として追加
-    if y_smooth.iloc[0] < y_smooth.iloc[1]:
+    # ===== 端点チェック =====
+    if y_smooth[0] < y_smooth[1]:
         valleys = np.insert(valleys, 0, 0)
+    if y_smooth[-1] < y_smooth[-2]:
+        valleys = np.append(valleys, len(y_smooth)-1)
 
-    # 終端が下降して終わる場合も谷として追加
-    if y_smooth.iloc[-1] < y_smooth.iloc[-2]:
-        valleys = np.append(valleys, len(y_smooth) - 1)
-
-    # ===== デバッグ確認 =====
     print(f"[DEBUG] peaks={len(peaks)}, valleys={len(valleys)} (first few: {valleys[:5]})")
 
     # ===== ループ検出 =====
@@ -331,7 +326,6 @@ def segment_loops(gyro, quats):
             i += 1
             continue
         v2 = vs2[0]
-
         if (
             y_smooth[p] - y_smooth[v1] >= 0
             and y_smooth[p] - y_smooth[v2] >= 0
@@ -348,7 +342,6 @@ def segment_loops(gyro, quats):
         t_start, t_end = time_data[v1], time_data[v2]
         mask = (quats["time"] >= t_start) & (quats["time"] <= t_end)
         segments.append(quats[mask].reset_index(drop=True))
-
     return segments
 
 

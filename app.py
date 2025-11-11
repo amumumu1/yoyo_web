@@ -514,7 +514,7 @@ def analyze():
 
         # --- プロデータ側と同様にスケールを掛ける ---
         threshold_scale_peak = 1.0     # 実験で変えやすいように
-        threshold_scale_valley = 0.005 # ← 今は実験値のままでOK
+        threshold_scale_valley = 0.3 # ← 今は実験値のままでOK
 
         peak_threshold   = mean_y + threshold_scale_peak * std_y
         valley_threshold = mean_y - threshold_scale_valley * std_y

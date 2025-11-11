@@ -292,8 +292,8 @@ def segment_loops(gyro, quats):
     mean_y, std_y = y_smooth.mean(), y_smooth.std()
     threshold_scale_peak = 1.0  # ピークはそのまま
     threshold_scale_valley = 0.6  # 谷だけ緩く（0.5〜0.7くらいが良い）
-    peaks, _ = find_peaks(y, height=y.mean() + threshold_scale_peak * y.std())
-    valleys, _ = find_peaks(-y, height=threshold_scale_valley * y.std() - y.mean())
+    peaks, _   = find_peaks(y_smooth, height=mean_y + threshold_scale_peak * std_y)
+    valleys, _ = find_peaks(-y_smooth, height=threshold_scale_valley * std_y - mean_y)
     valid_loops = []
     i = 0
     while i < len(valleys)-1:

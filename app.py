@@ -506,10 +506,26 @@ def analyze():
         quat_df = pd.DataFrame(quats, columns=['time','w','x','y','z'])
 
         # 6: フィルタ＆ピーク検出
+        # 6: フィルタ＆ピーク検出
         set_progress(task_id, 30, "extrema")
+
         y = savgol_filter(gyro_df['gy'], window_length=11, polyorder=3)
-        peaks, _   = find_peaks(y, height=y.mean()+y.std())
-        valleys, _ = find_peaks(-y, height=y.std()-y.mean())
+        mean_y, std_y = y.mean(), y.std()
+
+        # --- プロデータ側と同様にスケールを掛ける ---
+        threshold_scale_peak = 1.0     # 実験で変えやすいように
+        threshold_scale_valley = 0.005 # ← 今は実験値のままでOK
+
+        peak_threshold   = mean_y + threshold_scale_peak * std_y
+        valley_threshold = mean_y - threshold_scale_valley * std_y
+
+        print(f"[DEBUG] mean_y={mean_y:.4f}, std_y={std_y:.4f}")
+        print(f"[DEBUG] Peak threshold={peak_threshold:.4f}, Valley threshold={valley_threshold:.4f}")
+
+        # --- find_peaks にしっかり閾値を反映 ---
+        peaks, _   = find_peaks(y, height=peak_threshold)
+        valleys, _ = find_peaks(-y, height=-valley_threshold)
+
 
         # 7: ループ検出
         set_progress(task_id, 35, "segment")

@@ -578,6 +578,10 @@ def analyze():
         pro_hm = encode_heatmap(pro_mat, I18N[lang]["titles"]["pro_hm"])
 
         # 12: ループ検出グラフ
+        print(f"[DEBUG] Plotting {len(peaks)} peaks, {len(valleys)} valleys")
+        print(f"[DEBUG] First few peak times: {t_sec.values[peaks[:5]]}")
+        print(f"[DEBUG] First few valley times: {t_sec.values[valleys[:5]]}")
+
         set_progress(task_id, 70, "seg_plot")
         fig2, ax2 = plt.subplots(figsize=(12,6))
         # --- 修正版 ---

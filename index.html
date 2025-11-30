@@ -1412,8 +1412,9 @@
             name,
             acc_csv:accCsv,
             gyro_csv:gyroCsv,
-            user_id:user.uid,      // ←🔥必須
-            email:user.email       // ←🔥admin判定にも使える
+            user_id:user.uid,      
+            email:user.email,
+            user_name: user.displayName ?? "未設定"       
         };
 
         const res = await fetch(`${API_ROOT}/save_result`,{

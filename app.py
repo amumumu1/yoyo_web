@@ -228,7 +228,7 @@ def init_db():
 print("📂 Using database file:", os.path.abspath(DB_PATH))
 
 
-def save_result_to_db(result, user_id):
+def save_result_to_db(result, user_id, user_name=None, email=None):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     jst_now = datetime.utcnow() + timedelta(hours=9)

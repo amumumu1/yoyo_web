@@ -739,7 +739,7 @@ def save_result():
     
     uid  = result.get("user_id")      # ← Google UID
     name = result.get("user_name")    # ← ⭐ Google表示名 ここが今回追加
-    email = result.get("user_email") or result.get("email")      # ← 任意（管理向け表示用にも使える）
+    email = result.get("email")      # ← 任意（管理向け表示用にも使える）
 
     if not uid:
         return jsonify({"error": "user_id is required"}), 400
@@ -799,22 +799,24 @@ def get_result_detail(result_id):
 
 @app.route("/results_user", methods=["GET"])
 def get_results_user():
-    uid = request.args.get("uid")      # 現ログインユーザー
-    email = request.args.get("email")  # Googleログイン後、フロントから送る
+    uid = request.args.get("uid")
+    email = request.args.get("email")
 
     conn = sqlite3.connect(DB_PATH)
     cur  = conn.cursor()
 
-    # 👑 管理者 → 全履歴
+    # 👑 管理者 → 全件
     if email == ADMIN_EMAIL:
         cur.execute("""
-            SELECT id,timestamp,name,score,total_score,pro_distance_mean,loop_count,stable_loop,user_id
+            SELECT id,timestamp,name,score,total_score,pro_distance_mean,
+                   loop_count,stable_loop,user_id,user_name,email
             FROM results ORDER BY id DESC LIMIT 200
         """)
     else:
-        # 👤 一般 → uid一致のデータのみ
+        # 👤 一般 → uid一致のもの
         cur.execute("""
-            SELECT id,timestamp,name,score,total_score,pro_distance_mean,loop_count,stable_loop,user_id
+            SELECT id,timestamp,name,score,total_score,pro_distance_mean,
+                   loop_count,stable_loop,user_id,user_name,email
             FROM results WHERE user_id = ?
             ORDER BY id DESC LIMIT 200
         """, (uid, ))
@@ -823,12 +825,15 @@ def get_results_user():
     conn.close()
 
     return jsonify([
-        {"id":r[0],"timestamp":r[1],"name":r[2] or "無題",
+        {
+         "id":r[0],"timestamp":r[1],"name":r[2] or "無題",
          "score":r[3],"total_score":r[4],"pro_distance_mean":r[5],
          "loop_count":r[6],"stable_loop":r[7],
-         "user_id":r[8]}
+         "user_id":r[8],"user_name":r[9],"email":r[10]    # ⭐ここが最重要
+        }
         for r in rows
     ])
+
 
 
 @app.route("/")

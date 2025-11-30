@@ -1260,18 +1260,35 @@
 
       // 保存
       btnSaveResult.onclick = async ()=>{
+
         if(!lastResult){ alert(t('noResultToSave')); return; }
+
+        // Firebaseログイン確認＋UID付与
+        const user = firebase.auth().currentUser;
+        if(!user){
+            alert("⚠ ログインが必要です");
+            location.href = "login.html";
+            return;
+        }
+
+        // ★ 必須 ―― この2行でユーザー情報がDBに保存される
+        lastResult.user_id   = user.uid;
+        lastResult.user_email = user.email;
+
         const name = document.getElementById('resultName').value.trim() || t('untitled');
         const accCsv  = 'time,x,y,z\n'+acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         const gyroCsv = 'time,x,y,z\n'+gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
-        console.log("raw_self_distance:", lastResult.raw_self_distance);
+
         const res = await fetch(`${API_ROOT}/save_result`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({...lastResult,name,acc_csv:accCsv,gyro_csv:gyroCsv})
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({...lastResult,name,acc_csv:accCsv,gyro_csv:gyroCsv})
         });
+
         const r = await res.json();
         alert(r.status==='saved' ? tf('savedOk', name) : t('savedNg'));
-      };
+    };
+
 
       // CSVダウンロード
       document.getElementById('btnSaveCsv').onclick = ()=>{

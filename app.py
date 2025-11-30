@@ -242,7 +242,8 @@ def save_result_to_db(result, user_id):
         result.get("snap_std"),
         result.get("loop_duration_list"),
         result.get("loop_max_acc_list"),
-        user_id 
+        result.get("user_id")
+
     ))
     conn.commit()
     conn.close()

@@ -360,6 +360,22 @@
 
 
   </style>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <script>
+  const firebaseConfig = {
+      apiKey: "AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
+      authDomain: "yoyo-sensing.firebaseapp.com",
+      projectId: "yoyo-sensing",
+      storageBucket: "yoyo-sensing.firebasestorage.app",
+      messagingSenderId: "129908163482",
+      appId: "1:129908163482:web:8cb1c024e25b2c9a96f023",
+      measurementId: "G-H44GHQM64S"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  </script>
 </head>
 <body>
   <div class="container">
@@ -508,6 +524,16 @@
     <pre id="gyroOutput" style="display: none;"></pre>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      // ▼ Firebase SDK 読み込み後に必ず貼る！ ▼
+      firebase.auth().onAuthStateChanged((user) => {
+          if (!user) {
+              alert("ログインが必要です");
+              location.href = "login.html";  // 🔥ログインしてない場合はログインへ
+          }
+      });
+    </script>
+
     <script>
       // バックエンドのベースURL
       const API_ROOT = 'https://yoyo-backend.kajilab.dev';
@@ -1260,34 +1286,38 @@
 
       // 保存
       btnSaveResult.onclick = async ()=>{
-
-        if(!lastResult){ alert(t('noResultToSave')); return; }
-
-        // Firebaseログイン確認＋UID付与
         const user = firebase.auth().currentUser;
         if(!user){
-            alert("⚠ ログインが必要です");
+            alert("保存にはログインが必要です");
             location.href = "login.html";
             return;
         }
 
-        // ★ 必須 ―― この2行でユーザー情報がDBに保存される
-        lastResult.user_id   = user.uid;
-        lastResult.user_email = user.email;
+        if(!lastResult){ alert("保存できる結果がありません"); return; }
 
-        const name = document.getElementById('resultName').value.trim() || t('untitled');
+        const name = document.getElementById('resultName').value.trim() || "無題";
         const accCsv  = 'time,x,y,z\n'+acc.map(d=>`${d.t},${d.ax},${d.ay},${d.az}`).join('\n');
         const gyroCsv = 'time,x,y,z\n'+gyro.map(d=>`${d.t},${d.gx},${d.gy},${d.gz}`).join('\n');
+
+        const payload = {
+            ...lastResult,
+            name,
+            acc_csv:accCsv,
+            gyro_csv:gyroCsv,
+            user_id:user.uid,      // ←🔥必須
+            email:user.email       // ←🔥admin判定にも使える
+        };
 
         const res = await fetch(`${API_ROOT}/save_result`,{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({...lastResult,name,acc_csv:accCsv,gyro_csv:gyroCsv})
+            body:JSON.stringify(payload)
         });
 
         const r = await res.json();
-        alert(r.status==='saved' ? tf('savedOk', name) : t('savedNg'));
-    };
+        alert(r.status==="saved" ? `保存しました！ (${name})` : "保存に失敗しました");
+      };
+
 
 
       // CSVダウンロード

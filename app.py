@@ -109,6 +109,8 @@ I18N = {
 }
 
 DB_PATH = "results.db"
+ADMIN_EMAIL = "prj.yoyo@gmail.com"
+
 
 def add_user_column():
     conn = sqlite3.connect(DB_PATH)
@@ -765,6 +767,40 @@ def get_result_detail(result_id):
         "post_survey": json.loads(row[19]) if row[19] else None,
         "video_url": row[20] if len(row) > 20 else None  # ✅ 追加
     })
+
+@app.route("/results_user", methods=["GET"])
+def get_results_user():
+    uid = request.args.get("uid")      # 現ログインユーザー
+    email = request.args.get("email")  # Googleログイン後、フロントから送る
+
+    conn = sqlite3.connect(DB_PATH)
+    cur  = conn.cursor()
+
+    # 👑 管理者 → 全履歴
+    if email == ADMIN_EMAIL:
+        cur.execute("""
+            SELECT id,timestamp,name,score,total_score,pro_distance_mean,loop_count,stable_loop,user_id
+            FROM results ORDER BY id DESC LIMIT 200
+        """)
+    else:
+        # 👤 一般 → uid一致のデータのみ
+        cur.execute("""
+            SELECT id,timestamp,name,score,total_score,pro_distance_mean,loop_count,stable_loop,user_id
+            FROM results WHERE user_id = ?
+            ORDER BY id DESC LIMIT 200
+        """, (uid, ))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return jsonify([
+        {"id":r[0],"timestamp":r[1],"name":r[2] or "無題",
+         "score":r[3],"total_score":r[4],"pro_distance_mean":r[5],
+         "loop_count":r[6],"stable_loop":r[7],
+         "user_id":r[8]}
+        for r in rows
+    ])
+
 
 @app.route("/")
 def index():

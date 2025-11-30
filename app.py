@@ -168,7 +168,10 @@ def init_db():
         total_score REAL,
         radar_chart TEXT,
         score REAL,
+        raw_self_distance REAL,
+        raw_self_median REAL,
         pro_distance_mean REAL,
+        pro_distance_median REAL,
         loop_count INTEGER,
         stable_loop INTEGER,
         loop_mean_duration REAL,
@@ -185,12 +188,15 @@ def init_db():
         snap_std REAL,
         loop_duration_list TEXT,
         loop_max_acc_list TEXT,
-        pre_survey TEXT,   
-        post_survey TEXT   
+        pre_survey TEXT,
+        post_survey TEXT,
+        video_url TEXT,
+        user_id TEXT
     )
     """)
     conn.commit()
     conn.close()
+
 
 print("📂 Using database file:", os.path.abspath(DB_PATH))
 

@@ -739,7 +739,7 @@ def save_result():
     
     uid  = result.get("user_id")      # ← Google UID
     name = result.get("user_name")    # ← ⭐ Google表示名 ここが今回追加
-    email = result.get("email")       # ← 任意（管理向け表示用にも使える）
+    email = result.get("user_email") or result.get("email")      # ← 任意（管理向け表示用にも使える）
 
     if not uid:
         return jsonify({"error": "user_id is required"}), 400

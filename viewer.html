@@ -164,7 +164,8 @@ document.addEventListener("DOMContentLoaded",()=>{
     const result = await res.json();
     if (result.status === "deleted") {
       alert("削除しました");
-      fetchHistory();
+      const u = firebase.auth().currentUser;
+      fetchHistory(u);      // ← 修正後
     } else {
       alert("削除に失敗しました");
     }
@@ -632,8 +633,14 @@ if (id) {
     container.innerHTML = "<p>データの読み込みに失敗しました。</p>";
   }
 } else {
-  // 通常時 → 一覧を表示
-  fetchHistory();
+  // ▼ログイン完了後に一覧を表示
+  firebase.auth().onAuthStateChanged(user =>{
+    if(!user) {
+      location.href="index.html";
+      return;
+    }
+    fetchHistory(user);
+  });
 }
 
 });

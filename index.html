@@ -1410,12 +1410,13 @@
         const payload = {
             ...lastResult,
             name,
-            acc_csv:accCsv,
-            gyro_csv:gyroCsv,
-            user_id:user.uid,      
-            email:user.email,
-            user_name: user.displayName ?? "未設定"       
+            acc_csv: accCsv,
+            gyro_csv: gyroCsv,
+            user_id: user.uid,               // UID
+            user_name: user.displayName || "未設定", 
+            user_email: user.email           // ←★絶対これ
         };
+
 
         const res = await fetch(`${API_ROOT}/save_result`,{
             method:'POST',

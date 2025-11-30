@@ -4,152 +4,701 @@
   <meta charset="UTF-8">
   <title>履歴一覧</title>
   <style>
-    body { text-align:center; font-family:Arial,sans-serif; }
-    img { max-width:100%; display:block; margin:10px auto; }
-    button,.button{
-      margin:5px;padding:8px 16px;font-size:25px;background:#f0f0f0;
-      border:1px solid #ccc;border-radius:4px;cursor:pointer;text-decoration:none;color:#333;
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
     }
-    button:hover,.button:hover{ background:#ddd; }
-    .result{margin:20px auto;border-bottom:2px solid #000;padding-bottom:10px;max-width:100%;}
-    p{font-size:30px;margin:5px 0;} h1{font-size:40px;}
-    .heatmap-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px auto;}
-    .heatmap-row div{text-align:center;}
-    .heatmap-row img{max-width:100%;height:auto;}
-    .heatmap-row h4{min-height:3.5em;font-size:18px;}
+    img { 
+      max-width: 100%;
+      display: block;
+      margin: 10px auto;
+    }
+    button, .button {
+      margin: 5px;
+      padding: 8px 16px;
+      font-size: 25px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #333;
+      display: inline-block;
+    }
+    button:hover, .button:hover {
+      background-color: #ddd;
+    }
+    .result { 
+      margin: 20px auto; 
+      border-bottom: 2px solid #000; 
+      padding-bottom: 10px;
+      max-width: 100%;
+    }
+    p {
+      font-size: 30px;
+      margin: 5px 0;
+    }
+
+    h1 {
+      font-size: 40px;
+    }
+
+    .heatmap-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px auto;
+      flex-wrap: wrap;
+    }
+    .heatmap-row div {
+      text-align: center;
+    }
+    .heatmap-row img {
+      max-width: 100%;
+      height: auto;
+    }
+    .heatmap-row h4 {
+      min-height: 3.5em;
+      font-size: 18px;
+      line-height: 1.3;
+    }
   </style>
 </head>
-
 <body>
-<h1>履歴一覧</h1>
-<a href="index.html" class="button">戻る</a>
-<a href="survey_summary.html" class="button" target="_blank">アンケート集計</a>
-
-<div id="history"></div>
+  <h1>履歴一覧</h1>
+  <a href="index.html" class="button">戻る</a>
+  <a href="survey_summary.html" class="button" target="_blank">アンケートの集計結果を見る</a>
 
 
-<script>
-//==============================
-//  🔥 履歴取得
-//==============================
-async function fetchHistory(user){
-  const res = await fetch(`https://yoyo-backend.kajilab.dev/results_user?uid=${user.uid}&email=${user.email}`);
-  const data = await res.json();
-  const box=document.getElementById("history");
-  box.innerHTML="";
-
-  if(!data.length) return box.innerHTML="<p>履歴がありません。</p>";
-
-  for(const item of data){
-    box.innerHTML+=`
-      <div class="result">
-        <p>${item.timestamp}</p>
-        <p id="name-${item.id}">${item.name??"無題"}</p>
-        <p>総合評価: ${item.total_score!=null?item.total_score.toFixed(1)+"点":"なし"}</p>
-        <button onclick="toggleDetail(${item.id})" id="toggle-btn-${item.id}">詳細を見る</button>
-        <button onclick="renameResult(${item.id})">名前変更</button>
-        <div id="detail-${item.id}" style="display:none;"></div>
-      </div>`;
-  }
-}
-
-
-//==============================
-//  🔥 1件詳細展開 / 閉じる
-//==============================
-async function toggleDetail(id){
-  const box=document.getElementById(`detail-${id}`);
-  const btn=document.getElementById(`toggle-btn-${id}`);
-
-  if(box.style.display==='none'){
-    const res=await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
-    const d=await res.json();
-
-    box.innerHTML=`
-      <p>総合評価: ${d.total_score!=null?d.total_score.toFixed(1)+"点":"なし"}</p>
-      ${d.radar_chart?`<img src="data:image/png;base64,${d.radar_chart}">`:""}
-      <p>類似度スコア:${d.score!=null?d.score.toFixed(1):"0.0"}</p>
-      <p>プロ距離平均:${d.pro_distance_mean??"なし"}</p>
-      <p>ループ数:${d.loop_count??"なし"}</p>
-      <p>安定:${d.stable_loop!=null?d.stable_loop+"周目":"なし"}</p>
-      <pre style="white-space:pre-wrap;font-size:30px;">${Array.isArray(d.loop_duration_list)?d.loop_duration_list.join("\n"):""}</pre>
-      ${d.loop_plot?`<img src="data:image/png;base64,${d.loop_plot}">`:""}
-      <div class="heatmap-row">
-        ${d.self_heatmap?`<div><h4>自己比較</h4><img src="data:image/png;base64,${d.self_heatmap}"></div>`:""}
-        ${d.pro_heatmap?`<div><h4>プロ比較</h4><img src="data:image/png;base64,${d.pro_heatmap}"></div>`:""}
-      </div>
-      <button onclick="toggleDetail(${id})">閉じる</button>
-      <button onclick="downloadCSV(${id})">CSV</button>
-      <button onclick="deleteResult(${id})" style="background:#f66;color:white;">削除</button>
-    `;
-
-    box.style.display="block";
-    btn.textContent="閉じる";
-  }else{
-    box.style.display="none";
+  <div id="history"></div>
+  <script>
+  async function fetchHistory(user){
+    // ← バックエンドが admin判定してくれるのでそのまま送るだけ
+    const res = await fetch(
+        `https://yoyo-backend.kajilab.dev/results_user?uid=${user.uid}&email=${user.email}`
+    );
+    const data = await res.json();
+    const box=document.getElementById("history");
     box.innerHTML="";
-    btn.textContent="詳細を見る";
-  }
+
+    if(!data.length) return box.innerHTML="<p>履歴がありません。</p>";
+
+    // 🔥 管理者判定（バックエンドと同一値）
+    const ADMIN_EMAIL = "prj.yoyo@gmail.com";
+    const isAdmin = user.email === ADMIN_EMAIL;
+    const googleName = user.displayName || user.email;
+
+
+    for(const item of data){
+        box.innerHTML += `
+        <div class="result">
+            <p>${item.timestamp}</p>
+            <p id="name-${item.id}">${item.name ?? "無題"}</p>
+
+            ${isAdmin ? `<p style="font-size:20px;color:#444">👤 ${item.user_name || item.email}</p>` : ""}
+
+            <p>総合評価: ${item.total_score!=null ? item.total_score.toFixed(1) + "点" : "なし"}</p>
+
+            <button onclick="toggleDetail(${item.id})" id="toggle-btn-${item.id}">
+                詳細を見る
+            </button>
+            <button onclick="renameResult(${item.id})">名前変更</button>
+
+            <div id="detail-${item.id}" style="display:none;"></div>
+        </div>
+        `;
+    }
 }
 
 
-//==============================
-//  🔥 CSV
-//==============================
-function downloadCSV(id){
-  location.href=`https://yoyo-backend.kajilab.dev/results/${id}/csv`;
-}
-
-
-//==============================
-//  🔥 名前変更
-//==============================
-async function renameResult(id){
-  const now=document.getElementById(`name-${id}`).innerText;
-  const name=prompt("新しい名前:",now);
-  if(!name) return;
-
-  const r=await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`,{
-    method:"PUT",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name})
-  });
-
-  if(r.ok){
-    document.getElementById(`name-${id}`).innerText=name;
-    alert("変更完了");
-  }else alert("失敗");
-}
-
-
-//==============================
-//  🔥 削除（※後で管理者のみ制御対応可能）
-//==============================
-async function deleteResult(id){
-  if(!confirm("削除しますか？"))return;
-  const r=await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`,{method:"DELETE"});
-  const j=await r.json();
-  if(j.status==="deleted") location.reload();
-  else alert("削除失敗");
-}
-
-
-//==============================
-//  🔥 Firebaseログイン必須
-//==============================
+  // URL パラメータから id を取得して自動で開く処理
 document.addEventListener("DOMContentLoaded",()=>{
+  const params=new URLSearchParams(window.location.search);
+  const targetId=params.get("id");
   firebase.auth().onAuthStateChanged(async user=>{
-    if(!user){ location.href="login.html"; return; }
+    if(!user){ location.href="index.html"; return; }
 
-    const id=new URLSearchParams(location.search).get("id");
-    await fetchHistory(user);           // ← 認証後のみ履歴読み込み
-
-    if(id){                             // ← id指定時のみ自動展開
-      setTimeout(()=>{
-        toggleDetail(id);
-        document.getElementById(`name-${id}`)?.scrollIntoView({behavior:"smooth"});
-      },600);
+    if(targetId){
+      fetchHistory(user).then(()=>{
+        setTimeout(()=>{
+          toggleDetail(targetId);
+          document.getElementById(`name-${targetId}`)?.scrollIntoView({behavior:"smooth",block:"center"});
+        },500);
+      });
+    } else {
+      fetchHistory(user);
     }
   });
+});
+
+
+
+
+  async function renameResult(id) {
+    const currentName = document.getElementById(`name-${id}`).innerText;
+    const newName = prompt("新しい名前を入力してください:", currentName);
+    if (newName === null || newName.trim() === "") return;
+
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName })
+    });
+
+    if (res.ok) {
+      document.getElementById(`name-${id}`).innerText = newName;
+      alert("名前を変更しました");
+    } else {
+      const errText = await res.text();
+      console.error("名前変更エラー:", res.status, errText);
+      alert("名前の変更に失敗しました: " + res.status);
+    }
+  }
+
+  async function deleteResult(id) {
+    if (!confirm("この履歴を削除しますか？")) return;
+
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`, {
+      method: "DELETE"
+    });
+    const result = await res.json();
+    if (result.status === "deleted") {
+      alert("削除しました");
+      fetchHistory();
+    } else {
+      alert("削除に失敗しました");
+    }
+  }
+
+  async function toggleDetail(id) {
+    const container = document.getElementById(`detail-${id}`);
+    const button = document.getElementById(`toggle-btn-${id}`);
+
+    if (container.style.display === 'none') {
+      const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
+      const detail = await res.json();
+
+      // --- センシング結果表示 ---
+      container.innerHTML = `
+        <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + '点' : 'なし'}</p>
+        ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">` : ""}
+        <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
+        <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : 'なし'}</p>
+        <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
+        <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + '周目' : 'なし'}</p>
+        <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : '-'} 秒</p>
+        <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : '-'} 秒</p>
+        <p>手首を返す強さ（中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : '-'} 秒</p>
+        <p>手首を返す強さ（ばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : '-'} 秒</p>
+        <pre id="loopDetails-${id}" style="font-size: 30px; white-space: pre-wrap;"></pre>
+        <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
+        <div class="heatmap-row">
+          ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}"></div>` : ""}
+          ${detail.pro_heatmap ? `<div><h4>プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}"></div>` : ""}
+        </div>
+      `;
+
+      // --- アンケート結果の表示 ---
+      if (detail.pre_survey) {
+        container.innerHTML += renderSurveyTable("事前アンケート結果", detail.pre_survey);
+      }
+      if (detail.post_survey) {
+        container.innerHTML += renderSurveyTable("事後アンケート結果", detail.post_survey);
+      }
+
+      // --- アンケート入力ボタン ---
+      container.innerHTML += `
+        <button id="pre-btn-${id}" onclick="openSurvey(${id}, 'pre')">
+          ${detail.pre_survey ? "事前アンケートを編集" : "事前アンケートを入力"}
+        </button>
+        <button id="post-btn-${id}" onclick="openSurvey(${id}, 'post')">
+          ${detail.post_survey ? "事後アンケートを編集" : "事後アンケートを入力"}
+        </button><br>
+        <button onclick="uploadVideo(${id})">動画をアップロード</button><br>
+      `;
+
+      // --- 動画プレビューエリア ---
+      if (detail.video_url) {
+        const youtubeId = extractYouTubeId(detail.video_url);
+        if (youtubeId) {
+          container.innerHTML += `
+            <div id="video-preview-${id}" style="margin-top:20px;">
+              <h3>アップロードされた動画</h3>
+              <iframe width="900" height="500"
+                src="https://www.youtube.com/embed/${youtubeId}"
+                title="YouTube video player"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+            </div>
+          `;
+        }
+      }
+
+      // --- ループ詳細 ---
+      const statsEl = document.getElementById(`loopDetails-${id}`);
+      const loopLines = Array.isArray(detail.loop_duration_list) ? detail.loop_duration_list : [];
+      statsEl.textContent = loopLines.join("\n");
+
+      container.style.display = 'block';
+      button.textContent = '閉じる';
+    } else {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      button.textContent = '詳細を見る';
+    }
+
+    // --- 共通の操作ボタン ---
+    container.innerHTML += `
+      <button onclick="toggleDetail(${id})">閉じる</button>
+      <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">CSVをダウンロード</button>
+      <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">この結果を削除</button>
+    `;
+  }
+
+  function openSurvey(id, type) {
+    const width = 600, height = 700;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+
+    const popup = window.open("", "surveyWindow",
+      `width=${width},height=${height},left=${left},top=${top}`);
+
+    popup.document.write(`
+      <html lang="ja">
+      <head><meta charset="UTF-8"><title>${type === "pre" ? "事前" : "事後"}アンケート</title></head>
+      <body style="font-family:sans-serif; padding:10px;">
+        <h2>${type === "pre" ? "事前アンケート" : "事後アンケート"}</h2>
+        <form id="surveyForm">
+          ${renderSurveyForm(id, type)}
+          <button type="button" onclick="window.opener.saveSurvey(${id}, '${type}', window)">保存</button>
+        </form>
+      </body>
+      </html>
+    `);
+  }
+
+  function renderSurveyForm(id, type) {
+  if (type === "pre") {
+    return `
+      <p>年齢</p>
+      <input type="text" id="age-${id}" placeholder="年齢を入力"> 歳<br><br>
+
+      <p>ヨーヨー歴（どのくらい続けていますか？）</p>
+      <label><input type="radio" name="history-${id}" value="はじめて">はじめて（経験なし）</label><br>
+      <label><input type="radio" name="history-${id}" value="3か月未満">3か月未満</label><br>
+      <label><input type="radio" name="history-${id}" value="3か月～半年">3か月～半年</label><br>
+      <label><input type="radio" name="history-${id}" value="半年～1年">半年～1年</label><br>
+      <label><input type="radio" name="history-${id}" value="1～2年">1～2年</label><br>
+      <label><input type="radio" name="history-${id}" value="3～4年">3～4年</label><br>
+      <label><input type="radio" name="history-${id}" value="5年以上">5年以上</label><br><br>
+
+      <p>ヨーヨーをする頻度</p>
+      <label><input type="radio" name="freq-${id}" value="ほとんどしない">ほとんどしない</label><br>
+      <label><input type="radio" name="freq-${id}" value="月に数回">月に数回</label><br>
+      <label><input type="radio" name="freq-${id}" value="週に1～2回">週に1～2回</label><br>
+      <label><input type="radio" name="freq-${id}" value="週に3～4回">週に3～4回</label><br>
+      <label><input type="radio" name="freq-${id}" value="ほぼ毎日">ほぼ毎日</label><br><br>
+
+      <p>JYYFヨーヨー検定を受けたことがありますか？</p>
+      <label><input type="radio" name="exam-${id}" value="受験経験なし">受験経験なし</label><br>
+      <label><input type="radio" name="exam-${id}" value="受験経験あり">受験経験あり（最高位：
+        <input type="text" id="exam-rank-${id}" placeholder="例: 3級">）
+      </label><br><br>
+
+      <p>普段どのようにヨーヨーを練習していますか？（複数チェック可）</p>
+      <label><input type="checkbox" name="practice-${id}" value="1人で">1人で</label><br>
+      <label><input type="checkbox" name="practice-${id}" value="友達と">友達と</label><br>
+      <label><input type="checkbox" name="practice-${id}" value="解説動画を見ながら">解説動画を見ながら</label><br>
+      <label><input type="checkbox" name="practice-${id}" value="練習会に参加">練習会に参加</label><br>
+      <label><input type="checkbox" name="practice-${id}" value="その他">その他：
+        <input type="text" id="practice-other-${id}">
+      </label><br><br>
+
+      <p>練習するときに困っていることはありますか？（複数チェック可）</p>
+      <label><input type="checkbox" name="trouble-${id}" value="トリックが安定しない">トリックが安定しない</label><br>
+      <label><input type="checkbox" name="trouble-${id}" value="思うように上達しない">思うように上達しない</label><br>
+      <label><input type="checkbox" name="trouble-${id}" value="教えてくれる人がいない">教えてくれる人がいない</label><br>
+      <label><input type="checkbox" name="trouble-${id}" value="できているかどうかわからない">できているかどうかわからない</label><br>
+      <label><input type="checkbox" name="trouble-${id}" value="その他">その他：
+        <input type="text" id="trouble-other-${id}">
+      </label><br><br>
+
+      <p>ヨーヨーがどのくらい得意ですか？（0 = 不得意 ／ 5 = とても得意）</p>
+      <label><input type="radio" name="skill-${id}" value="0">0</label>
+      <label><input type="radio" name="skill-${id}" value="1">1</label>
+      <label><input type="radio" name="skill-${id}" value="2">2</label>
+      <label><input type="radio" name="skill-${id}" value="3">3</label>
+      <label><input type="radio" name="skill-${id}" value="4">4</label>
+      <label><input type="radio" name="skill-${id}" value="5">5</label>
+      <br><br>
+    `;
+  }
+
+  if (type === "post") {
+    return `
+      <p>1. デバイスをつけてヨーヨーをすることに違和感はありましたか？</p>
+      <label><input type="radio" name="discomfort-${id}" value="全くなかった">全くなかった</label><br>
+      <label><input type="radio" name="discomfort-${id}" value="少しあった">少しあった</label><br>
+      <label><input type="radio" name="discomfort-${id}" value="かなりあった">かなりあった</label><br><br>
+
+      <p>2. デバイスの重さや大きさ、装着性は気になりましたか？</p>
+      <label><input type="radio" name="weightfit-${id}" value="気にならなかった">気にならなかった</label><br>
+      <label><input type="radio" name="weightfit-${id}" value="少し気になった">少し気になった</label><br>
+      <label><input type="radio" name="weightfit-${id}" value="とても気になった">とても気になった</label><br><br>
+
+      <p>3. デバイスについて良かった点・改善してほしい点を教えてください。</p>
+      <textarea id="device-comment-${id}" rows="3" cols="50"></textarea><br><br>
+
+      <p>4. 評価結果の表示（例：グラフ、評価など）はわかりやすかったですか？</p>
+      <label><input type="radio" name="resultview-${id}" value="とてもわかりやすい">とてもわかりやすい</label><br>
+      <label><input type="radio" name="resultview-${id}" value="わかりやすい">わかりやすい</label><br>
+      <label><input type="radio" name="resultview-${id}" value="少しわかりにくい">少しわかりにくい</label><br>
+      <label><input type="radio" name="resultview-${id}" value="わかりにくい">わかりにくい</label><br><br>
+
+      <p>5. 評価結果（できている点・できていない点など）は、今後の練習の参考になると思いますか？</p>
+      <label><input type="radio" name="useful-${id}" value="とても思う">とても思う</label><br>
+      <label><input type="radio" name="useful-${id}" value="少し思う">少し思う</label><br>
+      <label><input type="radio" name="useful-${id}" value="あまり思わない">あまり思わない</label><br>
+      <label><input type="radio" name="useful-${id}" value="全く思わない">全く思わない</label><br><br>
+
+      <p>6. このシステムを使って、今後も練習したいと思いましたか？</p>
+      <label><input type="radio" name="continue-${id}" value="ぜひ使いたい">ぜひ使いたい</label><br>
+      <label><input type="radio" name="continue-${id}" value="機会があれば使いたい">機会があれば使いたい</label><br>
+      <label><input type="radio" name="continue-${id}" value="あまり使いたいと思わない">あまり使いたいと思わない</label><br><br>
+
+      <p>7. 今後、このシステムで分析してほしいトリックはありますか？</p>
+      <textarea id="future-trick-${id}" rows="3" cols="50"></textarea><br><br>
+
+      <p>8. システムについて良かった点・改善してほしい点を教えてください。</p>
+      <textarea id="system-comment-${id}" rows="3" cols="50"></textarea><br><br>
+    `;
+  }
+
+}
+
+
+  async function saveSurvey(id, type, popupWin) {
+    let answers = {};
+
+    if (type === "pre") {
+      answers.age = popupWin.document.getElementById(`age-${id}`)?.value || "";
+      answers.history = popupWin.document.querySelector(`input[name="history-${id}"]:checked`)?.value || "";
+      answers.freq = popupWin.document.querySelector(`input[name="freq-${id}"]:checked`)?.value || "";
+      answers.exam = popupWin.document.querySelector(`input[name="exam-${id}"]:checked`)?.value || "";
+      answers.exam_rank = popupWin.document.getElementById(`exam-rank-${id}`)?.value || "";
+
+      // 複数選択に対応
+      answers.practice = Array.from(popupWin.document.querySelectorAll(`input[name="practice-${id}"]:checked`)).map(el => el.value);
+      answers.practice_other = popupWin.document.getElementById(`practice-other-${id}`)?.value || "";
+
+      answers.trouble = Array.from(popupWin.document.querySelectorAll(`input[name="trouble-${id}"]:checked`)).map(el => el.value);
+      answers.trouble_other = popupWin.document.getElementById(`trouble-other-${id}`)?.value || "";
+
+      answers.skill = popupWin.document.querySelector(`input[name="skill-${id}"]:checked`)?.value || "";
+    }
+
+
+    if (type === "post") {
+      answers.discomfort   = popupWin.document.querySelector(`input[name="discomfort-${id}"]:checked`)?.value || "";
+      answers.weightfit    = popupWin.document.querySelector(`input[name="weightfit-${id}"]:checked`)?.value || "";
+      answers["device-comment"] = popupWin.document.getElementById(`device-comment-${id}`)?.value || "";
+      answers.resultview   = popupWin.document.querySelector(`input[name="resultview-${id}"]:checked`)?.value || "";
+      answers.useful       = popupWin.document.querySelector(`input[name="useful-${id}"]:checked`)?.value || "";
+      answers.continue     = popupWin.document.querySelector(`input[name="continue-${id}"]:checked`)?.value || "";
+      answers["future-trick"]   = popupWin.document.getElementById(`future-trick-${id}`)?.value || "";
+      answers["system-comment"] = popupWin.document.getElementById(`system-comment-${id}`)?.value || "";
+    }
+
+
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}/survey`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ survey_type: type, answers })
+    });
+
+    if (res.ok) {
+      alert(type === "pre" ? "事前アンケートを保存しました" : "事後アンケートを保存しました");
+      popupWin.close();
+      location.reload();
+      document.getElementById(`${type}-btn-${id}`).innerText =
+        type === "pre" ? "事前アンケートを編集" : "事後アンケートを編集";
+    } else {
+      const errText = await res.text();
+      console.error("アンケート保存エラー:", res.status, errText);
+      alert("保存に失敗しました: " + res.status);
+    }
+  }
+
+  function renderSurveyTable(title, survey) {
+    if (!survey) return "";
+
+    const labels = {
+      // 事前アンケート（フォームと同じ順序・文言に揃える）
+
+      age: "1. 年齢",
+      history: "2. ヨーヨー歴（どのくらい続けていますか？）",
+      freq: "3. ヨーヨーをする頻度",
+      exam: "4. JYYFヨーヨー検定を受けたことがありますか？",
+      exam_rank: "4-補足. 検定の最高位",
+      practice: "5. 普段どのようにヨーヨーを練習していますか？",
+      practice_other: "5-補足. 練習方法（その他）",
+      trouble: "6. 練習するときに困っていることはありますか？",
+      trouble_other: "6-補足. 困りごと（その他）",
+      skill: "7. ヨーヨーがどのくらい得意ですか？（0 = 不得意 ／ 5 = とても得意）",
+
+
+
+      // 事後アンケート
+      discomfort: "1. デバイスをつけてヨーヨーをすることに違和感はありましたか？",
+      weightfit: "2. デバイスの重さや大きさ、装着性は気になりましたか？",
+      "device-comment": "3. デバイスについて良かった点・改善してほしい点を教えてください。",
+      resultview: "4. 評価結果の表示（例：グラフ、評価など）はわかりやすかったですか？",
+      useful: "5. 評価結果（できている点・できていない点など）は、今後の練習の参考になると思いますか？",
+      continue: "6. このシステムを使って、今後も練習したいと思いましたか？",
+      "future-trick": "7. 今後、このシステムで分析してほしいトリックはありますか？",
+      "system-comment": "8. システムについて良かった点・改善してほしい点を教えてください。"
+    };
+
+    // 表示順を固定するリスト
+    const order_pre = [
+      "age",                // 1. 年齢
+      "history",            // 2. ヨーヨー歴
+      "freq",               // 3. ヨーヨーをする頻度
+      "exam",               // 4. ヨーヨー検定
+      "exam_rank",          // 4-補足. 検定の最高位
+      "practice",           // 5. 普段の練習方法
+      "practice_other",     // 5-補足. 練習方法（その他）
+      "trouble",            // 6. 練習で困っていること
+      "trouble_other",      // 6-補足. 困りごと（その他）
+      "skill"               // 7. ヨーヨーの得意度
+    ];
+
+    const order_post = [
+      "discomfort", "weightfit", "device-comment",
+      "resultview", "useful", "continue",
+      "future-trick", "system-comment"
+    ];
+
+    // タイトルでどちらか判定
+    const order = title.includes("事前") ? order_pre : order_post;
+
+    let rows = "";
+    for (const key of order) {
+      if (survey.hasOwnProperty(key)) {
+        let a = survey[key];
+        let answerText = Array.isArray(a) ? a.join(", ") : a;
+        if (!answerText) answerText = "（未回答）";
+        rows += `<tr>
+                  <th style="text-align:left; padding:5px;">${labels[key] ?? key}</th>
+                  <td style="padding:5px;">${answerText}</td>
+                </tr>`;
+      }
+    }
+
+    return `
+      <h3>${title}</h3>
+      <table border="1" style="margin:10px auto; border-collapse:collapse; font-size:20px;">
+        ${rows}
+      </table>
+    `;
+  }
+
+  function openSurveySummary() {
+    const width = 800, height = 600;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+
+    const popup = window.open("", "surveySummary",
+      `width=${width},height=${height},left=${left},top=${top}`);
+
+    fetch("https://yoyo-backend.kajilab.dev/survey_summary")
+      .then(res => res.json())
+      .then(data => {
+        let html = `
+          <html lang="ja">
+          <head><meta charset="UTF-8"><title>アンケート集計結果</title></head>
+          <body style="font-family:sans-serif; padding:10px;">
+            <h2>アンケート集計結果</h2>
+            <h3>事前アンケート</h3>
+            ${renderSummaryTable(data.pre)}
+            <h3>事後アンケート</h3>
+            ${renderSummaryTable(data.post)}
+          </body>
+          </html>
+        `;
+        popup.document.write();
+      });
+  }
+
+  function renderSummaryTable(surveys) {
+    if (!surveys.length) return "<p>データなし</p>";
+
+    // 集計例：選択肢の出現回数カウント
+    let counts = {};
+    surveys.forEach(s => {
+      for (const [k, v] of Object.entries(s)) {
+        const val = Array.isArray(v) ? v.join(",") : v;
+        counts[k] = counts[k] || {};
+        counts[k][val] = (counts[k][val] || 0) + 1;
+      }
+    });
+
+    let rows = "";
+    for (const [q, values] of Object.entries(counts)) {
+      rows += `<tr><th>${q}</th><td>${Object.entries(values)
+        .map(([ans, num]) => `${ans}: ${num}`).join("<br>")}</td></tr>`;
+    }
+
+    return `<table border="1" style="margin:10px auto; border-collapse:collapse; font-size:18px;">${rows}</table>`;
+  }
+
+  
+  window.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+
+ // id付きでアクセスした場合 → その履歴だけを全画面表示
+if (id) {
+  const container = document.getElementById("history");
+  container.innerHTML = "<p>読み込み中...</p>";
+
+  try {
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
+    if (!res.ok) throw new Error("データ取得に失敗");
+    const detail = await res.json();
+
+    // --- YouTube ID 抽出用関数 ---
+    const extractYouTubeId = (url) => {
+      const regExp = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S*?v=|v\/|embed\/|shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const match = url?.match(regExp);
+      return match ? match[1] : null;
+    };
+
+    // --- 動画埋め込みHTML ---
+    let videoHTML = "";
+    if (detail.video_url) {
+      const youtubeId = extractYouTubeId(detail.video_url);
+      if (youtubeId) {
+        videoHTML = `
+          <div style="margin-top:20px;">
+            <h3>アップロードされた動画</h3>
+            <iframe width="800" height="500"
+              src="https://www.youtube.com/embed/${youtubeId}"
+              title="YouTube video player"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen></iframe>
+          </div>
+        `;
+      }
+    }
+
+    // --- 詳細のみ表示 ---
+    container.innerHTML = `
+      <div class="result">
+        <p>${detail.timestamp ?? ""}</p>
+        <p>${detail.name ?? "無題"}</p>
+        <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + "点" : "なし"}</p>
+
+        ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">` : ""}
+        <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
+        <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : "なし"}</p>
+        <p>ループ数: ${detail.loop_count ?? "なし"}</p>
+        <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + "周目" : "なし"}</p>
+        <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : "-"} 秒</p>
+        <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : "-"} 秒</p>
+        <p>手首を返す強さ（中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : "-"} 秒</p>
+        <p>手首を返す強さ（ばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : "-"} 秒</p>
+        <pre style="font-size: 30px; white-space: pre-wrap;">${Array.isArray(detail.loop_duration_list) ? detail.loop_duration_list.join("\n") : ""}</pre>
+        ${detail.loop_plot ? `<img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">` : ""}
+        <div class="heatmap-row">
+          ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}"></div>` : ""}
+          ${detail.pro_heatmap ? `<div><h4>プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}"></div>` : ""}
+        </div>
+
+        ${detail.pre_survey ? renderSurveyTable("事前アンケート結果", detail.pre_survey) : ""}
+        ${detail.post_survey ? renderSurveyTable("事後アンケート結果", detail.post_survey) : ""}
+
+        ${videoHTML}  <!-- 👈 ここで動画を埋め込み表示 -->
+
+        <button onclick="window.location.href='viewer.html'">一覧に戻る</button>
+        <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">CSVをダウンロード</button>
+        <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">この結果を削除</button>
+      </div>
+    `;
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = "<p>データの読み込みに失敗しました。</p>";
+  }
+} else {
+  // 通常時 → 一覧を表示
+  fetchHistory();
+}
+
+});
+
+function extractYouTubeId(url) {
+  const regExp = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S*?v=|v\/|embed\/|shorts\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regExp);
+  return match ? match[1] : null;
+}
+
+async function uploadVideo(id) {
+  const url = prompt("YouTubeのURLを入力してください（例: https://youtu.be/xxxx）：");
+  if (!url) return;
+
+  const youtubeId = extractYouTubeId(url);
+  if (!youtubeId) {
+    alert("正しいYouTubeのURLを入力してください。");
+    return;
+  }
+
+  const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}/video`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ video_url: url })
+  });
+
+  if (res.ok) {
+    alert("動画URLを保存しました！");
+    const preview = document.getElementById(`video-preview-${id}`);
+    if (preview) preview.remove(); // 既存プレビュー削除
+    const container = document.getElementById(`detail-${id}`);
+    container.innerHTML += `
+      <div id="video-preview-${id}" style="margin-top:20px;">
+        <h3>アップロードされた動画</h3>
+        <iframe width="800" height="500"
+          src="https://www.youtube.com/embed/${youtubeId}"
+          title="YouTube video player"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+    `;
+  } else {
+    const err = await res.text();
+    console.error("動画アップロードエラー:", res.status, err);
+    alert("動画URLの保存に失敗しました");
+  }
+}
+
+
+  </script>
+
+  <!-- 🔥 Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<script>
+// === あなたのプロジェクト設定 ===
+firebase.initializeApp({
+  apiKey: "AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
+  authDomain: "yoyo-sensing.firebaseapp.com",
+  projectId: "yoyo-sensing",
+  storageBucket: "yoyo-sensing.firebasestorage.app",
+  messagingSenderId: "129908163482",
+  appId: "1:129908163482:web:8cb1c024e25b2c9a96f023",
 });
 </script>
 

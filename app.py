@@ -125,6 +125,31 @@ def add_user_column():
 
 add_user_column()  # ←★起動時に一度だけ実行
 
+def add_user_name_column():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "user_name" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN user_name TEXT")
+        conn.commit()
+    conn.close()
+
+add_user_name_column()
+
+def add_email_column():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "email" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN email TEXT")
+        conn.commit()
+    conn.close()
+
+add_email_column()
+
+
 def pick_lang(raw):
     if not raw: return "ja"
     raw = raw.lower()
@@ -214,8 +239,8 @@ def save_result_to_db(result, user_id):
             timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean, pro_distance_median,
             loop_count, stable_loop, loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap,
-            acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list, user_id 
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list, user_id, user_name, email
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
@@ -242,7 +267,9 @@ def save_result_to_db(result, user_id):
         result.get("snap_std"),
         result.get("loop_duration_list"),
         result.get("loop_max_acc_list"),
-        result.get("user_id")
+        result.get("user_id"),
+        result.get("user_name"),   # ← ★追加
+        result.get("email") 
 
     ))
     conn.commit()
@@ -708,23 +735,24 @@ def analyze():
 def save_result():
     result = request.get_json()
     if not result:
-        return jsonify({"error":"No result data"}),400
+        return jsonify({"error": "No result data"}), 400
     
-    # ←★★ ここで user_id を受け取る（Googleログイン情報から来る前提）
-    uid = result.get("user_id")
+    uid  = result.get("user_id")      # ← Google UID
+    name = result.get("user_name")    # ← ⭐ Google表示名 ここが今回追加
+    email = result.get("email")       # ← 任意（管理向け表示用にも使える）
+
     if not uid:
-        return jsonify({"error":"user_id is required"}),400
+        return jsonify({"error": "user_id is required"}), 400
 
-
-    # --- raw_self_distance の補正（あなたの元コード維持）---
+    # スコア欠落時の補正（元処理維持）
     if "raw_self_distance" not in result or result["raw_self_distance"] is None:
         result["raw_self_distance"] = 0.0
-    # -----------------------------------------------------
 
-    # ★★ user_idを含めてDBに保存
-    save_result_to_db(result, user_id=uid)
+    # DB保存（★ user_id / user_name / email を含める）
+    save_result_to_db(result, user_id=uid, user_name=name, email=email)
 
-    return jsonify({"status":"saved"})
+    return jsonify({"status": "saved"})
+
 
 
 @app.route("/results", methods=["GET"])

@@ -73,6 +73,13 @@
     h4 { font-size: 30px; }
     h5 { font-size: 50px; }
 
+    #appTitle {
+      font-size: 50px;
+      margin: 20px 0;   /* ← 83px → 20px に縮める */
+      padding: 10px 0;  /* ← 背景に余白があるならここで調整 */
+    }
+
+
 
     .heatmap-grid {
       display: flex;
@@ -355,27 +362,122 @@
     }
     .video-wrap iframe{ width:100%; height:100%; border:0; display:block; }
 
+    /* ▼ すべてのボタンの無効状態（disabled）を統一デザインにする */
+    button:disabled {
+      background: #eaeaea !important;   /* グレーを統一 */
+      color: #b5b5b5 !important;        /* 文字色も同じく薄く */
+      border: 1px solid #dcdcdc !important;
+      opacity: 1 !important;            /* ← これがとても重要！ */
+      cursor: not-allowed;
+    }
+
+
 
 
 
 
   </style>
+  <!-- ============================
+  🔥 Firebase 認証読み込み
+  =============================== -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
   <script>
+  // ===== Firebase 設定 =====
   const firebaseConfig = {
-      apiKey: "AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
-      authDomain: "yoyo-sensing.firebaseapp.com",
-      projectId: "yoyo-sensing",
-      storageBucket: "yoyo-sensing.firebasestorage.app",
-      messagingSenderId: "129908163482",
-      appId: "1:129908163482:web:8cb1c024e25b2c9a96f023",
-      measurementId: "G-H44GHQM64S"
+    apiKey: "AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
+    authDomain: "yoyo-sensing.firebaseapp.com",
+    projectId: "yoyo-sensing",
+    storageBucket: "yoyo-sensing.firebasestorage.app",
+    messagingSenderId: "129908163482",
+    appId: "1:129908163482:web:8cb1c024e25b2c9a96f023",
   };
-
   firebase.initializeApp(firebaseConfig);
+
+
+  // ============================
+  // 🔥 index画面にログイン機能統合
+  // ============================
+  function googleLogin(){
+    const provider=new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+      .then(()=>location.reload())   // ←ログイン後に即画面反映
+      .catch(err=>alert("ログイン失敗: "+err));
+  }
+
+  function logout(){
+    firebase.auth().signOut().then(()=>location.reload());
+  }
+
+  // ===========================================
+  // 🔥 DOMロード後にログイン状態で表示を切替
+  // ===========================================
+  document.addEventListener("DOMContentLoaded",()=>{
+    firebase.auth().onAuthStateChanged(user=>{
+      
+      const loginArea = document.getElementById("login-area");
+      const btnRi     = document.getElementById("btnRi");
+
+      if(!user){
+        btnRi.disabled = true;
+        btnRi.style.opacity = "0.4";
+        btnRi.style.pointerEvents = "none"; // ←押せない確定
+        btnRi.innerText = "履歴を見る（ログイン必要）"; // 表示文を変える
+        // -------- 未ログイン表示 --------
+        loginArea.innerHTML = `
+          <div style="display:flex; justify-content:center; margin-top:5px; margin-bottom:10px;">
+            <button onclick="googleLogin()" 
+              style="
+                font-size:25px;
+                padding:12px 24px;
+                background:#4285F4;
+                color:#fff;
+                border:none;
+                border-radius:6px;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+                gap:8px;
+              ">
+              <img src="https://developers.google.com/identity/images/g-logo.png" 
+                  style="width:24px;height:24px;">
+              Googleでログイン
+            </button>
+          </div>
+        `;
+
+      }else{
+        btnRi.disabled = false;
+        btnRi.style.opacity = "1";
+        btnRi.style.pointerEvents = "auto";
+        btnRi.innerText = "履歴を見る"; // 通常名に戻す
+        // -------- ログイン状態表示 --------
+        loginArea.innerHTML = `
+          <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:5px; margin-bottom:10px;">
+            <span style="font-size:25px; color:#333;"> <img src="https://developers.google.com/identity/images/g-logo.png" 
+                  style="width:24px;height:24px;"> ログイン中： <b>${user.email}</b></span>
+            
+            <button onclick="logout()"
+              style="
+                font-size:25px;
+                padding:8px 18px;
+                background:#e74c3c;
+                color:white;
+                border:none;
+                border-radius:6px;
+                cursor:pointer;
+              ">
+              ログアウト
+            </button>
+          </div>
+        `;
+      }
+      
+    });
+  });
   </script>
+
 </head>
 <body>
   <div class="container">
@@ -390,6 +492,8 @@
 
 
     <h5 id="appTitle">インサイド・ループ技能評価システム<br></h5>
+
+    <div id="login-area" style="margin-top:20px;"></div>
     
     <button id="btnConnect">接続 &amp; センシング開始</button>
     <input type="file" id="csvFiles" accept=".csv" multiple style="display:none;">
@@ -527,11 +631,12 @@
     <script>
       // ▼ Firebase SDK 読み込み後に必ず貼る！ ▼
       firebase.auth().onAuthStateChanged((user) => {
-          if (!user) {
-              alert("ログインが必要です");
-              location.href = "login.html";  // 🔥ログインしてない場合はログインへ
-          }
+        if (!user) {
+          console.log("未ログイン → index内のログインボタンを使用する");
+          return;
+         }
       });
+
     </script>
 
     <script>
@@ -950,6 +1055,7 @@
         isCsvMode = true; 
 
         // ▼ ここを追加：CSV解析中はボタン非表示
+        document.getElementById("login-area").style.display="none";
         btnConnect.style.display  = 'none';
         btnCsvMode.style.display  = 'none';
         btnRi.style.display       = 'none';
@@ -1040,6 +1146,7 @@
           btnStop.style.display      = 'none';
           btnCancel.style.display    = 'none';
           btnRestart.style.display   = 'none';
+          document.getElementById("login-area").style.display="block";
         } catch (err) {
           // 中止失敗
           alert(t('cancelFailed') + ': ' + err.message);
@@ -1091,6 +1198,7 @@
           btnRi.style.display='none';
           btnCancel.style.display  = 'none';
           btnRestart.style.display = 'none';
+          document.getElementById("login-area").style.display="none"
           showIntroVideo(false);
           hideMeasureUI();
           await controlChar.writeValue(new Uint8Array([0]));

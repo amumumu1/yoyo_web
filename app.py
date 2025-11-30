@@ -108,6 +108,21 @@ I18N = {
     }
 }
 
+DB_PATH = "results.db"
+
+def add_user_column():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "user_id" not in cols:
+        print("🔧 user_id列をDBに追加しました")
+        cur.execute("ALTER TABLE results ADD COLUMN user_id TEXT")
+        conn.commit()
+    conn.close()
+
+add_user_column()  # ←★起動時に一度だけ実行
+
 def pick_lang(raw):
     if not raw: return "ja"
     raw = raw.lower()
@@ -142,7 +157,6 @@ CORS(app)
 progress_store = {}
 
 # ── データベース初期化 ─────────────────────────────────
-DB_PATH = "results.db"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -181,7 +195,7 @@ def init_db():
 print("📂 Using database file:", os.path.abspath(DB_PATH))
 
 
-def save_result_to_db(result):
+def save_result_to_db(result, user_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     jst_now = datetime.utcnow() + timedelta(hours=9)
@@ -192,8 +206,8 @@ def save_result_to_db(result):
             timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean, pro_distance_median,
             loop_count, stable_loop, loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap,
-            acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list, user_id 
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
@@ -219,7 +233,8 @@ def save_result_to_db(result):
         result.get("snap_median"),
         result.get("snap_std"),
         result.get("loop_duration_list"),
-        result.get("loop_max_acc_list")
+        result.get("loop_max_acc_list"),
+        user_id 
     ))
     conn.commit()
     conn.close()
@@ -686,12 +701,22 @@ def save_result():
     if not result:
         return jsonify({"error":"No result data"}),400
     
-    # --- ここを追加 ---
+    # ←★★ ここで user_id を受け取る（Googleログイン情報から来る前提）
+    uid = result.get("user_id")
+    if not uid:
+        return jsonify({"error":"user_id is required"}),400
+
+
+    # --- raw_self_distance の補正（あなたの元コード維持）---
     if "raw_self_distance" not in result or result["raw_self_distance"] is None:
-        result["raw_self_distance"] = 0.0  # もしくは default 値 / 再計算
-    # ------------------
-    save_result_to_db(result)
+        result["raw_self_distance"] = 0.0
+    # -----------------------------------------------------
+
+    # ★★ user_idを含めてDBに保存
+    save_result_to_db(result, user_id=uid)
+
     return jsonify({"status":"saved"})
+
 
 @app.route("/results", methods=["GET"])
 def get_results():

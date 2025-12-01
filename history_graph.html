@@ -121,12 +121,13 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 <select onchange="drawGraph(this.value)">
     <option value="total_score">総合評価</option>
-    <option value="score">自己比較スコア</option>
+    <option value="raw_self_distance">自己類似度（距離）</option>
     <option value="loop_mean_duration">平均ループ時間</option>
     <option value="loop_std_duration">ループばらつき</option>
     <option value="stable_loop">安定開始ループ</option>
-    <option value="pro_distance_mean">プロ距離平均</option>
+    <option value="pro_distance_mean">プロ類似度（距離）</option>
 </select>
+
 
 <br>
 <a href="viewer.html" class="button">← 履歴に戻る</a>

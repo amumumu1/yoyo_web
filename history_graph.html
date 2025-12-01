@@ -9,16 +9,38 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
 <style>
-body { text-align:center; font-family:sans-serif; }
-canvas { width:90vw !important; max-width:1100px; height:55vh !important; }
-select{
-    font-size:22px;padding:6px 12px;margin:10px;
-}
-.button{
-    padding:10px 16px;background:#eee;border-radius:5px;
-    border:1px solid #aaa;font-size:20px;text-decoration:none;color:#333;
-}
+    body {
+        text-align:center;
+        font-family:sans-serif;
+        margin:0;                 /* ← 余白ゼロ */
+        padding-top:15px;         /* 少しのみ余白 */
+    }
+
+    canvas{
+        width:100vw !important;
+        height:calc(100vh - 200px) !important;  /* ← ほぼ画面全体 */
+        max-width:none !important;
+        display:block;
+        margin:0 auto;
+    }
+
+    select{
+        font-size:22px;
+        padding:6px 12px;
+        margin:10px;
+    }
+
+    .button{
+        padding:10px 16px;
+        background:#eee;
+        border-radius:5px;
+        border:1px solid #aaa;
+        font-size:20px;
+        text-decoration:none;
+        color:#333;
+    }
 </style>
+
 
 <script>
 const firebaseConfig={
@@ -41,7 +63,12 @@ async function drawGraph(type){
     const res=await fetch(`https://yoyo-backend.kajilab.dev/results_user_graph?uid=${user.uid}&email=${user.email}`);
     const data=await res.json();
 
-    const labels=data.map(d=>d.timestamp);
+    const labels = data.map(d => {
+        // "2025-02-14 18:22:40" → "2/14 18:22" に短縮
+        const dt = new Date(d.timestamp.replace(/-/g,'/')); 
+        return `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,"0")}`;
+    });
+
     const values=data.map(d=>d[type]);
 
     if(chart) chart.destroy();
@@ -61,11 +88,21 @@ async function drawGraph(type){
         options:{
             responsive:true,
             maintainAspectRatio:false,
+
             scales:{
-                x:{title:{display:true,text:"日時"}},
-                y:{title:{display:true,text:type}}
+                x:{
+                    title:{display:true,text:"日時"},
+                    ticks:{
+                        maxRotation:45,
+                        minRotation:30,
+                        autoSkip:true,        // ← ラベル間引き
+                        autoSkipPadding:10
+                    }
+                },
+                y:{ title:{display:true,text:type} }
             }
         }
+
     });
 }
 

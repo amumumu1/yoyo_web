@@ -1087,18 +1087,18 @@ def get_results_user_graph():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # 管理者 → 全ユーザー
     if email == ADMIN_EMAIL:
         cur.execute("""
             SELECT timestamp, total_score, score, loop_mean_duration,
-                   loop_std_duration, stable_loop, pro_distance_mean
+                   loop_std_duration, stable_loop, pro_distance_mean,
+                   raw_self_distance
             FROM results ORDER BY timestamp ASC
         """)
     else:
-        # 一般ユーザー → 自分の履歴だけ
         cur.execute("""
             SELECT timestamp, total_score, score, loop_mean_duration,
-                   loop_std_duration, stable_loop, pro_distance_mean
+                   loop_std_duration, stable_loop, pro_distance_mean,
+                   raw_self_distance
             FROM results WHERE user_id = ?
             ORDER BY timestamp ASC
         """, (uid, ))
@@ -1114,10 +1114,12 @@ def get_results_user_graph():
             "loop_mean_duration": r[3],
             "loop_std_duration": r[4],
             "stable_loop": r[5],
-            "pro_distance_mean": r[6]
+            "pro_distance_mean": r[6],
+            "raw_self_distance": r[7]   # ⭐追加
         }
         for r in rows
     ])
+
 
 
 

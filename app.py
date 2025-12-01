@@ -1079,6 +1079,47 @@ def save_video_url(result_id):
 
     return jsonify({"status": "saved", "id": result_id, "video_url": video_url})
 
+@app.route("/results_user_graph", methods=["GET"])
+def get_results_user_graph():
+    uid = request.args.get("uid")
+    email = request.args.get("email")
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    # 管理者 → 全ユーザー
+    if email == ADMIN_EMAIL:
+        cur.execute("""
+            SELECT timestamp, total_score, score, loop_mean_duration,
+                   loop_std_duration, stable_loop, pro_distance_mean
+            FROM results ORDER BY timestamp ASC
+        """)
+    else:
+        # 一般ユーザー → 自分の履歴だけ
+        cur.execute("""
+            SELECT timestamp, total_score, score, loop_mean_duration,
+                   loop_std_duration, stable_loop, pro_distance_mean
+            FROM results WHERE user_id = ?
+            ORDER BY timestamp ASC
+        """, (uid, ))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return jsonify([
+        {
+            "timestamp": r[0],
+            "total_score": r[1],
+            "score": r[2],
+            "loop_mean_duration": r[3],
+            "loop_std_duration": r[4],
+            "stable_loop": r[5],
+            "pro_distance_mean": r[6]
+        }
+        for r in rows
+    ])
+
+
 
 
 

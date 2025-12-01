@@ -406,9 +406,27 @@
       .catch(err=>alert("ログイン失敗: "+err));
   }
 
-  function logout(){
-    firebase.auth().signOut().then(()=>location.reload());
+  function googleLogin(){
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" }); // ←これが最重要！
+
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION).then(()=>{
+      return firebase.auth().signInWithPopup(provider);
+    })
+    .then(()=>location.reload())
+    .catch(err=>alert("ログイン失敗: "+err));
   }
+
+
+  function logout(){
+    firebase.auth().signOut().then(()=>{
+      // ここで完全に自動ログインを無効化
+      sessionStorage.clear();
+      localStorage.clear();
+      location.reload();
+    });
+  }
+
 
   // ===========================================
   // 🔥 DOMロード後にログイン状態で表示を切替

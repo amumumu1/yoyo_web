@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>成長グラフ</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<style>
+body { text-align:center; font-family:sans-serif; }
+canvas { width:90vw !important; max-width:1100px; height:55vh !important; }
+select{
+    font-size:22px;padding:6px 12px;margin:10px;
+}
+.button{
+    padding:10px 16px;background:#eee;border-radius:5px;
+    border:1px solid #aaa;font-size:20px;text-decoration:none;color:#333;
+}
+</style>
+
+<script>
+const firebaseConfig={
+apiKey:"AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
+authDomain:"yoyo-sensing.firebaseapp.com",
+projectId:"yoyo-sensing",
+storageBucket:"yoyo-sensing.firebasestorage.app",
+messagingSenderId:"129908163482",
+appId:"1:129908163482:web:8cb1c024e25b2c9a96f023"
+};
+firebase.initializeApp(firebaseConfig);
+
+let chart=null;
+
+//------------------ グラフ描画 ------------------
+async function drawGraph(type){
+    const user=firebase.auth().currentUser;
+    if(!user) return alert("ログインしてください");
+
+    const res=await fetch(`https://yoyo-backend.kajilab.dev/results_user_graph?uid=${user.uid}&email=${user.email}`);
+    const data=await res.json();
+
+    const labels=data.map(d=>d.timestamp);
+    const values=data.map(d=>d[type]);
+
+    if(chart) chart.destroy();
+
+    chart=new Chart(document.getElementById("graph"),{
+        type:"line",
+        data:{
+            labels,
+            datasets:[{
+                label:type,
+                data:values,
+                borderWidth:3,
+                pointRadius:5,
+                fill:false
+            }]
+        },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            scales:{
+                x:{title:{display:true,text:"日時"}},
+                y:{title:{display:true,text:type}}
+            }
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+    firebase.auth().onAuthStateChanged(u=>{
+        if(!u) return location.href="login.html";
+        drawGraph("total_score");
+    });
+});
+</script>
+</head>
+
+<body>
+
+<h1>📈 練習成長グラフ</h1>
+
+<select onchange="drawGraph(this.value)">
+    <option value="total_score">総合評価</option>
+    <option value="score">自己比較スコア</option>
+    <option value="loop_mean_duration">平均ループ時間</option>
+    <option value="loop_std_duration">ループばらつき</option>
+    <option value="stable_loop">安定開始ループ</option>
+    <option value="pro_distance_mean">プロ距離平均</option>
+</select>
+
+<br>
+<a href="viewer.html" class="button">← 履歴に戻る</a>
+
+<canvas id="graph"></canvas>
+
+</body>
+</html>

@@ -693,7 +693,7 @@ def analyze():
 
         radar_b64, total_score, s_pro_5 = generate_radar_chart(
             score=score,
-            loop_mean=loop_mean_duration,
+            snap_std=snap_std,   
             loop_std=loop_std_duration,
             stable_loop=stable_loop,
             pro_distance=pro_dist_mean,

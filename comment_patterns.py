@@ -8,8 +8,8 @@
 # --------------------------------------------
 types_dict = {
     # --- A：総合 ---
-    "overall_good": "タイプ：総合上手型",
-    "overall_bad": "タイプ：総合課題型", 
+    "overall_good": "インサイド・ループ マスター",
+    "overall_bad": "これから爆伸びビギナー", 
     "mid_type": "タイプ：中間バランス型",
 
     # --- B：単指標 上手い ---
@@ -105,12 +105,13 @@ improvement_dict = {
 def classify_type(scores):
     # internal → dictionary key prefix
     prefix_map = {
-        "self_sim": "self_sim",
-        "pro_sim": "pro_sim",
-        "stable_start": "stable_start",
-        "loop_var": "loop_var",
-        "snap_var": "snap_var"
+        "self_sim": "self",
+        "pro_sim": "pro",
+        "stable_start": "stable",
+        "loop_var": "loopvar",
+        "snap_var": "snapvar"
     }
+
     good_keys = [k for k,v in scores.items() if v >= 4]
     bad_keys  = [k for k,v in scores.items() if v <= 2]
 

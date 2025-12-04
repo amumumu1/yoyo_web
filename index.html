@@ -378,7 +378,65 @@
     #commentSection .blockTitle {
       font-weight: bold;
       margin-bottom: 4px;
+      text-align: center;
     }
+    #typeLabel {
+      text-align: center !important;
+    }
+    /* ===== コメントカード全体 ===== */
+    .comment-card {
+      background: #ffffff;
+      padding: 20px 30px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+      margin-top: 25px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;   /* 中央揃え */
+    }
+
+    /* 見出し（強み・弱み・改善案） */
+    .comment-card .blockTitle {
+      font-size: 30px;
+      margin-bottom: 8px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* リストは左寄せにする */
+    .comment-card ul {
+      text-align: left;
+      margin: 0 auto;
+      display: inline-block;
+      font-size: 26px;
+      line-height: 1.6;
+    }
+
+    /* ===== メトリクス（総ループ数〜スナップ）カード ===== */
+    .metric-card {
+      background: #ffffff;
+      padding: 25px 30px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+      margin-top: 25px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      font-size: 30px;
+    }
+
+    .metric-card .metric-line {
+      margin: 14px 0;
+    }
+
+    .metric-card .inline-tip {
+      font-size: 30px;
+    }
+
+
+
 
 
 
@@ -452,6 +510,10 @@
         btnRi.style.opacity = "0.4";
         btnRi.style.pointerEvents = "none"; // ←押せない確定
         btnRi.innerText = "履歴を見る（ログイン必要）"; // 表示文を変える
+
+        // ★ ここを追加：未ログイン時は「あなた」
+        currentUserName = 'あなた';
+
         // -------- 未ログイン表示 --------
         loginArea.innerHTML = `
           <div style="display:flex; justify-content:center; margin-top:5px; margin-bottom:10px;">
@@ -480,6 +542,8 @@
         btnRi.style.opacity = "1";
         btnRi.style.pointerEvents = "auto";
         btnRi.innerText = "履歴を見る"; // 通常名に戻す
+
+        currentUserName = user.displayName || user.email || 'あなた';
         // -------- ログイン状態表示 --------
         loginArea.innerHTML = `
           <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:5px; margin-bottom:10px;">
@@ -601,14 +665,14 @@
     </div>
 
     <!-- ▼ 自動コメント（タイプ・強み・弱み・改善案） -->
-    <div id="commentSection" style="display:none; margin-top: 20px; text-align:left; max-width:900px; margin-left:auto; margin-right:auto;">
-      
-      <h3 id="typeLabel" style="font-size:35px; margin-bottom:15px;"></h3>
+    <div id="commentSection" style="display:none;">
+      <h3 id="typeLabel" style="font-size:35px; margin-bottom:20px;"></h3>
 
-      <div id="strengths" style="margin-bottom:20px; font-size:28px;"></div>
-      <div id="weaknesses" style="margin-bottom:20px; font-size:28px;"></div>
-      <div id="suggestions" style="margin-bottom:20px; font-size:28px;"></div>
-
+      <div class="comment-card">
+        <div id="strengths"></div>
+        <div id="weaknesses"></div>
+        <div id="suggestions"></div>
+      </div>
     </div>
 
 
@@ -640,6 +704,8 @@
 
     
     </div>
+
+    <hr id="hrCsv" style="display:none; border:none; border-top:2px solid black; width:100%; margin:40px 0;" />
 
     <div id="proExample" style="display: none;">
       <h2 id="proTitle"></h2>
@@ -701,6 +767,9 @@
       const btnRestart  = document.getElementById('btnRestart');
       const demoHeading  = document.getElementById('demoHeading');
       const appTitle  = document.getElementById('appTitle');
+      // ログインしている人の名前（なければ「あなた」）
+      let currentUserName = 'あなた';
+
 
       // ===== i18n =====
       let lang = localStorage.getItem('lang') || 'ja';
@@ -729,7 +798,7 @@
 
           // Radar tooltips
           tipSelfSim: '自身の類似度：<br>各ループの繰り返しの一致度。高いほど安定。<br>類似度が高いほど高評価',
-          tipMeanLoopTime: '平均ループ時間：<br>1周にかかる平均時間。目安は約0.4秒。<br>短いほど高評価',
+          tipMeanLoopTime: 'スナップの強さのばらつき：<br>各ループの指を返すとき（スナップ）の強さの標準偏差。小さいほど一定の強さでループができている。<br>小さいほど高評価',
           tipLoopVar: 'ループ時間のばらつき：<br>各ループ時間の標準偏差。小さいほどリズムが一定。<br>小さいほど高評価',
           tipStableStart: '安定開始ループ：<br>安定し始めるまでに要した周回数。<br>小さいほど高評価',
           tipProSim: 'プロ類似度：<br>プロの動きとの一致度。高いほど近い。<br>高いほど高評価',
@@ -1003,6 +1072,7 @@
 
       // UIリセット
       function resetUIBeforeMeasure() {
+        document.getElementById('commentSection').style.display = 'none';
         document.getElementById('radarWrap').style.display = 'none';
         document.getElementById('Title').style.display = 'none';
         document.getElementById('RadarTitle').style.display = 'none';
@@ -1313,7 +1383,15 @@
         cSec.style.display = 'block';
 
         // タイプ表示
-        typeL.innerHTML = `タイプ：<span class="num-red">${json.type}</span>`;
+        const baseName = currentUserName || (lang === 'ja' ? 'あなた' : 'You');
+        const labelName = (lang === 'ja' && baseName !== 'あなた')
+          ? `${baseName}さん`
+          : baseName;
+        const connector = (lang === 'ja' ? 'は ' : ' is ');
+        typeL.innerHTML = `
+          <span class="num-red">${labelName}${connector}${json.type}</span>
+        `;
+
 
         // 強み
         if (json.comments?.strengths?.length){
@@ -1390,7 +1468,11 @@
         // ホバー説明はラベル・数値まとめて inline-tip 内に維持
         const scoreDiv = document.getElementById('score');
         // 元：scoreDiv.innerHTML = `...巨大テンプレ...`;
-        scoreDiv.innerHTML = buildMetricsHTML(json);
+        scoreDiv.innerHTML = `
+          <div class="metric-card">
+            ${buildMetricsHTML(json)}
+          </div>
+        `;
 
 
         

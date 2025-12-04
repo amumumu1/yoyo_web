@@ -13,18 +13,18 @@ types_dict = {
     "mid_type": "タイプ：中間バランス型",
 
     # --- B：単指標 上手い ---
-    "self_sim_good": "タイプ：自己類似度上手型",
-    "pro_sim_good": "タイプ：プロ類似度上手型",
-    "stable_start_good": "タイプ：安定開始上手型",
-    "loop_var_good": "タイプ：ループばらつき少型",
-    "snap_var_good": "タイプ：スナップ安定型",
+    "self_good": "タイプ：自己類似度上手型",
+    "pro_good": "タイプ：プロ類似度上手型",
+    "stable_good": "タイプ：安定開始上手型",
+    "loopvar_good": "タイプ：ループばらつき少型",
+    "snapvar_good": "タイプ：スナップ安定型",
 
     # --- C：単指標 下手 ---
-    "self_sim_bad": "タイプ：自己類似度不安定型",
-    "pro_sim_bad": "タイプ：プロ類似度低型",
-    "stable_start_bad": "タイプ：安定開始遅型",
-    "loop_var_bad": "タイプ：ループばらつき多型",
-    "snap_var_bad": "タイプ：スナップばらつき型",
+    "self_bad": "タイプ：自己類似度不安定型",
+    "pro_bad": "タイプ：プロ類似度低型",
+    "stable_bad": "タイプ：安定開始遅型",
+    "loopvar_bad": "タイプ：ループばらつき多型",
+    "snapvar_bad": "タイプ：スナップばらつき型",
 
     # --- D：強み × 弱み（20種類） ---
     # 自己類似度 上手 × 他4つ 下手

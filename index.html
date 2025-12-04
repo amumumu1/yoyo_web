@@ -371,6 +371,16 @@
       cursor: not-allowed;
     }
 
+    #commentSection h3 {
+      color: #333;
+      font-weight: bold;
+    }
+    #commentSection .blockTitle {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+
 
 
 
@@ -589,6 +599,18 @@
         <div class="tooltip" id="tipProSim"></div>
       </div>
     </div>
+
+    <!-- ▼ 自動コメント（タイプ・強み・弱み・改善案） -->
+    <div id="commentSection" style="display:none; margin-top: 20px; text-align:left; max-width:900px; margin-left:auto; margin-right:auto;">
+      
+      <h3 id="typeLabel" style="font-size:35px; margin-bottom:15px;"></h3>
+
+      <div id="strengths" style="margin-bottom:20px; font-size:28px;"></div>
+      <div id="weaknesses" style="margin-bottom:20px; font-size:28px;"></div>
+      <div id="suggestions" style="margin-bottom:20px; font-size:28px;"></div>
+
+    </div>
+
 
 
 
@@ -1280,6 +1302,55 @@
         radarImg.src = `data:image/png;base64,${json.radar_chart}`;
         document.getElementById('RadarTitle').innerHTML =
           `<span class="num-red">${t('overallScore')}: ${json.total_score.toFixed(1)} ${t('points')}</span>`;
+
+        // ▼ 自動コメントセクション表示
+        const cSec  = document.getElementById('commentSection');
+        const typeL = document.getElementById('typeLabel');
+        const sDiv  = document.getElementById('strengths');
+        const wDiv  = document.getElementById('weaknesses');
+        const sugDiv= document.getElementById('suggestions');
+
+        cSec.style.display = 'block';
+
+        // タイプ表示
+        typeL.innerHTML = `タイプ：<span class="num-red">${json.type}</span>`;
+
+        // 強み
+        if (json.comments?.strengths?.length){
+          sDiv.innerHTML = `
+            <div class="blockTitle">✔ 強み</div>
+            <ul>
+              ${json.comments.strengths.map(s => `<li>${s}</li>`).join('')}
+            </ul>
+          `;
+        } else {
+          sDiv.innerHTML = '';
+        }
+
+        // 弱み
+        if (json.comments?.weaknesses?.length){
+          wDiv.innerHTML = `
+            <div class="blockTitle">⚠ 弱み</div>
+            <ul>
+              ${json.comments.weaknesses.map(w => `<li>${w}</li>`).join('')}
+            </ul>
+          `;
+        } else {
+          wDiv.innerHTML = '';
+        }
+
+        // 改善案
+        if (json.comments?.suggestions?.length){
+          sugDiv.innerHTML = `
+            <div class="blockTitle">🔧 改善案</div>
+            <ul>
+              ${json.comments.suggestions.map(a => `<li>${a}</li>`).join('')}
+            </ul>
+          `;
+        } else {
+          sugDiv.innerHTML = '';
+        }
+
 
 
         // ループ検出図

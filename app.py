@@ -19,6 +19,8 @@ from flask import Flask, request, jsonify, send_file, Response
 from datetime import datetime, timedelta
 import urllib.parse
 import traceback
+from comment_patterns import classify_type, generate_comments, types_dict
+
 
 # フォント設定
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
@@ -710,6 +712,64 @@ def analyze():
 
         # 完了
         set_progress(task_id, 100, "done")
+
+        # ---- 5点スケールへ変換（レーダーチャートと同じロジックを再利用） ----
+        # self_sim = s_score
+        s_self = 0 if score is None else min(max((score/100)*5, 0), 5)
+
+        # snap_var = s_snap
+        if snap_std is None:
+            s_snap = 0
+        elif snap_std <= 15:
+            s_snap = 5
+        elif snap_std >= 60:
+            s_snap = 0
+        else:
+            s_snap = 5 * (60 - snap_std) / (60 - 15)
+
+        # loop_var = s_std
+        if loop_std_duration is None:
+            s_loopvar = 0
+        elif loop_std_duration <= 0.05:
+            s_loopvar = 5
+        elif loop_std_duration >= 0.2:
+            s_loopvar = 0
+        else:
+            s_loopvar = 5 * (0.2 - loop_std_duration) / (0.2 - 0.05)
+
+        # stable_start = s_stable
+        if stable_loop is None or n is None:
+            s_stable = 0
+        else:
+            scale = n / 10.0
+            max_full = int(round(2 * scale))
+            min_zero = int(round(7 * scale))
+            if stable_loop <= max_full:
+                s_stable = 5
+            elif stable_loop >= min_zero:
+                s_stable = 0
+            else:
+                s_stable = 5 * (min_zero - stable_loop) / (min_zero - max_full)
+
+        # pro_sim = s_pro_5（レーダーチャート内で作った値）
+        s_pro = s_pro_5
+
+        # ---- 5点スコア dict ----
+        scores_5 = {
+            "self_sim": s_self,
+            "snap_var": s_snap,
+            "loop_var": s_loopvar,
+            "stable_start": s_stable,
+            "pro_sim": s_pro
+        }
+
+        # ---- タイプ判定 ----
+        type_key = classify_type(scores_5)
+        type_label = types_dict.get(type_key, "不明タイプ")
+
+        # ---- コメント生成（強み・弱み・改善案） ----
+        comments = generate_comments(scores_5)
+
         result = {
             'self_heatmap': self_hm,
             'pro_heatmap': pro_hm,
@@ -730,7 +790,9 @@ def analyze():
             'snap_std': snap_std,
             'pro_score_100': float(s_pro_5*20),
             'pro_distance_mean': pro_dist_mean,
-            'pro_distance_median': pro_dist_median
+            'pro_distance_median': pro_dist_median,
+            'type': type_label,
+            'comments': comments
         }
         return jsonify(result)
     except Exception:

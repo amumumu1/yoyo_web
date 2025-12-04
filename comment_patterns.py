@@ -10,6 +10,8 @@ types_dict = {
     # --- A：総合 ---
     "overall_good": "タイプ：総合上手型",
 
+    "mid_type": "タイプ：中間バランス型",
+
     # --- B：単指標 上手い ---
     "self_sim_good": "タイプ：自己類似度上手型",
     "pro_sim_good": "タイプ：プロ類似度上手型",
@@ -97,3 +99,61 @@ improvement_dict = {
     "loop_var": "メトロノームに合わせて一定のテンポを保つ練習をしてみましょう。",
     "snap_var": "返す瞬間だけ力を一定にするスナップ練習を繰り返すと安定します。"
 }
+
+# comment_patterns.py
+
+def classify_type(scores):
+    # internal → dictionary key prefix
+    prefix_map = {
+        "self_sim": "self",
+        "pro_sim": "pro",
+        "stable_start": "stable",
+        "loop_var": "loopvar",
+        "snap_var": "snapvar"
+    }
+
+    good_keys = [k for k,v in scores.items() if v >= 4]
+    bad_keys  = [k for k,v in scores.items() if v <= 2]
+
+    # ① 全部good
+    if len(good_keys) == 5:
+        return "overall_good"
+
+    # ② 全部bad（任意）
+    if len(bad_keys) == 5:
+        return "overall_bad"
+
+    # ③ good × bad
+    if good_keys and bad_keys:
+        best_good = max(good_keys, key=lambda k: scores[k])
+        worst_bad = min(bad_keys, key=lambda k: scores[k])
+        return f"{prefix_map[best_good]}_good_{prefix_map[worst_bad]}_bad"
+
+    # ④ 単指標 good
+    if good_keys:
+        best_good = max(good_keys, key=lambda k: scores[k])
+        return f"{prefix_map[best_good]}_good"
+
+    # ⑤ 単指標 bad
+    if bad_keys:
+        worst_bad = min(bad_keys, key=lambda k: scores[k])
+        return f"{prefix_map[worst_bad]}_bad"
+
+    return "mid_type"
+
+
+def generate_comments(scores):
+    # --- 強み（最高スコア） ---
+    strength_key = max(scores, key=lambda k: scores[k])
+
+    # --- 弱み（最低スコア） ---
+    weakness_key = min(scores, key=lambda k: scores[k])
+
+    # --- 改善案 ---
+    improvement = improvement_dict[weakness_key]
+
+    return {
+        "strength": strength_dict[strength_key],
+        "weakness": weakness_dict[weakness_key],
+        "improvement": improvement
+    }

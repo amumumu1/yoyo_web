@@ -105,13 +105,12 @@ improvement_dict = {
 def classify_type(scores):
     # internal → dictionary key prefix
     prefix_map = {
-        "self_sim": "self",
-        "pro_sim": "pro",
-        "stable_start": "stable",
-        "loop_var": "loopvar",
-        "snap_var": "snapvar"
+        "self_sim": "self_sim",
+        "pro_sim": "pro_sim",
+        "stable_start": "stable_start",
+        "loop_var": "loop_var",
+        "snap_var": "snap_var"
     }
-
     good_keys = [k for k,v in scores.items() if v >= 4]
     bad_keys  = [k for k,v in scores.items() if v <= 2]
 

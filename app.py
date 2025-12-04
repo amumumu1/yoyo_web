@@ -792,7 +792,11 @@ def analyze():
             'pro_distance_mean': pro_dist_mean,
             'pro_distance_median': pro_dist_median,
             'type': type_label,
-            'comments': comments
+            'comments': {
+                'strengths': [comments["strength"]],
+                'weaknesses': [comments["weakness"]],
+                'suggestions': [comments["improvement"]],
+            }
         }
         return jsonify(result)
     except Exception:

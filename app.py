@@ -376,11 +376,18 @@ def generate_radar_chart(score, snap_std, loop_std, stable_loop, pro_distance, l
     elif score<=0:            s_score=0
     else:                     s_score=(score/100)*5
 
-    if snap_std is None:      s_snap = 0
-    elif snap_std <= 0.05:     s_snap = 5     # ばらつきが小さくて最高
-    elif snap_std >= 0.30:     s_snap = 0     # ばらつきが大きくて最低
+    if snap_std is None:
+        s_snap = 0
+
+    elif snap_std <= 15:
+        s_snap = 5     # 15以下 → 超安定で満点
+
+    elif snap_std >= 60:
+        s_snap = 0     # 60以上 → バラつき大で0点
+
     else:
-        s_snap = 5 * (0.30 - snap_std) / (0.30 - 0.05)
+        s_snap = 5 * (60 - snap_std) / (60 - 15)
+
 
 
     if loop_std is None:      s_std=0

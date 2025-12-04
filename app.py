@@ -66,7 +66,7 @@ I18N = {
             "dtw": "DTW距離"
         },
         "legend": { "peak": "ピーク", "valley": "谷", "one_loop": "1周" },
-        "radar_labels": ["自身の類似度","平均ループ時間","ループ時間のばらつき","安定開始ループ","プロ類似度"],
+        "radar_labels": ["自身の類似度","スナップばらつき","ループ時間ばらつき","安定開始ループ","プロ類似度"]
     },
     "en": {
         "progress": {
@@ -104,7 +104,7 @@ I18N = {
             "dtw": "DTW distance"
         },
         "legend": { "peak": "Peak", "valley": "Valley", "one_loop": "1 loop" },
-        "radar_labels": ["Self Similarity","Mean Loop Time","Loop Time Variation","Stable Start Loop","Pro Similarity"],
+        "radar_labels": ["Self Similarity","Snap Variation","Loop Time Variation","Stable Start Loop","Pro Similarity"]
     }
 }
 
@@ -369,17 +369,19 @@ def segment_loops(gyro, quats):
         segments.append(quats[mask].reset_index(drop=True))
     return segments
 
-def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, loop_count, labels=None):
+def generate_radar_chart(score, snap_std, loop_std, stable_loop, pro_distance, loop_count, labels=None):
     # 各指標を0〜5にスケーリング
     if score is None:         s_score=0
     elif score>=100:          s_score=5
     elif score<=0:            s_score=0
     else:                     s_score=(score/100)*5
 
-    if loop_mean is None:     s_mean=0
-    elif loop_mean<=0.4:      s_mean=5
-    elif loop_mean>=0.9:      s_mean=0
-    else:                     s_mean=5*(0.9-loop_mean)/(0.9-0.4)
+    if snap_std is None:      s_snap = 0
+    elif snap_std <= 0.05:     s_snap = 5     # ばらつきが小さくて最高
+    elif snap_std >= 0.30:     s_snap = 0     # ばらつきが大きくて最低
+    else:
+        s_snap = 5 * (0.30 - snap_std) / (0.30 - 0.05)
+
 
     if loop_std is None:      s_std=0
     elif loop_std<=0.05:      s_std=5
@@ -411,7 +413,7 @@ def generate_radar_chart(score, loop_mean, loop_std, stable_loop, pro_distance, 
     if labels is None:
         labels = ['自身の類似度','平均ループ時間','ループ時間のばらつき','安定開始ループ','プロ類似度']
 
-    values = [s_score, s_mean, s_std, s_stable, s_pro]
+    values = [s_score, s_snap, s_std, s_stable, s_pro]
     avg_score = np.mean(values) * 20
     values += values[:1]
     angles = np.linspace(0, 2*np.pi, len(labels)+1, endpoint=True)

@@ -10,52 +10,56 @@ types_dict = {
     # --- A：総合 ---
     "overall_good": "インサイド・ループ マスター",
     "overall_bad": "これから爆伸びビギナー", 
-    "mid_type": "タイプ：中間バランス型",
+    "mid_type": "バランス型プレイヤー",
 
     # --- B：単指標 上手い ---
-    "self_good": "タイプ：自己類似度上手型",
-    "pro_good": "タイプ：プロ類似度上手型",
-    "stable_good": "タイプ：安定開始上手型",
-    "loopvar_good": "タイプ：ループばらつき少型",
-    "snapvar_good": "タイプ：スナップ安定型",
+    "self_good": "ループそっくりプレイヤー",
+    "pro_good": "プロそっくりプレイヤー",
+    "stable_good": "投げ出し抜群プレイヤー",
+    "loopvar_good": "ループのテンポ一定プレイヤー",
+    "snapvar_good": "スナップの強さ一定プレイヤー",
 
     # --- C：単指標 下手 ---
-    "self_bad": "タイプ：自己類似度不安定型",
-    "pro_bad": "タイプ：プロ類似度低型",
-    "stable_bad": "タイプ：安定開始遅型",
-    "loopvar_bad": "タイプ：ループばらつき多型",
-    "snapvar_bad": "タイプ：スナップばらつき型",
+    "self_bad": "ループ類似度に難ありプレイヤー",
+    "pro_bad": "個性派プレイヤー",
+    "stable_bad": "投げ出し不安定プレイヤー",
+    "loopvar_bad": "ループのテンポ乱れがちプレイヤー",
+    "snapvar_bad": "スナップの強さばらばらプレイヤー",
 
     # --- D：強み × 弱み（20種類） ---
     # 自己類似度 上手 × 他4つ 下手
-    "self_good_pro_bad": "タイプ：自己類似度上手 × プロ類似度低型",
-    "self_good_stable_bad": "タイプ：自己類似度上手 × 安定開始遅型",
-    "self_good_loopvar_bad": "タイプ：自己類似度上手 × ループばらつき多型",
-    "self_good_snapvar_bad": "タイプ：自己類似度上手 × スナップばらつき型",
+    "self_good_pro_bad": "ループそっくり × 個性派 プレイヤー",
+    "self_good_stable_bad": "ループそっくり × 投げ出し不安定 プレイヤー",
+    "self_good_loopvar_bad": "ループそっくり × テンポ乱れがち プレイヤー",
+    "self_good_snapvar_bad": "ループそっくり × スナップばらばら プレイヤー",
+
 
     # プロ類似度 上手 × 他4つ 下手
-    "pro_good_self_bad": "タイプ：プロ類似度上手 × 自己類似度不安定型",
-    "pro_good_stable_bad": "タイプ：プロ類似度上手 × 安定開始遅型",
-    "pro_good_loopvar_bad": "タイプ：プロ類似度上手 × ループばらつき多型",
-    "pro_good_snapvar_bad": "タイプ：プロ類似度上手 × スナップばらつき型",
+    "pro_good_self_bad": "プロそっくり × 類似度に難あり プレイヤー",
+    "pro_good_stable_bad": "プロそっくり × 投げ出し不安定 プレイヤー",
+    "pro_good_loopvar_bad": "プロそっくり × テンポ乱れがち プレイヤー",
+    "pro_good_snapvar_bad": "プロそっくり × スナップばらばら プレイヤー",
+
 
     # 安定開始 上手 × 他4つ 下手
-    "stable_good_self_bad": "タイプ：安定開始上手 × 自己類似度不安定型",
-    "stable_good_pro_bad": "タイプ：安定開始上手 × プロ類似度低型",
-    "stable_good_loopvar_bad": "タイプ：安定開始上手 × ループばらつき多型",
-    "stable_good_snapvar_bad": "タイプ：安定開始上手 × スナップばらつき型",
+    "stable_good_self_bad": "投げ出し抜群 × 類似度に難あり プレイヤー",
+    "stable_good_pro_bad": "投げ出し抜群 × 個性派 プレイヤー",
+    "stable_good_loopvar_bad": "投げ出し抜群 × テンポ乱れがち プレイヤー",
+    "stable_good_snapvar_bad": "投げ出し抜群 × スナップばらばら プレイヤー",
+
 
     # ループばらつき少 × 他4つ 下手
-    "loopvar_good_self_bad": "タイプ：ループばらつき少型 × 自己類似度不安定型",
-    "loopvar_good_pro_bad": "タイプ：ループばらつき少型 × プロ類似度低型",
-    "loopvar_good_stable_bad": "タイプ：ループばらつき少型 × 安定開始遅型",
-    "loopvar_good_snapvar_bad": "タイプ：ループばらつき少型 × スナップばらつき型",
+    "loopvar_good_self_bad": "テンポ一定 × 類似度に難あり プレイヤー",
+    "loopvar_good_pro_bad": "テンポ一定 × 個性派 プレイヤー",
+    "loopvar_good_stable_bad": "テンポ一定 × 投げ出し不安定 プレイヤー",
+    "loopvar_good_snapvar_bad": "テンポ一定 × スナップばらばら プレイヤー",
+
 
     # スナップ安定 × 他4つ 下手
-    "snapvar_good_self_bad": "タイプ：スナップ安定型 × 自己類似度不安定型",
-    "snapvar_good_pro_bad": "タイプ：スナップ安定型 × プロ類似度低型",
-    "snapvar_good_stable_bad": "タイプ：スナップ安定型 × 安定開始遅型",
-    "snapvar_good_loopvar_bad": "タイプ：スナップ安定型 × ループばらつき多型"
+    "snapvar_good_self_bad": "スナップ一定 × 類似度に難あり プレイヤー",
+    "snapvar_good_pro_bad": "スナップ一定 × 個性派 プレイヤー",
+    "snapvar_good_stable_bad": "スナップ一定 × 投げ出し不安定 プレイヤー",
+    "snapvar_good_loopvar_bad": "スナップ一定 × テンポ乱れがち プレイヤー",
 }
 
 # --------------------------------------------

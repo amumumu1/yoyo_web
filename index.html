@@ -705,6 +705,13 @@
     
     </div>
 
+    <h3 id="orientationVideoTitle" style="display:none;">姿勢動画</h3>
+      <video id="orientationVideo" controls style="display:none; max-width:80%; margin:20px auto; border-radius:10px;">
+          <source id="orientationVideoSource" src="" type="video/mp4">
+          お使いのブラウザは動画再生に対応していません。
+      </video>
+
+
     <hr id="hrCsv" style="display:none; border:none; border-top:2px solid black; width:100%; margin:40px 0;" />
 
     <div id="proExample" style="display: none;">
@@ -1366,6 +1373,24 @@
         document.getElementById('proExample').style.display='block';
         document.getElementById('saveSection').style.display='block';
         document.getElementById('btnSaveResult').style.display = 'inline-block';
+
+        // ---- 姿勢動画の表示 ----
+        if (json.video_url) {
+            const vTitle = document.getElementById("orientationVideoTitle");
+            const vWrap  = document.getElementById("orientationVideo");
+            const vSrc   = document.getElementById("orientationVideoSource");
+
+            vSrc.src = json.video_url;   // ← Flask で生成した /static/videos/xxxx.mp4
+            vWrap.style.display = "block";
+            vTitle.style.display = "block";
+
+            // 再読み込み
+            vWrap.load();
+        } else {
+            document.getElementById("orientationVideo").style.display = "none";
+            document.getElementById("orientationVideoTitle").style.display = "none";
+        }
+
 
         // レーダー画像
         const radarImg = document.getElementById('radarChart');

@@ -58,13 +58,19 @@ def generate_orientation_video(quats, save_path):
         ax.plot(rod[:,0], rod[:,1], rod[:,2], linewidth=6)
 
         fig.canvas.draw()
-        frame = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+        # ▼ matplotlib 3.9以降は buffer_rgba() を使う
+        buf = fig.canvas.buffer_rgba()
+        frame = np.asarray(buf, dtype=np.uint8)
+
+        # ▼ frame を (H, W, 4) → BGR 3ch に変換
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+
         out.write(frame)
 
     out.release()
     plt.close(fig)
+
 
 
 

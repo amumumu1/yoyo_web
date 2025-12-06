@@ -20,61 +20,6 @@ from datetime import datetime, timedelta
 import urllib.parse
 import traceback
 from comment_patterns import classify_type, generate_comments, types_dict
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import cv2
-import tempfile
-
-def quaternion_to_rotation_matrix(q):
-    w, x, y, z = q
-    return np.array([
-        [1 - 2*(y*y + z*z),     2*(x*y - z*w),       2*(x*z + y*w)],
-        [2*(x*y + z*w),         1 - 2*(x*x + z*z),   2*(y*z - x*w)],
-        [2*(x*z - y*w),         2*(y*z + x*w),       1 - 2*(x*x + y*y)]
-    ])
-
-def generate_orientation_video(quats, save_path):
-    WIDTH, HEIGHT = 600, 600  # 固定サイズ
-    DPI = 100
-
-    fig = plt.figure(figsize=(WIDTH / DPI, HEIGHT / DPI), dpi=DPI)
-    ax = fig.add_subplot(111, projection='3d')
-
-    out = cv2.VideoWriter(
-        save_path,
-        cv2.VideoWriter_fourcc(*'mp4v'),
-        30,
-        (WIDTH, HEIGHT)
-    )
-
-    base = np.array([[0,0,0],[0,0,1]])
-
-    for q in quats:
-        R = quaternion_to_rotation_matrix(q)
-        rod = (R @ base.T).T
-
-        ax.clear()
-        ax.set_xlim([-1,1])
-        ax.set_ylim([-1,1])
-        ax.set_zlim([-1,1])
-        ax.plot(rod[:,0], rod[:,1], rod[:,2], linewidth=6)
-
-        fig.canvas.draw()
-
-        # matplotlib → numpy
-        buf = fig.canvas.buffer_rgba()
-        frame = np.asarray(buf, dtype=np.uint8)
-
-        # 必ず600×600にリサイズ（安全策）
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
-        frame = cv2.resize(frame, (WIDTH, HEIGHT))
-
-        out.write(frame)
-
-    out.release()
-    plt.close(fig)
-
 
 
 
@@ -554,8 +499,6 @@ def detect_stable_loop_by_tail(dtw_matrix, threshold_ratio=0.445):
 # ── 解析エンドポイント ─────────────────────────────────
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    session_id = str(uuid.uuid4())  # ← 動画用一意ID
-
     try:
         task_id = request.args.get('task_id')
         if not task_id or task_id not in progress_store:
@@ -597,8 +540,6 @@ def analyze():
             q = mad.updateIMU(q=q, gyr=gyr, acc=a)
             quats.append([gyro_df['t'].iloc[i]/1000, *q])
         quat_df = pd.DataFrame(quats, columns=['time','w','x','y','z'])
-        quat_list = quat_df[['w','x','y','z']].values.tolist()
-
 
         # 6: フィルタ＆ピーク検出
         set_progress(task_id, 30, "extrema")
@@ -830,11 +771,6 @@ def analyze():
         # ---- コメント生成（強み・弱み・改善案） ----
         comments = generate_comments(scores_5)
 
-       
-
-
-        
-
         result = {
             'self_heatmap': self_hm,
             'pro_heatmap': pro_hm,
@@ -863,20 +799,6 @@ def analyze():
                 'suggestions': [comments["improvement"]],
             }
         }
-        # ---- 3D姿勢動画生成（最終版）----
-        os.makedirs("static/videos", exist_ok=True)
-
-        video_path = f"static/videos/{session_id}_orientation.mp4"
-
-        try:
-            generate_orientation_video(quat_list, video_path)
-            result["video_url"] = "/" + video_path
-        except Exception as e:
-            print("動画生成エラー:", e)
-            result["video_url"] = None
-
-
-
         return jsonify(result)
     except Exception:
         traceback.print_exc()  # サーバログに詳細出力

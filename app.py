@@ -35,17 +35,20 @@ def quaternion_to_rotation_matrix(q):
     ])
 
 def generate_orientation_video(quats, save_path):
-    fig = plt.figure(figsize=(5,5))
+    WIDTH, HEIGHT = 600, 600  # 固定サイズ
+    DPI = 100
+
+    fig = plt.figure(figsize=(WIDTH / DPI, HEIGHT / DPI), dpi=DPI)
     ax = fig.add_subplot(111, projection='3d')
 
     out = cv2.VideoWriter(
         save_path,
         cv2.VideoWriter_fourcc(*'mp4v'),
         30,
-        (600, 600)
+        (WIDTH, HEIGHT)
     )
 
-    base = np.array([[0,0,0],[0,0,1]])  # 棒モデル
+    base = np.array([[0,0,0],[0,0,1]])
 
     for q in quats:
         R = quaternion_to_rotation_matrix(q)
@@ -59,12 +62,13 @@ def generate_orientation_video(quats, save_path):
 
         fig.canvas.draw()
 
-        # ▼ matplotlib 3.9以降は buffer_rgba() を使う
+        # matplotlib → numpy
         buf = fig.canvas.buffer_rgba()
         frame = np.asarray(buf, dtype=np.uint8)
 
-        # ▼ frame を (H, W, 4) → BGR 3ch に変換
+        # 必ず600×600にリサイズ（安全策）
         frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+        frame = cv2.resize(frame, (WIDTH, HEIGHT))
 
         out.write(frame)
 

@@ -773,6 +773,60 @@ def analyze():
         # ---- コメント生成（強み・弱み・改善案） ----
         comments = generate_comments(scores_5)
 
+
+        def compute_quaternions(acc, gyro):
+            """
+            acc: [{'t':..., 'ax':..., 'ay':..., 'az':...}, ...]
+            gyro: [{'t':..., 'gx':..., 'gy':..., 'gz':...}, ...]
+
+            return: [[w,x,y,z], [w,x,y,z], ...]  ← Three.jsへ送る
+            """
+
+            if len(acc) != len(gyro):
+                raise ValueError("加速度と角速度の長さが一致していません")
+
+            # 周波数（適宜調整）
+            SAMPLE_FREQ = 100.0
+            mad = Madgwick(sampleperiod=1.0 / SAMPLE_FREQ)
+
+            q = np.array([1.0, 0.0, 0.0, 0.0])
+            quats = []
+
+            last_t = None
+
+            for a, g in zip(acc, gyro):
+                t = a["t"]
+
+                # 時間差でサンプル周期を自動調整
+                if last_t is not None:
+                    dt = (t - last_t) / 1000.0
+                    if dt > 0:
+                        mad.Dt = dt
+                last_t = t
+
+                # 軸補正（あなたが導いた正しい式）
+                gyro_vec = np.array([
+                    -g["gy"],
+                    g["gz"],
+                    -g["gx"]
+                ], dtype=float)
+
+                acc_vec = np.array([a["ax"], a["ay"], a["az"]], dtype=float)
+
+                q = mad.updateIMU(q, gyr=gyro_vec, acc=acc_vec)
+                quats.append(q.tolist())
+
+            return quats
+        
+        acc_list = payload["acc"]
+        gyro_list = payload["gyro"]
+
+        quaternions = compute_quaternions(acc_list, gyro_list)
+        
+        
+
+
+
         result = {
             'self_heatmap': self_hm,
             'pro_heatmap': pro_hm,
@@ -799,7 +853,8 @@ def analyze():
                 'strengths': [comments["strength"]],
                 'weaknesses': [comments["weakness"]],
                 'suggestions': [comments["improvement"]],
-            }
+            },
+            "quaternions": quaternions
         }
         return jsonify(result)
     except Exception:

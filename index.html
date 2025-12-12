@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+
+  <!-- STL Loader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/loaders/STLLoader.js"></script>
+
   <meta charset="UTF-8" />
   <title>インサイド・ループ技能評価</title>
   <style>
@@ -701,6 +707,10 @@
           <div class="tooltip" id="tipProHeatmap"></div>
         </div>
       </div>
+
+    <h3 id="orientationTitle" style="display:none;">3D姿勢アニメーション</h3>
+    <div id="orientation3d" style="width: 400px; height: 400px; margin: 0 auto; display:none;"></div>
+
 
     
     </div>
@@ -1521,6 +1531,87 @@
         btnCsvMode.style.display   = 'inline-block';
         btnRi.style.display        = 'inline-block';
         btnStop.style.display      = 'none';
+
+        // ---- Three.js 姿勢アニメーション ----
+        if (json.quaternions) {
+            document.getElementById("orientationTitle").style.display = "block";
+            const container = document.getElementById("orientation3d");
+            container.style.display = "block";
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Three.js 基本セット
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 0, 120);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            container.innerHTML = "";
+            container.appendChild(renderer.domElement);
+
+            // ライト
+            const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
+            light1.position.set(50, 50, 100);
+            scene.add(light1);
+
+            const light2 = new THREE.AmbientLight(0x888888);
+            scene.add(light2);
+
+            let model = null;
+
+            // STLロード
+            const loader = new THREE.STLLoader();
+            loader.load("/static/stl/device.stl", function (geometry) {
+                const material = new THREE.MeshPhongMaterial({ color: 0x6699ff });
+                model = new THREE.Mesh(geometry, material);
+
+                // モデルの大きさ調整
+                geometry.computeBoundingBox();
+                const size = geometry.boundingBox.getSize(new THREE.Vector3()).length();
+                const scale = 40 / size;
+                model.scale.set(scale, scale, scale);
+
+                // 中心位置調整
+                geometry.center();
+
+                scene.add(model);
+            });
+
+            // クォータニオン → Three.js 用に変換
+            function applyQuaternion(q) {
+                // q = [w, x, y, z]
+                if (!model) return;
+
+                const threeQ = new THREE.Quaternion(q[1], q[2], q[3], q[0]);
+
+                // 実機の向き調整（ここが最も重要）
+                // 必要に応じて 90°回転を追加
+                const fix = new THREE.Quaternion();
+                fix.setFromEuler(new THREE.Euler(
+                    THREE.MathUtils.degToRad(90), 
+                    THREE.MathUtils.degToRad(0),
+                    THREE.MathUtils.degToRad(0)
+                ));
+
+                threeQ.multiply(fix);
+                model.setRotationFromQuaternion(threeQ);
+            }
+
+            let idx = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                if (json.quaternions.length > 0) {
+                    applyQuaternion(json.quaternions[idx]);
+                    idx = (idx + 1) % json.quaternions.length;
+                }
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        }
+
       }
 
       function buildMetricsHTML(json){

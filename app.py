@@ -242,8 +242,8 @@ def save_result_to_db(result, user_id, user_name=None, email=None):
             timestamp, name, total_score, radar_chart, score, raw_self_distance, raw_self_median, pro_distance_mean, pro_distance_median,
             loop_count, stable_loop, loop_mean_duration, loop_std_duration,
             loop_plot, self_heatmap, heatmap, pro_heatmap, compare_plot, combined_heatmap,
-            acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list, user_id, user_name, email
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            acc_csv, gyro_csv, snap_median, snap_std, loop_duration_list, loop_max_acc_list, user_id, user_name, email, type, comments
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         jst_now.strftime("%Y-%m-%d %H:%M:%S"),
         result.get("name"),
@@ -272,7 +272,9 @@ def save_result_to_db(result, user_id, user_name=None, email=None):
         result.get("loop_max_acc_list"),
         result.get("user_id"),
         result.get("user_name"),   # ← ★追加
-        result.get("email") 
+        result.get("email") ,
+        result.get("type"),
+        json.dumps(result.get("comments"), ensure_ascii=False)
 
     ))
     conn.commit()
@@ -853,7 +855,7 @@ def get_result_detail(result_id):
         SELECT timestamp,name,score,total_score,radar_chart,pro_distance_mean,
                loop_count,stable_loop,loop_mean_duration,loop_std_duration,
                loop_plot,self_heatmap,pro_heatmap,compare_plot,
-               loop_duration_list,loop_max_acc_list,snap_median,snap_std,pre_survey, post_survey, video_url
+               loop_duration_list,loop_max_acc_list,snap_median,snap_std,pre_survey, post_survey, video_url, type, comments
         FROM results WHERE id=?
     """,(result_id,))
     row=cur.fetchone(); conn.close()
@@ -870,7 +872,9 @@ def get_result_detail(result_id):
         "snap_median":row[16],"snap_std":row[17],
         "pre_survey": json.loads(row[18]) if row[18] else None,
         "post_survey": json.loads(row[19]) if row[19] else None,
-        "video_url": row[20] if len(row) > 20 else None  # ✅ 追加
+        "video_url": row[20] if len(row) > 20 else None,
+        "type": row[21],
+        "comments": json.loads(row[22]) if row[22] else None
     })
 
 @app.route("/results_user", methods=["GET"])
@@ -915,6 +919,23 @@ def get_results_user():
 @app.route("/")
 def index():
     return send_file("index.html")
+
+def add_type_and_comment_columns():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(results)")
+    cols = [r[1] for r in cur.fetchall()]
+
+    if "type" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN type TEXT")
+    if "comments" not in cols:
+        cur.execute("ALTER TABLE results ADD COLUMN comments TEXT")
+
+    conn.commit()
+    conn.close()
+
+add_type_and_comment_columns()
+
 
 
 

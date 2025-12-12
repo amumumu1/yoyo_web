@@ -143,6 +143,33 @@
       color: white;
     }
 
+    .comment-card {
+      background: #ffffff;
+      padding: 20px 30px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+      margin-top: 25px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+
+    .comment-card .blockTitle {
+      font-size: 26px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .comment-card ul {
+      text-align: left;
+      margin: 0 auto;
+      display: inline-block;
+      font-size: 22px;
+      line-height: 1.6;
+    }
+
+
    
 
 
@@ -269,69 +296,125 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 
   async function toggleDetail(id) {
-  const container = document.getElementById(`detail-${id}`);
-  const button = document.getElementById(`toggle-btn-${id}`);
+    const container = document.getElementById(`detail-${id}`);
+    const button = document.getElementById(`toggle-btn-${id}`);
 
-  const isClosed = container.style.display === 'none';
+    const isClosed = container.style.display === 'none';
 
-  // --- アイコンとボタン文言切り替え ---
-  if (isClosed) {
-    button.innerHTML = `<span class="icon">▲</span> 閉じる`;
-  } else {
-    button.innerHTML = `<span class="icon">▼</span> 詳細を開く`;
+    // --- アイコンと文言切り替え ---
+    if (isClosed) {
+      button.innerHTML = `<span class="icon">▲</span> 閉じる`;
+    } else {
+      button.innerHTML = `<span class="icon">▼</span> 詳細を開く`;
+    }
+
+    // --- 閉じる処理 ---
+    if (!isClosed) {
+      container.style.display = 'none';
+      container.innerHTML = "";
+      return;
+    }
+
+    // --- データ取得 ---
+    const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
+    const detail = await res.json();
+
+
+    // =======================================================
+    // ① 基本情報（総合評価 + レーダーチャート）
+    // =======================================================
+    let html = `
+      <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + '点' : 'なし'}</p>
+      ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">` : ""}
+    `;
+
+
+    // =======================================================
+    // ② コメントカード（レーダーチャートのすぐ下）
+    // =======================================================
+    if (detail.type || detail.comments) {
+      html += `
+        <div class="comment-card">
+          ${detail.type ? `<h3 class="blockTitle">タイプ：${detail.type}</h3>` : ""}
+          
+          ${detail.comments?.strengths?.length ? `
+            <div>
+              <div class="blockTitle">✔ 強み</div>
+              <ul>${detail.comments.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+            </div>
+          ` : ""}
+
+          ${detail.comments?.weaknesses?.length ? `
+            <div>
+              <div class="blockTitle">⚠ 弱み</div>
+              <ul>${detail.comments.weaknesses.map(s => `<li>${s}</li>`).join('')}</ul>
+            </div>
+          ` : ""}
+
+          ${detail.comments?.suggestions?.length ? `
+            <div>
+              <div class="blockTitle">🔧 改善案</div>
+              <ul>${detail.comments.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }
+
+
+    // =======================================================
+    // ③ そのほかの数値・グラフ情報
+    // =======================================================
+    html += `
+      <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
+      <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : 'なし'}</p>
+      <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
+      <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + '周目' : 'なし'}</p>
+      <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : '-'} 秒</p>
+      <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : '-'} 秒</p>
+      <p>手首を返す強さ（中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : '-'} </p>
+      <p>手首を返す強さ（ばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : '-'} </p>
+
+      <pre id="loopDetails-${id}" style="font-size: 30px; white-space: pre-wrap;"></pre>
+
+      ${detail.loop_plot ? `<img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">` : ""}
+
+      <div class="heatmap-row">
+        ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}"></div>` : ""}
+        ${detail.pro_heatmap ? `<div><h4>プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}"></div>` : ""}
+      </div>
+    `;
+
+
+    // =======================================================
+    // ④ アンケート表示
+    // =======================================================
+    if (detail.pre_survey) html += renderSurveyTable("事前アンケート結果", detail.pre_survey);
+    if (detail.post_survey) html += renderSurveyTable("事後アンケート結果", detail.post_survey);
+
+
+    // =======================================================
+    // ⑤ 操作用のボタン類
+    // =======================================================
+    html += `
+      <button onclick="openSurvey(${id}, 'pre')">${detail.pre_survey ? "事前アンケートを編集" : "事前アンケートを入力"}</button>
+      <button onclick="openSurvey(${id}, 'post')">${detail.post_survey ? "事後アンケートを編集" : "事後アンケートを入力"}</button><br>
+      <button onclick="renameResult(${id})">名前変更</button>
+      <button onclick="uploadVideo(${id})">動画をアップロード</button><br>
+
+      <button onclick="toggleDetail(${id})">閉じる</button>
+      <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">CSVをダウンロード</button>
+      <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">この結果を削除</button>
+    `;
+
+
+    // -------------------------------------------------------
+    // ⑥ HTML を反映
+    // -------------------------------------------------------
+    container.innerHTML = html;
+    container.style.display = 'block';
   }
 
-  // --- 閉じる処理 ---
-  if (!isClosed) {
-    container.style.display = 'none';
-    container.innerHTML = ""; // 中身を消す
-    return;
-  }
-
-  // --- 開く処理（ここからデータ取得） ---
-  const res = await fetch(`https://yoyo-backend.kajilab.dev/results/${id}`);
-  const detail = await res.json();
-
-  container.innerHTML = `
-    <p>総合評価: ${detail.total_score != null ? detail.total_score.toFixed(1) + '点' : 'なし'}</p>
-    ${detail.radar_chart ? `<img src="data:image/png;base64,${detail.radar_chart}" alt="レーダーチャート" style="max-width:800px; display:block; margin:10px auto;">` : ""}
-    <p>類似度スコア: ${detail.score != null ? detail.score.toFixed(1) : 0.0}</p>
-    <p>プロとの平均距離: ${detail.pro_distance_mean != null ? detail.pro_distance_mean.toFixed(1) : 'なし'}</p>
-    <p>ループ数: ${detail.loop_count ?? 'なし'}</p>
-    <p>安定開始ループ: ${detail.stable_loop != null ? detail.stable_loop + '周目' : 'なし'}</p>
-    <p>平均ループ時間: ${detail.loop_mean_duration != null ? detail.loop_mean_duration.toFixed(3) : '-'} 秒</p>
-    <p>ループ時間の標準偏差: ${detail.loop_std_duration != null ? detail.loop_std_duration.toFixed(3) : '-'} 秒</p>
-    <p>手首を返す強さ（中央値）: ${detail.snap_median != null ? detail.snap_median.toFixed(3) : '-'} 秒</p>
-    <p>手首を返す強さ（ばらつき）: ${detail.snap_std != null ? detail.snap_std.toFixed(3) : '-'} 秒</p>
-    <pre id="loopDetails-${id}" style="font-size: 30px; white-space: pre-wrap;"></pre>
-    <img src="data:image/png;base64,${detail.loop_plot}" alt="ループ検出">
-    <div class="heatmap-row">
-      ${detail.self_heatmap ? `<div><h4>自己比較</h4><img src="data:image/png;base64,${detail.self_heatmap}"></div>` : ""}
-      ${detail.pro_heatmap ? `<div><h4>プロ比較</h4><img src="data:image/png;base64,${detail.pro_heatmap}"></div>` : ""}
-    </div>
-  `;
-
-  // --- アンケート表示 ---
-  if (detail.pre_survey) container.innerHTML += renderSurveyTable("事前アンケート結果", detail.pre_survey);
-  if (detail.post_survey) container.innerHTML += renderSurveyTable("事後アンケート結果", detail.post_survey);
-
-  // --- アンケートボタン ---
-  container.innerHTML += `
-    <button onclick="openSurvey(${id}, 'pre')">${detail.pre_survey ? "事前アンケートを編集" : "事前アンケートを入力"}</button>
-    <button onclick="openSurvey(${id}, 'post')">${detail.post_survey ? "事後アンケートを編集" : "事後アンケートを入力"}</button><br>
-    <button onclick="renameResult(${id})">名前変更</button>
-    <button onclick="uploadVideo(${id})">動画をアップロード</button><br>
-  `;
-
-  // --- 共通操作ボタン ---
-  container.innerHTML += `
-    <button onclick="toggleDetail(${id})">閉じる</button>
-    <button onclick="window.location.href='https://yoyo-backend.kajilab.dev/results/${id}/csv'">CSVをダウンロード</button>
-    <button onclick="deleteResult(${id})" style="background-color:#f88; color:white;">この結果を削除</button>
-  `;
-
-  container.style.display = 'block';
-}
 
 
   function openSurvey(id, type) {

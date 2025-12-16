@@ -179,7 +179,14 @@
   <h1>履歴一覧</h1>
   <a href="index.html" class="button">戻る</a>
   <a href="history_graph.html" class="button">技能推移を見る</a>
-  <a href="survey_summary.html" class="button" target="_blank">アンケートの集計結果を見る</a>
+  <a href="survey_summary.html"
+    class="button"
+    id="survey-summary-btn"
+    target="_blank"
+    style="display:none;">
+    アンケートの集計結果を見る
+  </a>
+
 
 
   <div id="history"></div>
@@ -798,6 +805,15 @@ if (id) {
     if(!user) {
       location.href="index.html";
       return;
+    }
+    // 🔥 管理者判定
+    const ADMIN_EMAIL = "prj.yoyo@gmail.com";
+    const isAdmin = user.email === ADMIN_EMAIL;
+
+    // 🔥 管理者だけアンケート集計ボタンを表示
+    const surveyBtn = document.getElementById("survey-summary-btn");
+    if (surveyBtn && isAdmin) {
+      surveyBtn.style.display = "inline-block";
     }
     fetchHistory(user);
   });

@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+  <script src="./three.min.js"></script>
+  <script src="./STLLoader.js"></script>
 
-  <!-- STL Loader -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/examples/js/loaders/STLLoader.js"></script>
+
+
+
+
+
 
   <meta charset="UTF-8" />
   <title>インサイド・ループ技能評価</title>
@@ -441,6 +444,58 @@
       font-size: 30px;
     }
 
+   
+    #proExample {
+        text-align: center !important;
+    }
+
+    #proExample h2,
+    #proExample h3 {
+        text-align: center !important;
+        width: 100%;
+    }
+
+    #proExample img,
+    #proExample video {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* ▼ CSVエリアを完全に中央揃えにする */
+    #csvTitle,
+    #accLabel,
+    #gyroLabel,
+    #accOutput,
+    #gyroOutput {
+        text-align: center !important;
+        margin-left: auto !important;
+        margin-right: auto !important; 
+    }
+
+    /* pre（CSV中身）は幅が広いので中央に寄せる */
+    #accOutput,
+    #gyroOutput {
+        max-width: 500px;
+        font-size: 18px;
+        text-align: center !important;  /* 内容は左寄せ維持 */
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #btnSaveCsv {
+        display: block;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+
+
+
+
+
+
+
 
 
 
@@ -456,7 +511,6 @@
   =============================== -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-
   <script>
   // ===== Firebase 設定 =====
   const firebaseConfig = {
@@ -633,7 +687,7 @@
     <hr id="hrTitle" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
     <br>
     <div id="saveSection" style="display: none;">
-      <input type="text" id="resultName" placeholder="タイトルを入力" style="font-size:16px; padding:5px; width:200px;" />
+      <input type="text" id="resultName" placeholder="タイトル" style="font-size:16px; padding:5px; width:340px;" />
       <button id="btnSaveResult" style="display:none;">結果を保存する</button>
     </div>
 
@@ -707,9 +761,9 @@
           <div class="tooltip" id="tipProHeatmap"></div>
         </div>
       </div>
-
-    <h3 id="orientationTitle" style="display:none;">3D姿勢アニメーション</h3>
-    <div id="orientation3d" style="width: 400px; height: 400px; margin: 0 auto; display:none;"></div>
+    </div>
+    <br><h3 id="orientationTitle" style="display:none;">指動作の再現アニメーション（β版）</h3>
+    <div id="orientation3d" style="width: 700px; height: 600px; margin: 0 auto; display:none;"></div>
 
 
     
@@ -787,6 +841,10 @@
       const PRO_MEAN_S = 0.429;
       const PRO_STD_S  = 0.072;
 
+      let q0 = null;        // 初期姿勢
+      let q0_inv = null;    // 逆クォータニオン
+
+
       const i18n = {
         ja: {
           appTitle: 'インサイド・ループ技能評価システム',
@@ -839,7 +897,7 @@
           analysisPreparing: '解析準備中…',
           selectTwoCsv: '加速度CSVと角速度CSVの2つを選んでください',
           btnSaveCsvLabel: 'CSVを保存',
-          placeholderTitle: 'タイトルを入力',
+          placeholderTitle: 'タイトルを入力（メモ代わりに使ってください）',
           untitled: '無題',
           btnSaveResult: '結果を保存する',
           proTitle: '参考データ（プロ）',
@@ -1108,6 +1166,8 @@
         document.getElementById('proDistance').textContent     = '';
         document.getElementById('loopSummary').textContent     = '';
         document.getElementById('loopSummary').innerHTML       = '';
+        document.getElementById('orientationTitle').style.display = 'none';
+        document.getElementById('orientation3d').style.display = 'none';
         const loopDetails = document.getElementById('loopDetails');
         loopDetails.textContent                               = '';
         loopDetails.style.display                             = 'none';
@@ -1401,14 +1461,19 @@
           : baseName;
         const connector = (lang === 'ja' ? 'は ' : ' is ');
         typeL.innerHTML = `
-          <span class="num-red">${labelName}${connector}${json.type}</span>
+          <span style="color:#000;">
+            ${labelName}${connector}
+          </span><br>
+          <span class="num-red">
+            ${json.type}
+          </span>
         `;
 
 
         // 強み
         if (json.comments?.strengths?.length){
           sDiv.innerHTML = `
-            <div class="blockTitle">✔ 強み</div>
+            <div class="blockTitle">良い点</div>
             <ul>
               ${json.comments.strengths.map(s => `<li>${s}</li>`).join('')}
             </ul>
@@ -1420,7 +1485,7 @@
         // 弱み
         if (json.comments?.weaknesses?.length){
           wDiv.innerHTML = `
-            <div class="blockTitle">⚠ 弱み</div>
+            <div class="blockTitle">改善点</div>
             <ul>
               ${json.comments.weaknesses.map(w => `<li>${w}</li>`).join('')}
             </ul>
@@ -1432,7 +1497,7 @@
         // 改善案
         if (json.comments?.suggestions?.length){
           sugDiv.innerHTML = `
-            <div class="blockTitle">🔧 改善案</div>
+            <div class="blockTitle">改善案</div>
             <ul>
               ${json.comments.suggestions.map(a => `<li>${a}</li>`).join('')}
             </ul>
@@ -1507,7 +1572,7 @@
         // CSV セクション表示
         document.getElementById('hrCsv').style.display   = 'block';
         document.getElementById('csvTitle').style.display = 'block';
-        document.getElementById('btnSaveCsv').style.display = 'inline-block';
+        document.getElementById('btnSaveCsv').style.display = 'block';
         document.getElementById('accLabel').style.display  = 'block';
         document.getElementById('gyroLabel').style.display = 'block';
         document.getElementById('accOutput').style.display  = 'block';
@@ -1534,85 +1599,133 @@
 
         // ---- Three.js 姿勢アニメーション ----
         if (json.quaternions) {
-            document.getElementById("orientationTitle").style.display = "block";
-            const container = document.getElementById("orientation3d");
-            container.style.display = "block";
+        document.getElementById("orientationTitle").style.display = "block";
+        const container = document.getElementById("orientation3d");
+        container.style.display = "block";
 
-            const width = container.clientWidth;
-            const height = container.clientHeight;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
 
-            // Three.js 基本セット
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-            camera.position.set(0, 0, 120);
+        // --------------------
+        // Scene / Camera
+        // --------------------
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+        camera.position.set(0, 0, 120);
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(width, height);
-            container.innerHTML = "";
-            container.appendChild(renderer.domElement);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        container.innerHTML = "";
+        container.appendChild(renderer.domElement);
 
-            // ライト
-            const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
-            light1.position.set(50, 50, 100);
-            scene.add(light1);
+        // --------------------
+        // Light
+        // --------------------
+        const light1 = new THREE.DirectionalLight(0xffffff, 1.0);
+        light1.position.set(50, 50, 100);
+        scene.add(light1);
+        scene.add(new THREE.AmbientLight(0x888888));
 
-            const light2 = new THREE.AmbientLight(0x888888);
-            scene.add(light2);
+        let model = null;
+        
 
-            let model = null;
 
-            // STLロード
-            const loader = new THREE.STLLoader();
-            loader.load("/static/stl/device.stl", function (geometry) {
-                const material = new THREE.MeshPhongMaterial({ color: 0x6699ff });
-                model = new THREE.Mesh(geometry, material);
+        // =========================================================
+        // ★ STLモデル固有の「初期向き補正」クォータニオン
+        // =========================================================
+        // ★★★ ここを変えれば必ず見た目が変わる ★★★
+        const modelFixQ = new THREE.Quaternion();
+        modelFixQ.setFromEuler(new THREE.Euler(
+          THREE.MathUtils.degToRad(90),   // X（←ここを触る）
+          THREE.MathUtils.degToRad(180),    // Y
+          THREE.MathUtils.degToRad(-270)     // Z
+        ));
 
-                // モデルの大きさ調整
-                geometry.computeBoundingBox();
-                const size = geometry.boundingBox.getSize(new THREE.Vector3()).length();
-                const scale = 40 / size;
-                model.scale.set(scale, scale, scale);
+        // --------------------
+        // STL Load
+        // --------------------
+        const loader = new THREE.STLLoader();
+        loader.load("中指2.stl", function (geometry) {
+          const material = new THREE.MeshStandardMaterial({
+            color: 0xffc9b1,   // 肌色
+            roughness: 0.7,    // 少しザラつき
+            metalness: 0.0    // 金属感なし
+          });
 
-                // 中心位置調整
-                geometry.center();
+          model = new THREE.Mesh(geometry, material);
 
-                scene.add(model);
-            });
+          geometry.computeBoundingBox();
+          geometry.center();
 
-            // クォータニオン → Three.js 用に変換
-            function applyQuaternion(q) {
-                // q = [w, x, y, z]
-                if (!model) return;
+          model.scale.set(6, 6, 6);
 
-                const threeQ = new THREE.Quaternion(q[1], q[2], q[3], q[0]);
 
-                // 実機の向き調整（ここが最も重要）
-                // 必要に応じて 90°回転を追加
-                const fix = new THREE.Quaternion();
-                fix.setFromEuler(new THREE.Euler(
-                    THREE.MathUtils.degToRad(90), 
-                    THREE.MathUtils.degToRad(0),
-                    THREE.MathUtils.degToRad(0)
-                ));
+          // ⚠ rotation.set は使わない（毎フレーム上書きされるため）
+          scene.add(model);
+        });
 
-                threeQ.multiply(fix);
-                model.setRotationFromQuaternion(threeQ);
-            }
+        
 
-            let idx = 0;
-            function animate() {
-                requestAnimationFrame(animate);
-                if (json.quaternions.length > 0) {
-                    applyQuaternion(json.quaternions[idx]);
-                    idx = (idx + 1) % json.quaternions.length;
-                }
-                renderer.render(scene, camera);
-            }
+        // --------------------
+        // Initial calibration
+        // --------------------
+        let q0 = null;
+        let q0_inv = null;
 
-            animate();
+        function applyQuaternion(q) {
+          if (!model) return;
+
+          // Python [w,x,y,z] → Three.js
+          const threeQ = new THREE.Quaternion(q[1], -q[3], q[2], q[0]);
+
+          // 初期キャリブレーション
+          if (!q0) {
+            q0 = threeQ.clone();
+            q0_inv = q0.clone().invert();
+            console.log("🎯 初期姿勢キャリブレーション完了");
+          }
+
+          // センサ相対回転
+          const q_rel = q0_inv.clone().multiply(threeQ);
+
+          // ★ 正しい合成順
+          const q_final = modelFixQ.clone().multiply(q_rel);
+
+          model.setRotationFromQuaternion(q_final);
         }
 
+        // --------------------
+        // Animation
+        // --------------------
+        let idx = 0;
+        function animate() {
+          requestAnimationFrame(animate);
+
+          if (json.quaternions.length > 0) {
+            applyQuaternion(json.quaternions[idx]);
+            idx = (idx + 1) % json.quaternions.length;
+          }
+
+          renderer.render(scene, camera);
+        }
+
+        // --------------------
+        // IntersectionObserver
+        // --------------------
+        let animationStarted = false;
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting && !animationStarted) {
+              animationStarted = true;
+              console.log("🎬 姿勢アニメーション開始");
+              animate();
+            }
+          });
+        });
+
+        observer.observe(container);
       }
+    }
 
       function buildMetricsHTML(json){
           const totalLoops = json.loop_count;

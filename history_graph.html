@@ -75,7 +75,8 @@ let currentMetric = "total_score";
 let userFilterInitialized = false;
 
 //------------------ グラフ描画 ------------------
-async function drawGraph(type){
+async function drawGraph(type, filterUid = ""){
+    currentMetric = type; 
     const user = firebase.auth().currentUser;
     if(!user) return alert("ログインしてください");
 
@@ -218,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </select>
 
 
-<select onchange="drawGraph(this.value)">
+<select onchange="drawGraph(this.value, document.getElementById('user-filter').value)">
     <option value="total_score">総合評価</option>
     <option value="raw_self_distance">自己類似度（距離）</option>
     <option value="pro_distance_mean">プロ類似度（距離）</option>

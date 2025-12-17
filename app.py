@@ -1262,14 +1262,24 @@ def get_results_user_graph():
                     raw_self_distance, snap_median, snap_std, user_id, user_name, email
                 FROM results WHERE user_id = ? ORDER BY timestamp ASC
             """, (filter_uid,))
+        else:
+            cur.execute("""
+                SELECT timestamp, total_score, score, loop_mean_duration,
+                    loop_std_duration, stable_loop, pro_distance_mean,
+                    raw_self_distance, snap_median, snap_std, user_id, user_name, email
+                FROM results 
+                ORDER BY timestamp ASC
+            """)
     else:
+        # 👤 一般ユーザー
         cur.execute("""
             SELECT timestamp, total_score, score, loop_mean_duration,
-                   loop_std_duration, stable_loop, pro_distance_mean,
-                   raw_self_distance, snap_median, snap_std, user_id, user_name, email
-            FROM results WHERE user_id = ?
+                loop_std_duration, stable_loop, pro_distance_mean,
+                raw_self_distance, snap_median, snap_std, user_id, user_name, email
+            FROM results
+            WHERE user_id = ?
             ORDER BY timestamp ASC
-        """, (uid, ))
+        """, (uid,))
 
     rows = cur.fetchall()
     conn.close()

@@ -195,6 +195,8 @@
 
   <div id="history"></div>
   <script>
+    let userFilterInitialized = false;
+    
     async function fetchHistory(user, filterUid = ""){
     // --- URL組み立て ---
     let url = `https://yoyo-backend.kajilab.dev/results_user?uid=${user.uid}&email=${user.email}`;
@@ -218,6 +220,14 @@
     // 🔥 管理者判定
     const ADMIN_EMAIL = "prj.yoyo@gmail.com";
     const isAdmin = user.email === ADMIN_EMAIL;
+
+  
+
+
+    if (isAdmin && !userFilterInitialized) {
+      buildUserFilter(data);
+      userFilterInitialized = true;
+    }
 
     for (const item of data) {
       box.innerHTML += `

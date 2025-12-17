@@ -59,25 +59,40 @@
 
 <script>
 const firebaseConfig={
-apiKey:"AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
-authDomain:"yoyo-sensing.firebaseapp.com",
-projectId:"yoyo-sensing",
-storageBucket:"yoyo-sensing.firebasestorage.app",
-messagingSenderId:"129908163482",
-appId:"1:129908163482:web:8cb1c024e25b2c9a96f023"
+    apiKey:"AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
+    authDomain:"yoyo-sensing.firebaseapp.com",
+    projectId:"yoyo-sensing",
+    storageBucket:"yoyo-sensing.firebasestorage.app",
+    messagingSenderId:"129908163482",
+    appId:"1:129908163482:web:8cb1c024e25b2c9a96f023"
 };
 firebase.initializeApp(firebaseConfig);
 
-let chart=null;
+const ADMIN_EMAIL = "prj.yoyo@gmail.com";
+
+let chart = null;
+let currentMetric = "total_score";
+let userFilterInitialized = false;
 
 //------------------ グラフ描画 ------------------
 async function drawGraph(type){
     const user = firebase.auth().currentUser;
     if(!user) return alert("ログインしてください");
 
-    const res = await fetch(`https://yoyo-backend.kajilab.dev/results_user_graph?uid=${user.uid}&email=${user.email}`);
-    const data = await res.json();
+    let url =
+        `https://yoyo-backend.kajilab.dev/results_user_graph?uid=${user.uid}&email=${user.email}`;
+    if (filterUid) {
+        url += `&filter_uid=${filterUid}`;
+    }
 
+    const res = await fetch(url);
+  const data = await res.json();
+    // 👑 管理者のみ：ユーザーセレクト生成（1回だけ）
+    if (user.email === ADMIN_EMAIL && !userFilterInitialized) {
+        buildUserFilterForGraph(data);
+        userFilterInitialized = true;
+    }
+    
     const labels = data.map(d => {
         const dt = new Date(d.timestamp.replace(/-/g,'/')); 
         return `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,"0")}`;
@@ -156,19 +171,52 @@ async function drawGraph(type){
     });
 }
 
+function buildUserFilterForGraph(data) {
+  const select = document.getElementById("user-filter");
+  select.innerHTML = `<option value="">すべてのユーザー</option>`;
 
-document.addEventListener("DOMContentLoaded",()=>{
-    firebase.auth().onAuthStateChanged(u=>{
-        if(!u) return location.href="login.html";
-        drawGraph("total_score");
-    });
+  const users = {};
+  data.forEach(d => {
+    if (d.user_id) {
+      users[d.user_id] = d.user_name || d.email || d.user_id;
+    }
+  });
+
+  for (const [uid, name] of Object.entries(users)) {
+    const opt = document.createElement("option");
+    opt.value = uid;
+    opt.textContent = name;
+    select.appendChild(opt);
+  }
+
+  select.style.display = "inline-block";
+
+  // 🔁 切り替え時に再描画
+  select.addEventListener("change", e => {
+    const metric = document.querySelector("select[onchange]").value;
+    drawGraph(metric, e.target.value);
+  });
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user) return location.href = "login.html";
+    drawGraph("total_score");
+  });
 });
+
 </script>
 </head>
 
 <body>
 
 <h1>📈 技能推移グラフ</h1>
+
+<select id="user-filter" style="display:none;">
+  <option value="">すべてのユーザー</option>
+</select>
+
 
 <select onchange="drawGraph(this.value)">
     <option value="total_score">総合評価</option>

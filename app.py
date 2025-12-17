@@ -1248,22 +1248,25 @@ def save_video_url(result_id):
 def get_results_user_graph():
     uid = request.args.get("uid")
     email = request.args.get("email")
+    filter_uid = request.args.get("filter_uid")
+
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     if email == ADMIN_EMAIL:
-        cur.execute("""
-            SELECT timestamp, total_score, score, loop_mean_duration,
-                   loop_std_duration, stable_loop, pro_distance_mean,
-                   raw_self_distance, snap_median, snap_std
-            FROM results ORDER BY timestamp ASC
-        """)
+        if filter_uid:
+            cur.execute("""
+                SELECT timestamp, total_score, score, loop_mean_duration,
+                    loop_std_duration, stable_loop, pro_distance_mean,
+                    raw_self_distance, snap_median, snap_std, user_id, user_name, email
+                FROM results WHERE user_id = ? ORDER BY timestamp ASC
+            """, (filter_uid,))
     else:
         cur.execute("""
             SELECT timestamp, total_score, score, loop_mean_duration,
                    loop_std_duration, stable_loop, pro_distance_mean,
-                   raw_self_distance, snap_median, snap_std
+                   raw_self_distance, snap_median, snap_std, user_id, user_name, email
             FROM results WHERE user_id = ?
             ORDER BY timestamp ASC
         """, (uid, ))
@@ -1281,8 +1284,11 @@ def get_results_user_graph():
             "stable_loop": r[5],
             "pro_distance_mean": r[6],
             "raw_self_distance": r[7],
-            "snap_median": r[8],     # ← ★追加
-            "snap_std": r[9]         # ← ★追加
+            "snap_median": r[8],     
+            "snap_std": r[9],
+            "user_id": r[10],
+            "user_name": r[11],
+            "email": r[12],         
         }
         for r in rows
     ])

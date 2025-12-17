@@ -936,24 +936,37 @@ def get_result_detail(result_id):
 def get_results_user():
     uid = request.args.get("uid")
     email = request.args.get("email")
+    filter_uid = request.args.get("filter_uid")  # ← 追加
 
     conn = sqlite3.connect(DB_PATH)
     cur  = conn.cursor()
 
-    # 👑 管理者 → 全件
     if email == ADMIN_EMAIL:
-        cur.execute("""
-            SELECT id,timestamp,name,score,total_score,pro_distance_mean,
-                   loop_count,stable_loop,user_id,user_name,email
-            FROM results ORDER BY id DESC LIMIT 200
-        """)
+        if filter_uid:
+            # 👑 管理者 + 特定ユーザー絞り込み
+            cur.execute("""
+                SELECT id,timestamp,name,score,total_score,pro_distance_mean,
+                       loop_count,stable_loop,user_id,user_name,email
+                FROM results
+                WHERE user_id = ?
+                ORDER BY id DESC
+            """, (filter_uid,))
+        else:
+            # 👑 管理者（全件）
+            cur.execute("""
+                SELECT id,timestamp,name,score,total_score,pro_distance_mean,
+                       loop_count,stable_loop,user_id,user_name,email
+                FROM results
+                ORDER BY id DESC
+            """)
     else:
-        # 👤 一般 → uid一致のもの
+        # 👤 一般ユーザー
         cur.execute("""
             SELECT id,timestamp,name,score,total_score,pro_distance_mean,
                    loop_count,stable_loop,user_id,user_name,email
-            FROM results WHERE user_id = ?
-            ORDER BY id DESC LIMIT 200
+            FROM results
+            WHERE user_id = ?
+            ORDER BY id DESC
         """, (uid, ))
 
     rows = cur.fetchall()
@@ -961,10 +974,10 @@ def get_results_user():
 
     return jsonify([
         {
-         "id":r[0],"timestamp":r[1],"name":r[2] or "無題",
-         "score":r[3],"total_score":r[4],"pro_distance_mean":r[5],
-         "loop_count":r[6],"stable_loop":r[7],
-         "user_id":r[8],"user_name":r[9],"email":r[10]    # ⭐ここが最重要
+            "id":r[0],"timestamp":r[1],"name":r[2] or "無題",
+            "score":r[3],"total_score":r[4],"pro_distance_mean":r[5],
+            "loop_count":r[6],"stable_loop":r[7],
+            "user_id":r[8],"user_name":r[9],"email":r[10]
         }
         for r in rows
     ])

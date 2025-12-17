@@ -786,7 +786,13 @@
         <source src="/pro.mp4" type="video/mp4" />
         お使いのブラウザは動画に対応していません。
       </video>
+      <h3 id="proAnimeTitle"></h3>
+      <video controls style="max-width: 60%;">
+        <source src="/proanime.mp4" type="video/mp4" />
+        お使いのブラウザは動画に対応していません。
+      </video>
     </div>
+
 
 
     <hr id="hrCsv" style="display: none; border: none; border-top: 2px solid black; width: 100%; margin: 40px 0;" />
@@ -908,6 +914,7 @@
           proSegTitle: 'プロのループ検出',
           proHmTitle: 'プロのヒートマップ',
           proVideoTitle: 'プロの実演映像',
+          proAnimeTitle: 'プロの指の動き',
 
           // Misc / alerts
           analysisStarting: '解析開始…',
@@ -951,6 +958,7 @@
           proSegTitle: 'Pro: Loop Detection',
           proHmTitle: 'Pro: Heatmap',
           proVideoTitle: 'Pro: Demo Video',
+          proAnimeTitle: 'Pro: Animation',
 
           // Radar tooltips
           tipSelfSim: 'Self Similarity:<br>How consistently each loop repeats the same motion.<br>Higher = more stable.',
@@ -1028,6 +1036,7 @@
         setText('proSegTitle', t('proSegTitle'));
         setText('proHmTitle', t('proHmTitle'));
         setText('proVideoTitle', t('proVideoTitle'));
+        setText('proAnimeTitle', t('proAnimeTitle'));
         setText('proMean', `${t('proMean')}: ${PRO_MEAN_S} ${t('unit_sec')}`);
         setText('proStd',  `${t('proStd')}: ${PRO_STD_S} ${t('unit_sec')}`);
         setText('proSnap', `${t('proSnap')}: 91.45 ${t('unit_ms2')}`);
@@ -1271,7 +1280,8 @@
                 { name: 'ゆびせん3号' },
                 { name: 'ゆびせん4号' },
                 { name: 'ゆびせん5号' },
-                { name: 'ゆびせん6号' }
+                { name: 'ゆびせん6号' },
+                { name: 'ゆびせん7号' }
               ],
               optionalServices: [SERVICE_UUID]
             });

@@ -186,60 +186,66 @@
     style="display:none;">
     アンケートの集計結果を見る
   </a>
+  <select id="user-filter" style="font-size:20px; display:none;">
+    <option value="">すべてのユーザー</option>
+  </select>
+
 
 
 
   <div id="history"></div>
   <script>
-  async function fetchHistory(user){
-    // ← バックエンドが admin判定してくれるのでそのまま送るだけ
-    const res = await fetch(
-        `https://yoyo-backend.kajilab.dev/results_user?uid=${user.uid}&email=${user.email}`
-    );
+    async function fetchHistory(user, filterUid = ""){
+    // --- URL組み立て ---
+    let url = `https://yoyo-backend.kajilab.dev/results_user?uid=${user.uid}&email=${user.email}`;
+
+    // 👑 管理者 + ユーザー絞り込み
+    if (filterUid) {
+      url += `&filter_uid=${filterUid}`;
+    }
+
+    const res = await fetch(url);
     const data = await res.json();
-    const box=document.getElementById("history");
-    box.innerHTML="";
 
-    if(!data.length) return box.innerHTML="<p>履歴がありません。</p>";
+    const box = document.getElementById("history");
+    box.innerHTML = "";
 
-    // 🔥 管理者判定（バックエンドと同一値）
+    if (!data.length) {
+      box.innerHTML = "<p>履歴がありません。</p>";
+      return;
+    }
+
+    // 🔥 管理者判定
     const ADMIN_EMAIL = "prj.yoyo@gmail.com";
     const isAdmin = user.email === ADMIN_EMAIL;
-    const googleName = user.displayName || user.email;
 
-
-    for(const item of data){
-        box.innerHTML += `
+    for (const item of data) {
+      box.innerHTML += `
         <div class="result">
-
-          <!-- 日付 -->
           <p class="meta">${item.timestamp}</p>
 
-          <!-- タイトル（名前）-->
           <h2 id="name-${item.id}">${item.name ?? "無題"}</h2>
 
-          <!-- 管理者だけ：ユーザー名表示 -->
           ${isAdmin ? `<p class="meta">👤 ${item.user_name ?? "(no name)"} </p>` : ""}
 
-          <!-- 総合評価 -->
-          <p class="score">⭐ 総合評価： ${item.total_score != null ? item.total_score.toFixed(1) : "なし"}点</p>
+          <p class="score">
+            ⭐ 総合評価： ${item.total_score != null ? item.total_score.toFixed(1) : "なし"}点
+          </p>
 
-          <!-- ボタン -->
           <div class="result-buttons">
-              <button onclick="toggleDetail(${item.id})" id="toggle-btn-${item.id}" class="toggle-btn">
-                  <span class="icon">▼</span> 詳細を開く
-              </button>
+            <button onclick="toggleDetail(${item.id})"
+                    id="toggle-btn-${item.id}"
+                    class="toggle-btn">
+              <span class="icon">▼</span> 詳細を開く
+            </button>
           </div>
 
-
-          <!-- 詳細（初期は非表示） -->
           <div id="detail-${item.id}" style="display:none;"></div>
-
         </div>
-        `;
-
+      `;
     }
-}
+  }
+
 
 
   // URL パラメータから id を取得して自動で開く処理
@@ -346,21 +352,21 @@ document.addEventListener("DOMContentLoaded",()=>{
           
           ${detail.comments?.strengths?.length ? `
             <div>
-              <div class="blockTitle">✔ 強み</div>
+              <div class="blockTitle">良い点</div>
               <ul>${detail.comments.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
             </div>
           ` : ""}
 
           ${detail.comments?.weaknesses?.length ? `
             <div>
-              <div class="blockTitle">⚠ 弱み</div>
+              <div class="blockTitle">改善点</div>
               <ul>${detail.comments.weaknesses.map(s => `<li>${s}</li>`).join('')}</ul>
             </div>
           ` : ""}
 
           ${detail.comments?.suggestions?.length ? `
             <div>
-              <div class="blockTitle">🔧 改善案</div>
+              <div class="blockTitle">改善案</div>
               <ul>${detail.comments.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
             </div>
           ` : ""}
@@ -699,6 +705,28 @@ document.addEventListener("DOMContentLoaded",()=>{
       });
   }
 
+  function buildUserFilter(data) {
+    const select = document.getElementById("user-filter");
+    select.innerHTML = `<option value="">すべてのユーザー</option>`;
+
+    const users = {};
+    data.forEach(item => {
+      if (item.user_id) {
+        users[item.user_id] = item.user_name || item.email || item.user_id;
+      }
+    });
+
+    for (const [uid, name] of Object.entries(users)) {
+      const opt = document.createElement("option");
+      opt.value = uid;
+      opt.textContent = name;
+      select.appendChild(opt);
+    }
+
+    select.style.display = "inline-block";
+  }
+
+
   function renderSummaryTable(surveys) {
     if (!surveys.length) return "<p>データなし</p>";
 
@@ -814,6 +842,20 @@ if (id) {
     const surveyBtn = document.getElementById("survey-summary-btn");
     if (surveyBtn && isAdmin) {
       surveyBtn.style.display = "inline-block";
+      
+    }
+
+      // 管理者だけ：ユーザー絞り込みセレクトを有効化
+    if (isAdmin) {
+      const select = document.getElementById("user-filter");
+      if (select) {
+        select.style.display = "inline-block";
+
+        // ★④ セレクト変更時に再取得 ← ここ
+        select.addEventListener("change", e => {
+          fetchHistory(user, e.target.value);
+        });
+      }
     }
     fetchHistory(user);
   });

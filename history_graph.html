@@ -9,205 +9,35 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
 <style>
-    body {
-        text-align:center;
-        font-family:sans-serif;
-        margin:0;                 /* ← 余白ゼロ */
-        padding-top:15px;         /* 少しのみ余白 */
-    }
-
-    canvas{
-        width:100vw !important;
-        height:calc(100vh - 200px) !important;  /* ← ほぼ画面全体 */
-        max-width:none !important;
-        display:block;
-        margin:0 auto;
-    }
-
-    select{
-        font-size:22px;
-        padding:6px 12px;
-        margin:10px;
-    }
-
-    .button{
-        padding:10px 16px;
-        background:#eee;
-        border-radius:5px;
-        border:1px solid #aaa;
-        font-size:20px;
-        text-decoration:none;
-        color:#333;
-    }
-    .back-btn{
-        position: fixed;
-        top: 40px;      /* ← 少し下へ */
-        right: 40px;    /* ← 少し左へ */
-        padding: 10px 18px;
-        background:#eee;
-        border-radius:5px;
-        border:1px solid #aaa;
-        font-size:20px;
-        text-decoration:none;
-        color:#333;
-        z-index: 1000;
-    }
-
-
+body{
+    text-align:center;
+    font-family:sans-serif;
+    margin:0;
+    padding-top:15px;
+}
+canvas{
+    width:90vw !important;
+    height:calc(100vh - 200px) !important;
+    margin:0 auto;
+}
+select{
+    font-size:22px;
+    padding:6px 12px;
+    margin:10px;
+}
+.back-btn{
+    position:fixed;
+    top:40px;
+    right:40px;
+    padding:10px 18px;
+    background:#eee;
+    border-radius:5px;
+    border:1px solid #aaa;
+    font-size:20px;
+    text-decoration:none;
+    color:#333;
+}
 </style>
-
-
-<script>
-const firebaseConfig={
-    apiKey:"AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
-    authDomain:"yoyo-sensing.firebaseapp.com",
-    projectId:"yoyo-sensing",
-    storageBucket:"yoyo-sensing.firebasestorage.app",
-    messagingSenderId:"129908163482",
-    appId:"1:129908163482:web:8cb1c024e25b2c9a96f023"
-};
-firebase.initializeApp(firebaseConfig);
-
-const ADMIN_EMAIL = "prj.yoyo@gmail.com";
-
-let chart = null;
-let currentMetric = "total_score";
-let userFilterInitialized = false;
-
-//------------------ グラフ描画 ------------------
-async function drawGraph(type, filterUid = ""){
-    currentMetric = type; 
-    const user = firebase.auth().currentUser;
-    if(!user) return alert("ログインしてください");
-
-    let url =
-        `https://yoyo-backend.kajilab.dev/results_user_graph?uid=${user.uid}&email=${user.email}`;
-    if (filterUid) {
-        url += `&filter_uid=${filterUid}`;
-    }
-
-    const res = await fetch(url);
-  const data = await res.json();
-    // 👑 管理者のみ：ユーザーセレクト生成（1回だけ）
-    if (user.email === ADMIN_EMAIL && !userFilterInitialized) {
-        buildUserFilterForGraph(data);
-        userFilterInitialized = true;
-    }
-    
-    const labels = data.map(d => {
-        const dt = new Date(d.timestamp.replace(/-/g,'/')); 
-        return `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,"0")}`;
-    });
-
-    const values = data.map(d => d[type]);
-
-    // ★ 日本語ラベルテーブル
-    const jpLabels = {
-        total_score: "総合評価",
-        raw_self_distance: "自己類似度（距離）",
-        pro_distance_mean: "プロ類似度（距離）",
-        loop_mean_duration: "平均ループ時間",
-        loop_std_duration: "ループ時間のばらつき",
-        stable_loop: "安定開始ループ",
-        snap_median: "手首を返す強さ（中央値）",
-        snap_std: "手首を返す強さのばらつき"
-    };
-
-    // ★ 単位テーブル（既存）
-    const units = {
-        total_score: "点",
-        raw_self_distance: "",
-        pro_distance_mean: "",
-        loop_mean_duration: "秒",
-        loop_std_duration: "秒",
-        stable_loop: "回",
-        snap_median: "m/s²",
-        snap_std: "m/s²"
-    };
-
-    // ★ y軸ラベル（日本語＋単位）
-    const yLabel = units[type]
-        ? `${jpLabels[type]}（${units[type]}）`
-        : jpLabels[type];
-
-
-    if(chart) chart.destroy();
-
-    // ★ y軸設定（総合点だけ 0-100 固定）
-    const yScale = {
-        title:{ display:true, text:yLabel, font:{size:20} },
-        ticks:{ font:{size:18} }
-    };
-
-    if(type === "total_score"){
-        yScale.min = 0;
-        yScale.max = 100;
-    }
-
-
-    chart=new Chart(document.getElementById("graph"),{
-        type:"line",
-        data:{ labels, datasets:[{
-            label:type,
-            data:values,
-            borderWidth:3,
-            pointRadius:5,
-            fill:false
-        }]},
-        options:{
-            responsive:true,
-            maintainAspectRatio:false,
-            plugins: {
-                legend: { display: false }
-            },
-
-            scales:{
-                x:{
-                    title:{display:true,text:"日時", font:{size:20}},
-                    ticks:{ font:{size:18}, maxRotation:45, minRotation:30, autoSkip:true, autoSkipPadding:10 }
-                },
-                y:yScale
-            }
-        }
-    });
-}
-
-function buildUserFilterForGraph(data) {
-  const select = document.getElementById("user-filter");
-  select.innerHTML = `<option value="">すべてのユーザー</option>`;
-
-  const users = {};
-  data.forEach(d => {
-    if (d.user_id) {
-      users[d.user_id] = d.user_name || d.email || d.user_id;
-    }
-  });
-
-  for (const [uid, name] of Object.entries(users)) {
-    const opt = document.createElement("option");
-    opt.value = uid;
-    opt.textContent = name;
-    select.appendChild(opt);
-  }
-
-  select.style.display = "inline-block";
-
-  // 🔁 切り替え時に再描画
-  select.addEventListener("change", e => {
-    const metric = document.querySelector("select[onchange]").value;
-    drawGraph(metric, e.target.value);
-  });
-}
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  firebase.auth().onAuthStateChanged(user => {
-    if (!user) return location.href = "login.html";
-    drawGraph("total_score");
-  });
-});
-
-</script>
 </head>
 
 <body>
@@ -218,24 +48,289 @@ document.addEventListener("DOMContentLoaded", () => {
   <option value="">すべてのユーザー</option>
 </select>
 
-
-<select onchange="drawGraph(this.value, document.getElementById('user-filter').value)">
-    <option value="total_score">総合評価</option>
-    <option value="raw_self_distance">自己類似度（距離）</option>
-    <option value="pro_distance_mean">プロ類似度（距離）</option>
-    <option value="loop_mean_duration">平均ループ時間</option>
-    <option value="loop_std_duration">ループばらつき</option>
-    <option value="stable_loop">安定開始ループ</option>
-    <option value="snap_median">手首を返す強さ</option>
-    <option value="snap_std">手首を返す強さのばらつき</option>
+<select id="metric-select">
+  <option value="total_score">総合評価</option>
+  <option value="raw_self_distance">自己類似度（距離）</option>
+  <option value="pro_distance_mean">プロ類似度（距離）</option>
+  <option value="loop_mean_duration">平均ループ時間</option>
+  <option value="loop_std_duration">ループばらつき</option>
+  <option value="stable_loop">安定開始ループ</option>
+  <option value="snap_median">手首を返す強さ</option>
+  <option value="snap_std">手首を返す強さのばらつき</option>
 </select>
 
-
-<br>
 <a href="viewer.html" class="back-btn">履歴に戻る</a>
 
-
 <canvas id="graph"></canvas>
+
+<script>
+/* ================= Firebase ================= */
+firebase.initializeApp({
+    apiKey:"AIzaSyCIoMI9P-shqBz6RF38L_V9PG3bl5J7Pbc",
+    authDomain:"yoyo-sensing.firebaseapp.com",
+    projectId:"yoyo-sensing",
+    storageBucket:"yoyo-sensing.firebasestorage.app",
+    messagingSenderId:"129908163482",
+    appId:"1:129908163482:web:8cb1c024e25b2c9a96f023"
+});
+
+const ADMIN_EMAIL = "prj.yoyo@gmail.com";
+
+/* ================= プロ基準値 ================= */
+const PRO_REFERENCE = {
+    loop_mean_duration: 0.429,
+    loop_std_duration: 0.072,
+    snap_median: 91.45,
+    snap_std: 25.80
+};
+
+let chart = null;
+let currentMetric = "total_score";
+let userFilterInitialized = false;
+
+/* ================= プロ水平線 ================= */
+function createProLine(labels, value){
+    return {
+        label: "プロ",
+        data: labels.map(() => value),
+        borderWidth: 3,
+        borderDash: [8, 6],      
+        borderColor: undefined,  
+        pointRadius: 0,
+        pointStyle: 'line',    
+        fill: false
+    };
+}
+
+
+/* ================= 共通描画 ================= */
+function renderChart(
+    labels,
+    datasets,
+    yLabel,
+    xLabel,
+    yMin = null,
+    yMax = null,
+    showLegend = false,
+    forceIntegerY = false
+){
+    if(chart) chart.destroy();
+
+    const yScale = {
+        title:{ display:true, text:yLabel, font:{size:20} },
+        ticks:{
+            font:{ size:20 },
+            stepSize: forceIntegerY ? 1 : undefined,
+            callback: forceIntegerY
+                ? (v) => Number.isInteger(v) ? v : ""
+                : undefined
+        }
+    };
+    if (yMin !== null) yScale.min = yMin;
+    if (yMax !== null) yScale.max = yMax;
+
+    chart = new Chart(document.getElementById("graph"),{
+        type:"line",
+        data:{ labels, datasets },
+        options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            plugins:{ 
+                legend:{ 
+                    display:showLegend,
+                    labels: {
+                        generateLabels(chart) {
+                            const labels =
+                            Chart.defaults.plugins.legend.labels.generateLabels(chart);
+
+                            return labels.map(l => ({
+                            ...l,
+                            pointStyle: 'line',  // ← 凡例だけ線
+                            lineWidth: 3
+                            }));
+                        }
+                    }
+                } 
+            },
+            scales:{
+                x:{
+                    title:{ display:true, text:xLabel, font:{size:20} },
+                    ticks:{ font:{ size:20 } }
+                },
+                y: yScale
+            }
+        }
+    });
+}
+
+/* ================= 個人 ================= */
+function drawSingleUser(data, metric, yLabel, yAxisRule, isStableLoop){
+
+    if (!data.length) return;
+
+    const userLabel =
+        data[0].user_name ||
+        data[0].email ||
+        "ユーザー";
+    
+    const labels = data.map(d=>{
+        const dt=new Date(d.timestamp.replace(/-/g,"/"));
+        return `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,"0")}`;
+    });
+
+    const datasets = [{
+        label: userLabel,
+        data:data.map(d=>d[metric]),
+        borderWidth:4,
+        pointRadius:6,
+        pointHoverRadius:8        
+    }];
+
+    if(PRO_REFERENCE[metric] !== undefined){
+        datasets.push(createProLine(labels, PRO_REFERENCE[metric]));
+    }
+
+    renderChart(
+        labels,
+        datasets,
+        yLabel,
+        "日時",
+        yAxisRule.min,
+        yAxisRule.max,
+        true,
+        isStableLoop
+    );
+}
+
+/* ================= 全ユーザー ================= */
+function drawAllUsers(data, metric, yLabel, yAxisRule, isStableLoop){
+    const grouped = {};
+    data.forEach(d=>{
+        if(!d.user_name) return;
+        if(d.user_name==="ヨーヨープロジェクト") return;
+        if(!grouped[d.user_id]){
+            grouped[d.user_id]={name:d.user_name,values:[]};
+        }
+        grouped[d.user_id].values.push(d[metric]);
+    });
+
+    const users = Object.values(grouped);
+    if(users.length===0){
+        if(chart) chart.destroy();
+        return;
+    }
+
+    const maxLen=Math.max(...users.map(u=>u.values.length));
+    const labels=Array.from({length:maxLen},(_,i)=>i+1);
+
+    const datasets = users.map(u=>({
+        label:u.name,
+        data:u.values,
+        borderWidth:4,
+        pointRadius:6,
+        pointHoverRadius:7,
+        fill:false,
+        isStableLoop
+    }));
+
+    if(PRO_REFERENCE[metric] !== undefined){
+        datasets.push(createProLine(labels, PRO_REFERENCE[metric]));
+    }
+
+    renderChart(
+        labels,
+        datasets,
+        yLabel,
+        "履歴番号",
+        yAxisRule.min,
+        yAxisRule.max,
+        true,
+        isStableLoop
+    );
+}
+
+/* ================= メイン ================= */
+async function drawGraph(){
+    const user=firebase.auth().currentUser;
+    if(!user) return;
+
+    const metric=currentMetric;
+    const filterUid=document.getElementById("user-filter").value;
+
+    const isStableLoop = (metric === "stable_loop");
+
+
+    const yAxisRule = {
+        total_score:{min:0,max:100},
+        stable_loop:{min:1,max:null},
+        raw_self_distance:{min:0,max:null},
+        pro_distance_mean:{min:0,max:null},
+        loop_mean_duration:{min:0,max:null},
+        loop_std_duration:{min:0,max:null},
+        snap_median:{min:0,max:null},
+        snap_std:{min:0,max:null}
+    }[metric];
+
+    let url=`https://yoyo-backend.kajilab.dev/results_user_graph?uid=${user.uid}&email=${user.email}`;
+    if(filterUid) url+=`&filter_uid=${filterUid}`;
+
+    const data=await (await fetch(url)).json();
+
+    if(user.email===ADMIN_EMAIL && !userFilterInitialized){
+        buildUserFilter(data);
+        userFilterInitialized=true;
+    }
+
+    const yLabel={
+        total_score:"総合評価（点）",
+        raw_self_distance:"自己類似度（距離）※小さいほどよい",
+        pro_distance_mean:"プロ類似度（距離）※小さいほどよい",
+        loop_mean_duration:"平均ループ時間（秒）※プロは 0.429 秒",
+        loop_std_duration:"ループばらつき（秒）※小さいほどよい",
+        stable_loop:"安定開始ループ（周目）※小さいほどよい",
+        snap_median:"スナップ中央値 (m/s²) ※プロは 91.45 m/s²",
+        snap_std:"スナップばらつき（m/s²）※小さいほどよい"
+    }[metric];
+
+    if(user.email===ADMIN_EMAIL && filterUid===""){
+        drawAllUsers(data,metric,yLabel,yAxisRule, isStableLoop);
+    }else{
+        drawSingleUser(data,metric,yLabel,yAxisRule, isStableLoop);
+    }
+}
+
+/* ================= ユーザーセレクト ================= */
+function buildUserFilter(data){
+    const select=document.getElementById("user-filter");
+    select.innerHTML='<option value="">すべてのユーザー</option>';
+
+    const map={};
+    data.forEach(d=>{
+        if(d.user_id) map[d.user_id]=d.user_name||d.email;
+    });
+
+    Object.entries(map).forEach(([uid,name])=>{
+        const o=document.createElement("option");
+        o.value=uid;
+        o.textContent=name;
+        select.appendChild(o);
+    });
+
+    select.style.display="inline-block";
+    select.onchange=drawGraph;
+}
+
+/* ================= 初期化 ================= */
+document.getElementById("metric-select").onchange=e=>{
+    currentMetric=e.target.value;
+    drawGraph();
+};
+
+firebase.auth().onAuthStateChanged(u=>{
+    if(!u) location.href="login.html";
+    drawGraph();
+});
+</script>
 
 </body>
 </html>

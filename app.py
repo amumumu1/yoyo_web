@@ -417,9 +417,9 @@ def generate_radar_chart(score, snap_std, loop_std, stable_loop, pro_distance, l
 
 
     if pro_distance is None:  s_pro=0
-    elif pro_distance<=20:    s_pro=5
-    elif pro_distance>=120:   s_pro=0
-    else:                     s_pro=5*(120-pro_distance)/(120-20)
+    elif pro_distance<=30:    s_pro=5
+    elif pro_distance>=130:   s_pro=0
+    else:                     s_pro=5*(130-pro_distance)/(130-30)
 
     # ここを変更：外から来た labels を使う。無ければ日本語デフォルト
     if labels is None:

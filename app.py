@@ -152,6 +152,37 @@ def add_email_column():
 
 add_email_column()
 
+def encode_1d_heatmap(values: np.ndarray, title: str, lang="ja") -> str:
+    """
+    values: shape = (N,)  ← 各ループのプロ距離
+    """
+    fig, ax = plt.subplots(figsize=(8, 2))
+
+    mat = values.reshape(1, -1)   # ← 1×N に変形
+    cax = ax.imshow(mat, cmap="coolwarm", aspect="auto")
+    cb = plt.colorbar(cax, ax=ax)
+
+    ax.set_title(title, fontproperties=font_prop, fontsize=16)
+
+    # x軸 = ループ番号
+    ax.set_xticks(np.arange(len(values)))
+    ax.set_xticklabels([str(i+1) for i in range(len(values))],
+                       fontproperties=font_prop)
+
+    # y軸は意味を持たないので消す
+    ax.set_yticks([])
+
+    # カラーバーのフォント
+    for t in cb.ax.get_yticklabels():
+        t.set_fontproperties(font_prop)
+
+    plt.tight_layout()
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
 
 def pick_lang(raw):
     if not raw: return "ja"
@@ -611,9 +642,12 @@ def analyze():
 
         # 11: Pro ヒートマップ
         set_progress(task_id, 65, "pro_hm")
-        pro_mat = np.full_like(dtw_mat, np.nan)
-        for i,d in enumerate(distances): pro_mat[i,i] = d
-        pro_hm = encode_heatmap(pro_mat, I18N[lang]["titles"]["pro_hm"])
+        pro_hm = encode_1d_heatmap(
+            np.array(distances),
+            I18N[lang]["titles"]["pro_hm"],
+            lang=lang
+        )
+
 
         # 12: ループ検出グラフ
         set_progress(task_id, 70, "seg_plot")

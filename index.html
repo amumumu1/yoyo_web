@@ -489,6 +489,99 @@
         text-align: center;
     }
 
+    /* ===== お知らせ欄 ===== */
+    #newsBox {
+      max-width: 900px;
+      margin: 40px auto 30px;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+      padding: 18px 24px;
+      text-align: center;
+    }
+
+    /* ヘッダー完全中央 */
+    .news-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* 見出し */
+    .news-title {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .news-sub {
+      font-size: 18px;
+      color: #888;
+    }
+
+    /* リスト本体 */
+    .news-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    /* 各行：横・縦ともに中央 */
+    .news-list li {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 22px;
+      text-align: center;      /* ← 念のため */
+    }
+
+    /* 最終行の下線削除 */
+    .news-list li:last-child {
+      border-bottom: none;
+    }
+
+    /* 日付 */
+    .news-date {
+      font-size: 18px;
+      color: #666;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    /* 本文 */
+    .news-text {
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+    }
+
+    /* NEW バッジ */
+    .news-badge {
+      font-size: 16px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    .news-badge.new {
+      background: #e74c3c;
+      color: white;
+    }
+
+    #newsBox,
+    #newsBox * {
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+    }
+
+
+
+
 
 
 
@@ -654,6 +747,26 @@
     <button id="btnStop" disabled>センシング終了</button>
     <button id="btnCancel"  style="display:none;">中止</button>
     <button id="btnRi"  onclick="location.href='/viewer'">履歴を見る</button>
+
+
+    <!-- ===== 更新情報 / お知らせ ===== -->
+    <div id="newsBox">
+    <div class="news-header">
+      <span class="news-title" id="newsTitle">お知らせ</span>
+      <span class="news-sub">News / Update</span>
+    </div>
+
+    <ul class="news-list">
+      <li>
+        <span class="news-date">2025/12/23</span>
+        <span class="news-badge new">NEW</span>
+        <span class="news-text">プロ類似度の評価基準を調整しました</span>
+      </li>
+    </ul>
+  </div>
+
+
+    
 
     <h2 id="demoHeading"><br>デモ動画</h2>
 
@@ -837,6 +950,7 @@
       const btnRestart  = document.getElementById('btnRestart');
       const demoHeading  = document.getElementById('demoHeading');
       const appTitle  = document.getElementById('appTitle');
+      const newsBox       = document.getElementById('newsBox');
       // ログインしている人の名前（なければ「あなた」）
       let currentUserName = 'あなた';
 
@@ -855,6 +969,7 @@
         ja: {
           appTitle: 'インサイド・ループ技能評価システム',
           demoHeading: 'デモ動画',
+          newsBox: 'おしらせ / 更新情報',
           btnConnectStart: '接続 & センシング開始',
           btnConnectAgain: 'もう一度センシング',
           btnCsvMode: 'CSVから解析',
@@ -929,6 +1044,7 @@
         en: {
           appTitle: 'Inside Loop Skill Evaluation',
           demoHeading: 'Demo Video',
+          newsBox: 'News', 
           btnConnectStart: 'Connect & Start Sensing',
           btnConnectAgain: 'Sense Again',
           btnCsvMode: 'Analyze from CSV',
@@ -1017,6 +1133,7 @@
         // 見出し・ボタン
         setText('appTitle', t('appTitle'));
         setText('demoHeading', t('demoHeading'));
+        setText('newsTitle', t('newsBox'));
         setText('btnConnect', t('btnConnectStart'));
         setText('btnCsvMode', t('btnCsvMode'));
         setText('btnRestart', t('btnRestart'));
@@ -1069,6 +1186,9 @@
         // html[lang] を更新（スクリーンリーダー向け）
         document.documentElement.lang = lang;
       }
+
+      showNews(true);
+
 
       // 言語セレクタ初期化
       const langSel = document.getElementById('langSelect');
@@ -1147,6 +1267,13 @@
         });
       }
 
+      function showNews(show = true) {
+        if (newsBox) {
+          newsBox.style.display = show ? 'block' : 'none';
+        }
+      }
+
+
       // UIリセット
       function resetUIBeforeMeasure() {
         document.getElementById('commentSection').style.display = 'none';
@@ -1194,7 +1321,8 @@
 
       // 解析用ラッパー
       async function runAnalysis(payload) {
-        showIntroVideo(false);  // 念のため毎回隠す
+        showIntroVideo(false); 
+        showNews(false);
         // タスク開始
         const startRes = await fetch(`${API_ROOT}/start_analysis?lang=${lang}`, { method:'POST' });
         const { task_id } = await startRes.json();
@@ -1235,6 +1363,7 @@
       // CSV 解析
       btnCsvMode.onclick  = ()=> csvInput.click();
       csvInput.onchange    = async ()=>{
+        showNews(false); 
         showIntroVideo(false);
         if(csvInput.files.length<2){
           alert(t('selectTwoCsv'));
@@ -1269,6 +1398,7 @@
       // センシング開始
       btnConnect.onclick = async ()=>{
         showIntroVideo(false);
+        showNews(false);
         isCsvMode = false;
         resetUIBeforeMeasure();
         try {
@@ -1329,6 +1459,7 @@
 
           // ボタン復帰（初期状態へ）
           showIntroVideo(true);
+          showNews(true);
           btnConnect.style.display   = 'inline-block';
           btnConnect.disabled        = false;
           // 初期状態へ戻すとき
@@ -1355,27 +1486,28 @@
       }
 
       btnRestart.onclick = async () => {
-      // いまの計測を確実に停止
-      await safeStopMeasure();
+        // いまの計測を確実に停止
+        await safeStopMeasure();
 
-      // 取得済みデータ・前回結果などを完全リセット
-      resetUIBeforeMeasure();
+        // 取得済みデータ・前回結果などを完全リセット
+        resetUIBeforeMeasure();
 
 
-      // ボタン表示を初期状態に戻す（表示まわりはお好みで）
-      btnConnect.style.display = 'inline-block';
-      btnConnect.disabled      = false;
-      setConnectButtonAgain();
-      btnCsvMode.style.display = 'inline-block';
-      btnRi.style.display      = 'inline-block'
-      btnStop.style.display    = 'none';
-      btnCancel.style.display  = 'none';
-      btnRestart.style.display = 'none';
-      showIntroVideo(true);
+        // ボタン表示を初期状態に戻す（表示まわりはお好みで）
+        btnConnect.style.display = 'inline-block';
+        btnConnect.disabled      = false;
+        btnCsvMode.style.display = 'inline-block';
+        btnRi.style.display      = 'inline-block'
+        btnStop.style.display    = 'none';
+        btnCancel.style.display  = 'none';
+        btnRestart.style.display = 'none';
+        showIntroVideo(true);
+        showNews(true);
 
-      // 直ちに「接続 & センシング開始」を実行（ユーザーのクリック内なので許可される）
-      btnConnect.click();
-    };
+        // 直ちに「接続 & センシング開始」を実行（ユーザーのクリック内なので許可される）
+        btnConnect.click();
+      
+      };
 
 
 
@@ -1392,6 +1524,7 @@
           btnRestart.style.display = 'none';
           document.getElementById("login-area").style.display="none"
           showIntroVideo(false);
+          showNews(false);
           hideMeasureUI();
           await controlChar.writeValue(new Uint8Array([0]));
           await dataChar.stopNotifications();
@@ -1402,6 +1535,8 @@
           alert(t('analysisFailed') + ': ' + err.message);
         }
       };
+
+
 
 
       // データ受信ハンドラ

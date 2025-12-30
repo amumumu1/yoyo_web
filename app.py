@@ -156,7 +156,7 @@ def encode_1d_heatmap(values: np.ndarray, title: str, lang="ja") -> str:
     """
     values: shape = (N,)  ← 各ループのプロ距離
     """
-    fig, ax = plt.subplots(figsize=(6, 6))
+    fig, ax = plt.subplots(figsize=(8, 2))
 
     mat = values.reshape(1, -1)   # ← 1×N に変形
     cax = ax.imshow(mat, cmap="coolwarm", aspect="auto")

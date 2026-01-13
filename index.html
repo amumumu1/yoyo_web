@@ -579,23 +579,23 @@
       text-orientation: mixed !important;
     }
 
+    #autoToast {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      
+      padding: 16px 30px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 32px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 99999;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      transition: opacity .25s ease;
+    }
 
 
   </style>
@@ -734,6 +734,19 @@
         <option value="en">English</option>
       </select>
     </div>
+    <div id="autoModeArea" style="text-align:right; margin-bottom: 10px; font-size:18px;">
+      <label style="cursor:pointer;">
+        <input type="checkbox" id="autoRestartToggle" checked style="transform:scale(1.2); margin-right:4px;">
+        自動やり直し
+      </label>
+
+      <label style="cursor:pointer; margin-left:10px;">
+        <input type="checkbox" id="autoStopToggle" checked style="transform:scale(1.2); margin-right:4px;">
+        自動終了 & 解析開始
+      </label>
+    </div>
+
+
 
 
     <h5 id="appTitle">インサイド・ループ技能評価システム<br></h5>
@@ -758,8 +771,12 @@
 
     <ul class="news-list">
       <li>
-        <span class="news-date">2025/12/29</span>
+        <span class="news-date">2025/1/11</span>
         <span class="news-badge new">NEW</span>
+        <span class="news-text">自動センシングモードを追加しました</span>
+      </li>
+      <li>
+        <span class="news-date">2025/12/29</span>
         <span class="news-text">プロ類似度のヒートマップを１次元に変更しました</span>
       </li>
       <li>
@@ -957,6 +974,11 @@
       const newsBox       = document.getElementById('newsBox');
       // ログインしている人の名前（なければ「あなた」）
       let currentUserName = 'あなた';
+      let autoStartTime = null;
+      let autoRestartEnabled = true;
+      let autoStopEnabled = true;
+
+
 
 
       // ===== i18n =====
@@ -1277,6 +1299,21 @@
         }
       }
 
+      const autoRestartToggle = document.getElementById('autoRestartToggle');
+      const autoStopToggle = document.getElementById('autoStopToggle');
+
+      autoRestartToggle.onchange = () => {
+        autoRestartEnabled = autoRestartToggle.checked;
+        console.log("Auto Restart:", autoRestartEnabled);
+      };
+
+      autoStopToggle.onchange = () => {
+        autoStopEnabled = autoStopToggle.checked;
+        console.log("Auto Stop:", autoStopEnabled);
+      };
+
+
+
 
       // UIリセット
       function resetUIBeforeMeasure() {
@@ -1382,6 +1419,8 @@
         btnCsvMode.style.display  = 'none';
         btnRi.style.display       = 'none';
         btnStop.style.display    = 'none';
+        document.getElementById('autoModeArea').style.display = 'none';
+
         showIntroVideo(false);
 
         
@@ -1428,6 +1467,7 @@
           await controlChar.writeValue(new Uint8Array([1]));
           await dataChar.startNotifications();
           dataChar.addEventListener('characteristicvaluechanged',handleNotify);
+          autoStartTime = performance.now();
           document.getElementById('accTitle').style.display='block';
           document.getElementById('gyroTitle').style.display='block';
           document.getElementById('accChart').style.display='block';
@@ -1473,6 +1513,7 @@
           btnStop.style.display      = 'none';
           btnCancel.style.display    = 'none';
           btnRestart.style.display   = 'none';
+          document.getElementById('autoModeArea').style.display = 'block';
           document.getElementById("login-area").style.display="block";
         } catch (err) {
           // 中止失敗
@@ -1505,6 +1546,8 @@
         btnStop.style.display    = 'none';
         btnCancel.style.display  = 'none';
         btnRestart.style.display = 'none';
+        document.getElementById('autoModeArea').style.display = 'block';
+
         showIntroVideo(true);
         showNews(true);
 
@@ -1526,6 +1569,7 @@
           btnRi.style.display='none';
           btnCancel.style.display  = 'none';
           btnRestart.style.display = 'none';
+          document.getElementById('autoModeArea').style.display = 'none';
           document.getElementById("login-area").style.display="none"
           showIntroVideo(false);
           showNews(false);
@@ -1541,6 +1585,15 @@
       };
 
 
+      // ==== 自動制御パラメータ ====
+      let restart_threshold = 210;  // m/s²くらい
+      let stop_threshold = 12;      // m/s²くらい
+      let noMotionTime = 0;
+      let lastTimestamp = null;
+      let autoEnabled = true;      // ボタン残すので切替可能
+
+
+
 
 
       // データ受信ハンドラ
@@ -1554,6 +1607,38 @@
             const [t,ax,ay,az,gx,gy,gz]=p;
             acc.push({ t,ax,ay,az });
             gyro.push({ t,gx,gy,gz });
+            const norm = Math.sqrt(ax*ax + ay*ay + az*az);
+
+            // Δt計算（ms→s）
+            if (lastTimestamp === null) lastTimestamp = t;
+            const dt = (t - lastTimestamp) / 1000;
+            lastTimestamp = t;
+            if (autoEnabled) {
+                const elapsedSec = (performance.now() - autoStartTime) / 1000;
+                const autoStopWindow = (elapsedSec > 5.0);
+
+                // === (1) 自動やり直し ===
+                if (autoRestartEnabled && norm > restart_threshold) {
+                    console.log("AUTO RESTART!");
+                    autoRestart();
+                    return;
+                }
+
+
+                // === (2) 自動終了 ===
+                if (autoStopEnabled && autoStopWindow && norm < stop_threshold) {
+                    noMotionTime += dt;
+                    if (noMotionTime >= 3.0) {
+                        console.log("AUTO STOP!");
+                        autoStop();
+                        return;
+                    }
+                } else {
+                    noMotionTime = 0;
+                }
+
+            }
+
             accData.labels.push(''); gyroData.labels.push('');
             accData.datasets[0].data.push(ax);
             accData.datasets[1].data.push(ay);
@@ -1573,6 +1658,78 @@
           }
         }
       }
+      
+      async function autoRestart() {
+          console.log("AUTO RESTART");
+
+          // --- (1) センサー停止 ---
+          try { await controlChar.writeValue(new Uint8Array([0])); } catch(e){}
+
+          // --- (2) 通知を確実に停止 ---
+          try { await dataChar.stopNotifications(); } catch(e){}
+
+          // --- (3) データクリア ---
+          acc.length = 0;
+          gyro.length = 0;
+          buffer = '';
+          noMotionTime = 0;
+          lastTimestamp = null;
+          q0 = null;
+          q0_inv = null;
+
+          // --- (4) 少し待つ ---
+          setTimeout(async ()=>{
+              try {
+                  // センサー再スタート
+                  await controlChar.writeValue(new Uint8Array([1]));
+
+                  // 通知を確実に再開
+                  await dataChar.startNotifications();
+                  dataChar.addEventListener('characteristicvaluechanged', handleNotify);
+
+                  autoStartTime = performance.now();
+                  console.log("AUTO RESTART DONE");
+                  showAutoToast("やり直し");
+
+              } catch(e) {
+                  console.error("restart failed", e);
+              }
+          }, 200);
+      }
+
+
+
+
+      let autoStopLock = false;
+
+      async function autoStop() {
+        if (autoStopLock) return; // 多重実行防止
+        autoStopLock = true;
+
+        console.log("AUTO STOP → btnStop.click()");
+
+        // ボタンと完全に同じ動作
+        btnStop.click();
+
+        // ボタンクールダウン時間（必要に応じて調整）
+        setTimeout(() => {
+          autoStopLock = false;
+        }, 2000);
+      }
+
+      function showAutoToast(msg="自動やり直ししました") {
+        const toast = document.getElementById("autoToast");
+        toast.textContent = msg;
+        toast.style.opacity = 1;
+
+        setTimeout(() => {
+          toast.style.opacity = 0;
+        }, 500); // 1秒表示
+      }
+
+
+
+
 
       // 結果描画
       function renderResult(json){
@@ -1745,6 +1902,8 @@
         btnCsvMode.style.display   = 'inline-block';
         btnRi.style.display        = 'inline-block';
         btnStop.style.display      = 'none';
+        document.getElementById('autoModeArea').style.display = 'block';
+
 
         // ---- Three.js 姿勢アニメーション ----
         if (json.quaternions) {
@@ -1973,5 +2132,9 @@
     
     </script>
   </div>
+  <div id="autoToast">
+    やり直し
+  </div>
+
 </body>
 </html>
